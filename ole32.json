@@ -1,0 +1,101 @@
+{
+  "Category": "Ole32",
+  "Calling convention": "WINAPI",
+  
+  "CoCreateInstance": {
+    "Signature": {
+	  "Library": "ole32.dll",
+	  "Return": "HRESULT"
+	},
+	
+	"Parameters": {
+	 "rclsid": "REFCLSID",
+	 "pUnkOuter": "LPVOID",
+	 "dwClsContext": "DWORD",
+	 "riid": "REFIID",
+	 "ppv": "LPVOID*"
+	},
+	
+	"PreLog": [
+	  "rclsid",
+	  "riid"
+	]
+  },
+  
+  "CoCreateInstanceEx": {
+    "Signature": {
+	  "Library": "ole32.dll",
+	  "Return": "HRESULT"
+	},
+	
+	"Parameters": {
+	 "rclsid": "REFCLSID",
+	 "punkOuter": "LPVOID",
+	 "dwClsContext": "DWORD",
+	 "pServerInfo": "COSERVERINFO*",
+	 "dwCount": "DWORD",
+	 "pResults": "MULTI_QI*"
+	},
+	
+	"PreLog": [
+	  "rclsid",
+	  "pResults->pIID"
+	]
+  },
+  
+  "CoGetClassObject": {
+    "Signature": {
+	  "Library": "ole32.dll",
+	  "Return": "HRESULT"
+	},
+	
+	"Parameters": {
+	 "rclsid": "REFCLSID",
+	 "dwClsContext": "DWORD",
+	 "pvReserved": "LPVOID",
+	 "riid": "REFIID",
+	 "ppv": "LPVOID*"
+	},
+	
+	"PreLog": [
+	  "rclsid",
+	  "riid"
+	]
+  },
+  
+  "CoInitialize": {
+    "Signature": {
+	  "Library": "ole32.dll",
+	  "Return": "HRESULT"
+	},
+	
+	"Parameters": {
+	 "pvReserved": "LPVOID"
+	},
+	
+	"Logging": true
+  },
+  
+  "CoInitializeEx": {
+    "Signature": {
+	  "Library": "ole32.dll",
+	  "Return": "HRESULT"
+	},
+	
+	"Parameters": {
+	 "pvReserved": "LPVOID",
+	 "dwCoInit": "DWORD"
+	},
+	
+	"Logging": true
+  },
+  
+  "CoUninitialize": {
+    "Signature": {
+	  "Library": "ole32.dll",
+	  "Return": "VOID"
+	},
+	
+	"Logging": true
+  }
+}

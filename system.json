@@ -1,0 +1,309 @@
+{
+  "Category": "System",
+  "Calling convention": "WINAPI",
+  
+  "LoadLibraryA": {
+    "Signature": {
+	  "Library": "kernel32.dll",
+	  "Return": "HMODULE",
+	  "Special": false
+	},
+	
+	"Parameters": {
+	 "lpLibFileName": "LPCSTR"
+	},
+	
+	"Ensure": [
+	  "lpLibFileName"
+	],
+	
+	"PreLog": [
+	  "lpLibFileName"
+	]
+  },
+  
+  "LoadLibraryW": {
+    "Signature": {
+	  "Library": "kernel32.dll",
+	  "Return": "HMODULE",
+	  "Special": false
+	},
+	
+	"Parameters": {
+	 "lpLibFileName": "LPCWSTR"
+	},
+	
+	"Ensure": [
+	  "lpLibFileName"
+	],
+	
+	"PreLog": [
+	  "lpLibFileName"
+	]
+  },
+  
+  "LoadLibraryExA": {
+    "Signature": {
+	  "Library": "kernel32.dll",
+	  "Return": "HMODULE",
+	  "Special": false
+	},
+	
+	"Parameters": {
+	 "lpLibFileName": "LPCSTR",
+	 "hFile": "HANDLE",
+	 "dwFlags": "LOADFLAGS"
+	},
+	
+	"Ensure": [
+	  "lpLibFileName"
+	],
+	
+	"PreLog": [
+	  "lpLibFileName",
+	  "dwFlags"
+	]
+  },
+  
+  "LoadLibraryExW": {
+    "Signature": {
+	  "Library": "kernel32.dll",
+	  "Return": "HMODULE",
+	  "Special": false
+	},
+	
+	"Parameters": {
+	 "lpLibFileName": "LPCWSTR",
+	 "hFile": "HANDLE",
+	 "dwFlags": "LOADFLAGS"
+	},
+	
+	"Ensure": [
+	  "lpLibFileName"
+	],
+	
+	"PreLog": [
+	  "lpLibFileName",
+	  "dwFlags"
+	]
+  },
+   
+  "ExitWindowsEx": {
+    "Signature": {
+	  "Library": "user32.dll",
+	  "Return": "BOOL"
+	},
+	
+	"Parameters": {
+	  "uFlags": "EXITFLAGS",
+      "dwReason": "EXITREASON"
+	},
+	
+	"PreLog": [
+	  "uFlags" ,
+	  "dwReason"
+	]
+  },
+  
+  "GetDiskFreeSpaceExA": {
+    "Signature": {
+	  "Library": "kernel32.dll",
+	  "Return": "BOOL"
+	},
+	
+	"Parameters": {
+	  "lpDirectoryName": "LPCSTR",
+      "lpFreeBytesAvailableToCaller": "LPULARGE_INTEGER",
+	  "lpTotalNumberOfBytes": "LPULARGE_INTEGER",
+	  "lpTotalNumberOfFreeBytes": "LPULARGE_INTEGER"
+	},
+	
+	"PostCheck": {
+	  "0": {
+	    "Check": {
+	      "lpDirectoryName|lpTotalNumberOfBytes": "(%var0 == '' || %var0 =~ 'C:*') && (%var1 <= 64424509440)"
+	    },
+	  
+	    "Modify": {
+	      "lpTotalNumberOfBytes": "%var0=1099511627776"
+	    }
+	  }
+	}
+  },
+  
+  "GetDiskFreeSpaceExW": {
+    "Signature": {
+	  "Library": "kernel32.dll",
+	  "Return": "BOOL"
+	},
+	
+	"Parameters": {
+	  "lpDirectoryName": "LPCWSTR",
+      "lpFreeBytesAvailableToCaller": "LPULARGE_INTEGER",
+	  "lpTotalNumberOfBytes": "LPULARGE_INTEGER",
+	  "lpTotalNumberOfFreeBytes": "LPULARGE_INTEGER"
+	},
+	
+	"PostCheck": {
+	  "0": {
+	    "Check": {
+	      "lpDirectoryName|lpTotalNumberOfBytes": "(%var0 == '' || %var0 =~ 'C:*') && (%var1 <= 64424509440)"
+	    },
+	  
+	    "Modify": {
+	      "lpTotalNumberOfBytes": "%var0=1099511627776"
+	    }
+	  }
+	}
+  },
+  
+  "GetTickCount": {
+    "Signature": {
+	  "Library": "kernel32.dll",
+	  "Return": "DWORD"
+	},
+	
+	"PostLog": [
+	  "Return"
+	]
+  },
+  
+  "GetModuleHandleA": {
+    "Signature": {
+	  "Library": "kernel32.dll",
+	  "Return": "HMODULE"
+	},
+	
+	"Parameters": {
+	  "lpModuleName": "LPCSTR"
+	},
+	
+	"PreLog": [
+	  "lpModuleName"
+	]
+  },
+  
+  "GetModuleHandleW": {
+    "Signature": {
+	  "Library": "kernel32.dll",
+	  "Return": "HMODULE"
+	},
+	
+	"Parameters": {
+	  "lpModuleName": "LPCWSTR"
+	},
+	
+	"PreLog": [
+	  "lpModuleName"
+	]
+  },
+  
+  "GetProcAddress": {
+    "Signature": {
+	  "Library": "kernel32.dll",
+	  "Return": "FARPROC"
+	},
+	
+	"Parameters": {
+	  "hModule": "HMODULE",
+	  "lpProcName": "LPCSTR"
+	},
+	
+	"PreLog": [
+	  "hModule",
+	  "lpProcName"
+	],
+	
+	"PostLog": [
+	  "Return"
+	]
+  },
+  
+  "NtQueryInformationProcess": {
+    "Signature": {
+	  "Library": "ntdll.dll",
+	  "Return": "NTSTATUS"
+	},
+	
+	"Parameters": {
+	  "ProcessHandle": "HANDLE",
+	  "ProcessInformationClass": "PROCESSINFOCLASS",
+	  "ProcessInformation": "LPVOID",
+	  "ProcessInformationLength": "ULONG",
+	  "ReturnLength": "LPULONG"
+	},
+	
+	"PreHandle": {
+	  "ProcessName": "GetProcessName(ProcessHandle)"
+	},
+	
+	"PreLog": [
+	  "ProcessHandle",
+	  "ProcessInformationClass"
+	],
+	
+	"PostCheck": {
+	  "0": {
+	    "Define": {
+	      "ProcessInformation": "LPULONG"
+	    },
+	  
+	    "Check": {
+	      "ProcessInformationClass": "(%var0 == ProcessDebugPort)"
+	    },
+	  
+	    "Log": [
+	      "ProcessInformation"
+	    ]
+	  },
+	  
+	  "1": {
+	    "Define": {
+	      "ProcessInformation": "DWORD_PTR*"
+	    },
+	  
+	    "Check": {
+	      "ProcessInformationClass": "(%var0 == ProcessBreakOnTermination)"
+	    },
+	  
+	    "Log": [
+	      "ProcessInformation"
+	    ]
+	  }
+	}
+  },
+  
+  "NtQuerySystemInformation": {
+    "Signature": {
+	  "Library": "ntdll.dll",
+	  "Return": "NTSTATUS"
+	},
+	
+	"Parameters": {
+	  "SystemInformationClass": "SYSTEM_INFORMATION_CLASS",
+	  "SystemInformation": "LPVOID",
+	  "SystemInformationLength": "ULONG",
+	  "ReturnLength": "LPULONG"
+	},
+	
+	"PreLog": [
+	  "SystemInformationClass"
+	],
+	
+	"PostCheck": {
+	  "0": {
+	    "Define": {
+		"SystemInformation": "SYSTEM_BASIC_INFORMATION*"
+		},
+		
+		"Check": {
+		  "SystemInformationClass|SystemInformation->dwNumberOfProcessors": "(%var0 == SystemBasicInformation) && (%var1 < 2)"
+		},
+		  
+		"Modify": {
+		  "SystemInformation->dwNumberOfProcessors": "2"
+		}
+      }
+	}
+  }
+}
