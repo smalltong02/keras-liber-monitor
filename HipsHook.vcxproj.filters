@@ -16,9 +16,6 @@
     <Filter Include="HipsObject">
       <UniqueIdentifier>{1103d1ae-5062-460e-96b9-7be0e32ab904}</UniqueIdentifier>
     </Filter>
-    <Filter Include="TracerComm">
-      <UniqueIdentifier>{a90c23cc-6b8e-4211-9121-10bac1a9eb47}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Coms">
       <UniqueIdentifier>{52632530-5c2a-4a54-ab0d-e4210ea909b0}</UniqueIdentifier>
     </Filter>
@@ -45,15 +42,6 @@
     <ClInclude Include="HipsHook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\FortiTracer\fortihipstracer\public\tpl.h">
-      <Filter>TracerComm</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\FortiTracer\fortihipstracer\public\TracerComm.h">
-      <Filter>TracerComm</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\FortiTracer\fortihipstracer\public\TracerLog.h">
-      <Filter>TracerComm</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -71,9 +59,6 @@
     </ClInclude>
     <ClInclude Include="OleConfigObject.h">
       <Filter>HipsObject</Filter>
-    </ClInclude>
-    <ClInclude Include="DriverMgr.h">
-      <Filter>TracerComm</Filter>
     </ClInclude>
     <ClInclude Include="SigsObject.h">
       <Filter>HipsObject</Filter>
@@ -143,9 +128,6 @@
     <ClCompile Include="HipsHook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\FortiTracer\fortihipstracer\public\tpl.c">
-      <Filter>TracerComm</Filter>
-    </ClCompile>
     <ClCompile Include="ComsObject.cpp">
       <Filter>HipsObject</Filter>
     </ClCompile>
@@ -160,15 +142,6 @@
     </ClCompile>
     <ClCompile Include="OleConfigObject.cpp">
       <Filter>HipsObject</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\FortiTracer\fortihipstracer\public\TracerComm.cpp">
-      <Filter>TracerComm</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\FortiTracer\fortihipstracer\public\TracerLog.cpp">
-      <Filter>TracerComm</Filter>
-    </ClCompile>
-    <ClCompile Include="DriverMgr.cpp">
-      <Filter>TracerComm</Filter>
     </ClCompile>
     <ClCompile Include="SigsObject.cpp">
       <Filter>HipsObject</Filter>

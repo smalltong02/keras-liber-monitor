@@ -89,7 +89,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;WIN32_HOOK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\ThirdParty\minhook\include;../../FortiTracer/fortihipstracer/public;../../FortiTracer/loki/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DisableSpecificWarnings>4244;4290;4800;4200;4214;4018</DisableSpecificWarnings>
       <TreatSpecificWarningsAsErrors>4013;4020;4022;4047;4098;4113;4129;4163;4229;4700;4603;4716;4189</TreatSpecificWarningsAsErrors>
@@ -97,7 +97,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\HipsHook\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>.\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>ntdll.lib;libMinHook.x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -130,7 +130,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;WIN32_HOOK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..\..\ThirdParty\minhook\include;../../FortiTracer/fortihipstracer/public;../../FortiTracer/loki/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4244;4290;4800;4200;4214;4018</DisableSpecificWarnings>
       <TreatSpecificWarningsAsErrors>4013;4020;4022;4047;4098;4113;4129;4163;4229;4700;4603;4716;4189</TreatSpecificWarningsAsErrors>
     </ClCompile>
@@ -140,7 +140,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>ntdll.lib;libMinHook.x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\HipsHook\lib\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>.\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -170,12 +170,8 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\FortiTracer\fortihipstracer\public\tpl.h" />
-    <ClInclude Include="..\..\FortiTracer\fortihipstracer\public\TracerComm.h" />
-    <ClInclude Include="..\..\FortiTracer\fortihipstracer\public\TracerLog.h" />
     <ClInclude Include="commutils.h" />
     <ClInclude Include="ComsObject.h" />
-    <ClInclude Include="DriverMgr.h" />
     <ClInclude Include="FlagsObject.h" />
     <ClInclude Include="HipsConfigObject.h" />
     <ClInclude Include="HipsHook.h" />
@@ -204,19 +200,6 @@
     <ClInclude Include="Win32WbemServices.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\FortiTracer\fortihipstracer\public\tpl.c" />
-    <ClCompile Include="..\..\FortiTracer\fortihipstracer\public\TracerComm.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\..\FortiTracer\fortihipstracer\public\TracerLog.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="commutils.cpp" />
     <ClCompile Include="ComsObject.cpp" />
     <ClCompile Include="dllmain.cpp">
@@ -233,7 +216,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="DriverMgr.cpp" />
     <ClCompile Include="FlagsObject.cpp" />
     <ClCompile Include="HipsConfigObject.cpp" />
     <ClCompile Include="HipsHook.cpp" />

@@ -3,7 +3,6 @@
 
 #include "stdafx.h"
 #include "test_minihook.h"
-#include "MinHook.h"
 
 int main()
 {

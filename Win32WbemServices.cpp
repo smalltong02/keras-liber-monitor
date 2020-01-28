@@ -397,17 +397,17 @@ HRESULT STDMETHODCALLTYPE WbemServicesExecMethod(
 						{
 							if (g_oleConfig->GetDriverMgr() != nullptr && ParamValue.vt == VT_BSTR)
 							{
-								DWORD BytesReturned = 0;
-								BOOL  Result = FALSE;
-								Result = g_oleConfig->GetDriverMgr()->IoControl((DWORD)IOCTL_HIPS_SETTARGETCMD, ParamValue.bstrVal, (wcslen(ParamValue.bstrVal) + 1) * sizeof(wchar_t), NULL, 0, &BytesReturned);
-								if (Result == TRUE)
-								{
-									DbgPrintLog(L"WbemServicesExecMethod: set target cmdline success!");
-								}
-								else
-								{
-									DbgPrintLog(L"WbemServicesExecMethod: set target cmdline failed!");
-								}
+								//DWORD BytesReturned = 0;
+								//BOOL  Result = FALSE;
+								//Result = g_oleConfig->GetDriverMgr()->IoControl((DWORD)IOCTL_HIPS_SETTARGETCMD, ParamValue.bstrVal, (wcslen(ParamValue.bstrVal) + 1) * sizeof(wchar_t), NULL, 0, &BytesReturned);
+								//if (Result == TRUE)
+								//{
+								//	DbgPrintLog(L"WbemServicesExecMethod: set target cmdline success!");
+								//}
+								//else
+								//{
+								//	DbgPrintLog(L"WbemServicesExecMethod: set target cmdline failed!");
+								//}
 							}
 						}
 					}

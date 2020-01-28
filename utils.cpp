@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "utils.h"
-#include "TracerLog.h"
 #include "Win32ClassFactory.h"
 #include "Win32ClassFactory2.h"
 #include "Win32ClientSecurity.h"
@@ -770,32 +769,32 @@ bool SendToTracer(PVOID stream, ULONG length)
 
 void WmiInterfaceQueryLog(int ClassId, std::wstring Properties, VARIANT& Value)
 {
-	void* buffer = NULL;
-	size_t  blen = 0;
-	std::wstring ValueString;
+	//void* buffer = NULL;
+	//size_t  blen = 0;
+	//std::wstring ValueString;
 
-	if (GetValueString(Value, ValueString))
-	{
-		WmiInterfaceQueryTracerLog log((HANDLE)GetCurrentProcessId(), (HANDLE)GetCurrentThreadId(), ClassId, Properties.c_str(), ValueString.c_str());
-		log.Save(buffer, blen);
-		SendToTracer(buffer, blen);
-	}
-	else
-	{
-		DbgPrintLog(L"WmiInterfaceQueryLog: because Value.vt not support, so convert value failed!");
-	}
+	//if (GetValueString(Value, ValueString))
+	//{
+	//	WmiInterfaceQueryTracerLog log((HANDLE)GetCurrentProcessId(), (HANDLE)GetCurrentThreadId(), ClassId, Properties.c_str(), ValueString.c_str());
+	//	log.Save(buffer, blen);
+	//	SendToTracer(buffer, blen);
+	//}
+	//else
+	//{
+	//	DbgPrintLog(L"WmiInterfaceQueryLog: because Value.vt not support, so convert value failed!");
+	//}
 	return;
 }
 
 void DbgPrintLog(std::wstring notice_string)
 {
-	void* buffer = NULL;
-	size_t  blen = 0;
-
-	DebugTracerLog log((HANDLE)GetCurrentProcessId(), (HANDLE)GetCurrentThreadId(), notice_string);
-	log.Save(buffer, blen);
-
-	SendToTracer(buffer, blen);
+//	void* buffer = NULL;
+//	size_t  blen = 0;
+//
+//	DebugTracerLog log((HANDLE)GetCurrentProcessId(), (HANDLE)GetCurrentThreadId(), notice_string);
+//	log.Save(buffer, blen);
+//
+//	SendToTracer(buffer, blen);
 }
 
 bool ExtractResource(HMODULE ModuleHandle, TCHAR const * ResourceName,
