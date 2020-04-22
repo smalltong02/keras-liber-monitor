@@ -3,9 +3,8 @@
 #include "commutils.h"
 #include "hookimpl.h"
 #include "DriverMgr.h"
-#include "HipsConfigObject.h"
+#include "HipsCfgObject.h"
 #include "HookImplementObject.h"
-#include "OleConfigObject.h"
 #include "LogObject.h"
 #include "utils.h"
 #include "resource.h"
@@ -17,53 +16,40 @@ extern "C" {
 }
 
 CDriverMgr* g_driverMgr = nullptr;
-COleConfig* g_oleConfig = nullptr;
-CHipsConfigObject* g_hipsConfigObject = nullptr;
-CHookImplementObject* g_impl_object = nullptr;
-CLogObject* g_log_object = nullptr;
-
-bool InitializeConfig()
+std::shared_ptr<CHipsCfgObject> InitializeConfig()
 {
 	//TODO: read hook config information from json file.
 	HMODULE ModuleHandle = NULL;
 	std::vector<BYTE> ResBuffer;
-	ModuleHandle = GetModuleHandle(L"hipshook.dll");
+#ifdef WIN32_HOOK_DLL
+	ModuleHandle = GetModuleHandle(__TEXT("hipshook.dll"));
+#else
+	ModuleHandle = GetModuleHandle(NULL);
+#endif
+	std::shared_ptr<CHipsCfgObject> hipsCfgObject = std::make_shared<CHipsCfgObject>();
 
 	bool result = ExtractResource(ModuleHandle,
-		L"JSONRES",
+		__TEXT("JSONRES"),
 		MAKEINTRESOURCE(IDR_HIPSHOOK),
 		ResBuffer);
 	if (result && ResBuffer.size() > 0)
 	{
-		g_hipsConfigObject = new CHipsConfigObject();
-		if (g_hipsConfigObject && g_hipsConfigObject->Initialize(std::string((char*)&ResBuffer[0], ResBuffer.size())))
+		if (hipsCfgObject && hipsCfgObject->Initialize(std::string((char*)&ResBuffer[0], ResBuffer.size())))
 		{
-			return true;
+			return hipsCfgObject;
 		}
 	}
-	return false;
+	return nullptr;
 }
 
-//bool test_initializeHook()
-//{
-//	CHookImplementObject impl_object;
-//	if (impl_object.test_Initialize())
-//	{
-//		impl_object.test_HookApi();
-//	}
-//	return true;
-//}
-
-bool InitializeHook()
+bool InitializeHook(std::shared_ptr<CHipsCfgObject>& hipsCfgObject)
 {
 	bool bSuccess = false;
-	g_impl_object = new CHookImplementObject();
-	g_log_object = new CLogObject();
 
-	if (!g_impl_object || !g_log_object)
+	if (hipsCfgObject == nullptr || g_impl_object == nullptr || g_log_object == nullptr)
 		return false;
 
-	if (g_impl_object->Initialize(g_hipsConfigObject) && g_log_object->Initialize() /*&& g_impl_object->HookAllApi()*/)
+	if (g_impl_object->Initialize(hipsCfgObject) && g_log_object->Initialize() && g_impl_object->HookAllApis())
 	{
 		bSuccess = true;
 	}
@@ -72,6 +58,7 @@ bool InitializeHook()
 
 void UninitialHook()
 {
-	MH_DisableHook(MH_ALL_HOOKS);
-	MH_Uninitialize();
+	if (g_impl_object)
+		g_impl_object->DisableAllApis();
+	return;
 }

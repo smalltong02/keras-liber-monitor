@@ -1,0 +1,171 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="HipsHookTest.cpp" />
+    <ClCompile Include="packages\gmock.1.10.0\lib\native\src\gtest\gtest-all.cc">
+      <Filter>gmock</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\gmock.1.10.0\lib\native\src\gmock\gmock-all.cc">
+      <Filter>gmock</Filter>
+    </ClCompile>
+    <ClCompile Include="HookImplObjTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\benchmark.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\benchmark_api_internal.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\benchmark_name.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\benchmark_register.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\benchmark_runner.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\colorprint.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\commandlineflags.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\complexity.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\console_reporter.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\counter.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\csv_reporter.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\json_reporter.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\reporter.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\sleep.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\statistics.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\string_util.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\sysinfo.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="packages\benchmark\src\timers.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="HookWmiMethodsTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="HipsHookTest.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="packages\benchmark\src\arraysize.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\benchmark_api_internal.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\benchmark_register.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\benchmark_runner.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\check.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\colorprint.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\commandlineflags.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\complexity.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\counter.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\cycleclock.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\internal_macros.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\log.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\mutex.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\re.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\sleep.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\statistics.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\string_util.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\thread_manager.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\thread_timer.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\benchmark\src\timers.h">
+      <Filter>benchmark</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+    <Text Include="packages\benchmark\src\CMakeLists.txt">
+      <Filter>benchmark</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="gmock">
+      <UniqueIdentifier>{14dbe88d-d0d3-4ba7-9da1-b750749a439b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{20cf79d1-c558-4f53-9ef6-062dcad1afcb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{df79c34a-9f26-49dc-9115-4ed322a5197b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="benchmark">
+      <UniqueIdentifier>{eebe8c84-3902-46b3-81af-a39b870badb2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="HipsHookTest.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="test_config\wmi_test.json" />
+    <None Include="test_config\hips_test.json" />
+    <None Include="test_config\system_test.json" />
+    <None Include="test_config\com_test.json" />
+    <None Include="test_config\types_test.json" />
+    <None Include="test_config\ole32_test.json" />
+    <None Include="test_config\services_test.json" />
+  </ItemGroup>
+</Project>

@@ -3,15 +3,42 @@
 #include <windows.h>
 #include <string>
 #include <vector>
+#include "FlagsObject.h"
+#include "ParsingImpl.h"
 
-class CComsConfigObject
+namespace cchips {
+
+#define COM_METHOD "Methods"
+#define COM_MIDL "MIDL_INTERFACE"
+
+class CWmisCfgObject
 {
 public:
-	CComsConfigObject() { ; }
-	CComsConfigObject(std::wstring name) { m_name = name; }
-	~CComsConfigObject() { ; }
+	CWmisCfgObject() { ; }
+	CWmisCfgObject(std::string name) { m_name = name; }
+	~CWmisCfgObject() { ; }
 
-	bool Initialize(void* initData, int len);
+	bool InitializeWmiDatas(const std::shared_ptr<CWmiObject>& wmi_object, const rapidjson::Value& Object);
+	bool InitializeCheck(const std::shared_ptr<CWmiObject>& wmi_object, const rapidjson::Value& Object);
+	bool InitializeWmiMethods(const std::shared_ptr<CWmiObject>& wmi_object, const rapidjson::Value& Object);
+	bool InitializeWmiObject(const std::string& object_name, const rapidjson::Value& Object);
+	bool Initialize(const std::string& json_str);
 private:
-	std::wstring m_name;
+	bool m_bValid;
+	std::string m_name;
+	std::string m_category_name;
 };
+
+class CComsCfgObject
+{
+public:
+	CComsCfgObject() { ; }
+	CComsCfgObject(std::string name) { m_name = name; }
+	~CComsCfgObject() { ; }
+
+	bool Initialize(const std::string& json_str);
+private:
+	std::string m_name;
+};
+
+} // namespace cchips

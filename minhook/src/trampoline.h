@@ -48,8 +48,22 @@ typedef struct _JMP_REL
 
 typedef struct _PUSH_CON
 {
+#ifdef _DEBUG
+	BYTE opdebug;
+#endif
+#ifdef _X86_
 	UINT8  opcode;
 	UINT32 operand;
+#endif
+#ifdef _AMD64_
+	UINT8 opcode1[3];
+	UINT8 operand1;
+	UINT8 opcode2[3];
+	UINT32 operand2;
+	UINT8 opcode3[4];
+	UINT32 operand3;
+	
+#endif
 } PUSH_CON, *PPUSH_CON;
 
 // 64-bit indirect absolute jump.

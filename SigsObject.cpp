@@ -2,47 +2,28 @@
 #include "SigsObject.h"
 #include "utils.h"
 #include "FlagsObject.h"
-#include "HipsConfigObject.h"
+#include "HipsCfgObject.h"
+#include "HookImplementObject.h"
 #include "rapidjson\document.h"
 
-CSigsConfigObject::CSigsConfigObject()
+namespace cchips {
+
+CFunction::_call_convention CSigsCfgObject::GetCallConvention(const std::string& str_call) const
 {
-	m_bValid = false;
-	m_hips_object = nullptr;
+	if (_stricmp(str_call.c_str(), CCS_WINAPI) == 0 ||
+		_stricmp(str_call.c_str(), CCS_STDCALL) == 0)
+		return CFunction::call_stdcall;
+	else if (_stricmp(str_call.c_str(), CCS_CDECL) == 0)
+		return CFunction::call_cdecl;
+	else if (_stricmp(str_call.c_str(), CCS_FASTCALL) == 0)
+		return CFunction::call_fastcall;
+	else if (_stricmp(str_call.c_str(), CCS_VECTORCALL) == 0)
+		return CFunction::call_vectorcall;
+	return CFunction::call_unknown;
 }
 
-CSigsConfigObject::CSigsConfigObject(std::wstring name, CHipsConfigObject* p_hipsobject)
-{ 
-	m_name = name; 
-	m_hips_object = p_hipsobject; 
-	m_bValid = false;
-}
-
-CApiObject::call_convention CSigsConfigObject::GetCallConvention(std::string str_call)
+bool CSigsCfgObject::Initialize(const std::string& json_str)
 {
-	if (stricmp(str_call.c_str(), CCS_WINAPI) == 0 ||
-		stricmp(str_call.c_str(), CCS_STDCALL) == 0)
-	{
-		return CApiObject::call_stdcall;
-	}
-	else if (stricmp(str_call.c_str(), CCS_CDECL) == 0)
-	{
-		return CApiObject::call_cdecl;
-	}
-	else if (stricmp(str_call.c_str(), CCS_FASTCALL) == 0)
-	{
-		return CApiObject::call_fastcall;
-	}
-	else if (stricmp(str_call.c_str(), CCS_VECTORCALL) == 0)
-	{
-		return CApiObject::call_vectorcall;
-	}
-	return CApiObject::call_unknown;
-}
-
-bool CSigsConfigObject::Initialize(std::string& json_str)
-{
-	if (m_hips_object == nullptr) return false;
 	if (json_str.length() == 0) return false;
 
 	rapidjson::Document document;
@@ -54,978 +35,402 @@ bool CSigsConfigObject::Initialize(std::string& json_str)
 		return false;
 	}
 
-	CApiObject::call_convention call_conv = CApiObject::call_unknown;
+	CFunction::_call_convention call_conv = CFunction::call_unknown;
 	if (document.HasMember(SI_CATEGORY) && document[SI_CATEGORY].IsString())
-	{
-		m_category_name = A2W(document[SI_CATEGORY].GetString());
-	}
-
+		m_category_name = document[SI_CATEGORY].GetString();
 	if (document.HasMember(SI_CALL) && document[SI_CALL].IsString())
-	{
 		call_conv = GetCallConvention(document[SI_CALL].GetString());
-	}
 
-	if (call_conv == CApiObject::call_unknown)
+	if (call_conv == CFunction::call_unknown)
 	{
 		error_log("CSigsConfigObject::Initialize get a error call convention!");
 		return false;
 	}
 
-	for (auto& api_docment : document.GetObject())
+	for (const auto& api_docment : document.GetObject())
 	{
-		if (stricmp(api_docment.name.GetString(), SI_CATEGORY) == 0)
-		{
+		if (_stricmp(api_docment.name.GetString(), SI_CATEGORY) == 0)
 			continue;
-		}
-		else if (stricmp(api_docment.name.GetString(), SI_CALL) == 0)
-		{
+		else if (_stricmp(api_docment.name.GetString(), SI_CALL) == 0)
 			continue;
-		}
 		else
 		{
-			if (!api_docment.value.IsObject() || api_docment.value.IsNull())
+			if (!InitializeFunction(call_conv, api_docment.name.GetString(), api_docment.value))
 			{
-				error_log("CSigsConfigObject::Initialize the %s not a object!", root_members[root_count].c_str());
-				continue;
+				error_log("CSigsConfigObject::Initialize InitializeFunction({}) failed!", api_docment.name.GetString());
+				return false;
 			}
-			// set api name
-			CApiObject api_object;
-			api_object.SetHipsObject(m_hips_object);
-			api_object.SetApiName(A2W(api_docment.name.GetString()));
-			api_object.SetCallConvention(call_conv);
-
-			if (!api_docment.value.HasMember(SI_SIGNATURE) || !api_docment.value[SI_SIGNATURE].IsObject())
-			{
-				error_log("CSigsConfigObject::Initialize the signature not a object!");
-				continue;
-			}
-			// set signature information
-			auto& sign_Object = api_docment.value[SI_SIGNATURE].GetObject();
-			if (!sign_Object.HasMember(SI_LIBRARY) || !sign_Object[SI_LIBRARY].IsString())
-			{
-				error_log("CSigsConfigObject::Initialize the library not a object!");
-				continue;
-			}
-			api_object.SetLibrary(A2W(sign_Object[SI_LIBRARY].GetString()));
-
-			if (!sign_Object.HasMember(SI_RETURN) || !sign_Object[SI_RETURN].GetString())
-			{
-				error_log("CSigsConfigObject::Initialize the return not a object!");
-				continue;
-			}
-
-			CApiObject::parameters param_return;
-			param_return.name = A2W(SI_RETURN);
-			param_return.type_name = A2W(sign_Object[SI_RETURN].GetString());
-			param_return.shape.offset = 0;
-			param_return.shape.size = m_hips_object->GetTypesSize(param_return.type_name);
-			if (param_return.shape.size == InvalidOrdinal)
-			{
-				error_log("CSigsConfigObject::Initialize the return value type not defined!");
-				continue;
-			}
-			api_object.SetParameter(param_return);
-
-			if (sign_Object.HasMember(SI_SPECIAL) && sign_Object[SI_SPECIAL].IsBool())
-			{
-				api_object.SetSpecial(sign_Object[SI_SPECIAL].GetBool());
-			}
-
-			// set parameter information
-			if (api_docment.value.HasMember(SI_PARAMETERS) && api_docment.value[SI_PARAMETERS].IsObject())
-			{
-				for(auto& param_Object : api_docment.value[SI_PARAMETERS].GetObject())
-				{
-					if (param_Object.value.IsString())
-					{
-						CApiObject::parameters param;
-						param.name = A2W(param_Object.name.GetString());
-						param.type_name = A2W(param_Object.value.GetString());
-						param.shape.size = m_hips_object->GetTypesSize(param.type_name);
-						if (param.shape.size == InvalidOrdinal)
-						{
-							error_log("CSigsConfigObject::Initialize the parameter %ws failed, don't get param_size!", param.name.c_str());
-							continue;
-						}
-						param.shape.offset = api_object.GetParamsSize();
-						api_object.SetParameter(param);
-					}
-					else
-					{
-						error_log("CSigsConfigObject::Initialize the param %ws not a string!", A2W(param_members[param_count]).c_str());
-					}
-				}
-			}
-			// set ensure information
-			if (api_docment.value.HasMember(SI_ENSURE) && api_docment.value[SI_ENSURE].IsArray())
-			{
-				for (auto& array_element : api_docment.value[SI_ENSURE].GetArray())
-				{
-					if (array_element.IsString())
-					{
-						CApiObject::param_shape shape;
-						if(api_object.InitializeMultipleMembersShape(A2W(array_element.GetString()), shape))
-							api_object.SetEnsure(shape);
-					}
-				}
-			}
-			// set prelog information
-			if (api_docment.value.HasMember(SI_PRELOG) && api_docment.value[SI_PRELOG].IsArray())
-			{
-				for (auto& array_element : api_docment.value[SI_PRELOG].GetArray())
-				{
-					if (array_element.IsString())
-					{
-						CApiObject::param_shape shape;
-						if (api_object.InitializeMultipleMembersShape(A2W(array_element.GetString()), shape))
-							api_object.SetPrelog(shape);
-					}
-				}
-			}
-			// set postlog information
-			if (api_docment.value.HasMember(SI_POSTLOG) && api_docment.value[SI_POSTLOG].IsArray())
-			{
-				for (auto& array_element : api_docment.value[SI_POSTLOG].GetArray())
-				{
-					if (array_element.IsString())
-					{
-						CApiObject::param_shape shape;
-						if (api_object.InitializeMultipleMembersShape(A2W(array_element.GetString()), shape))
-							api_object.SetPostlog(shape);
-					}
-				}
-			}
-			// set logging information
-			if (api_docment.value.HasMember(SI_LOGGING) && api_docment.value[SI_LOGGING].IsBool())
-			{
-				if(api_docment.value[SI_LOGGING].GetBool())
-					api_object.SetLogging();
-			}
-
-			// set precheck information
-			if (api_docment.value.HasMember(SI_PRECHECK) && api_docment.value[SI_PRECHECK].IsObject())
-			{
-				for (auto& inspect_object : api_docment.value[SI_PRECHECK].GetObject())
-				{
-					if (!inspect_object.value.IsObject())
-					{
-						continue;
-					}
-					CApiObject::inspects inspect;
-					if (inspect_object.value.HasMember(SI_DEFINE) && inspect_object.value[SI_DEFINE].IsObject())
-					{
-						for (auto& check_object : inspect_object.value[SI_DEFINE].GetObject())
-						{
-							CApiObject::parameters param;
-							if (!check_object.value.IsString())
-							{
-								continue;
-							}
-							if (!api_object.GetParameter(A2W(check_object.name.GetString()), param))
-							{
-								continue;
-							}
-							param.type_name = A2W(check_object.value.GetString());
-							inspect.define_array.push_back(param);
-						}
-					}
-
-					if (inspect_object.value.HasMember(SI_LOG) && inspect_object.value[SI_LOG].IsArray())
-					{
-						for (auto& array_element : inspect_object.value[SI_LOG].GetArray())
-						{
-							if (array_element.IsString())
-							{
-								CApiObject::param_shape shape;
-								if (api_object.InitializeMultipleMembersShape(A2W(array_element.GetString()), shape))
-								{
-									inspect.log_array.push_back(shape);
-								}
-							}
-						}
-					}
-
-					if (inspect_object.value.HasMember(SI_CHECK) && inspect_object.value[SI_CHECK].IsObject())
-					{
-						for (auto& check_object : inspect_object.value[SI_CHECK].GetObject())
-						{
-							CApiObject::checks post_check;
-							std::wstring string_array = A2W(check_object.name.GetString());
-							std::vector<std::wstring> param_array;
-							if (!check_object.value.IsString())
-								continue;
-							if (post_check.expr_object.SplitStringArray(string_array, param_array))
-							{
-								for (auto& shape_string : param_array)
-								{
-									CApiObject::param_shape shape;
-									if (api_object.InitializeMultipleMembersShape(shape_string, shape))
-									{
-										post_check.shape_array.push_back(shape);
-									}
-									else
-										continue;
-								}
-							}
-							else continue;
-							post_check.expr_object.SetLogicalExpr(A2W(check_object.value.GetString()));
-							inspect.check_array.push_back(post_check);
-						}
-					}
-
-					if (inspect_object.value.HasMember(SI_MODIFY) && inspect_object.value[SI_MODIFY].IsObject())
-					{
-						for (auto& check_object : inspect_object.value[SI_MODIFY].GetObject())
-						{
-							CApiObject::checks post_check;
-							std::wstring string_array = A2W(check_object.name.GetString());
-							std::vector<std::wstring> param_array;
-							if (!check_object.value.IsString())
-								continue;
-							if (post_check.expr_object.SplitStringArray(string_array, param_array))
-							{
-								for (auto& shape_string : param_array)
-								{
-									CApiObject::param_shape shape;
-									if (api_object.InitializeMultipleMembersShape(shape_string, shape))
-									{
-										post_check.shape_array.push_back(shape);
-									}
-								}
-							}
-							post_check.expr_object.SetLogicalExpr(A2W(check_object.value.GetString()));
-							inspect.modify_array.push_back(post_check);
-						}
-					}
-					api_object.SetPreCheck(inspect);
-				}
-			}
-			// set postcheck information
-			if (api_docment.value.HasMember(SI_POSTCHECK) && api_docment.value[SI_POSTCHECK].IsObject())
-			{
-				for (auto& inspect_object : api_docment.value[SI_POSTCHECK].GetObject())
-				{
-					if (!inspect_object.value.IsObject())
-					{
-						continue;
-					}
-					CApiObject::inspects inspect;
-					if (inspect_object.value.HasMember(SI_DEFINE) && inspect_object.value[SI_DEFINE].IsObject())
-					{
-						for (auto& check_object : inspect_object.value[SI_DEFINE].GetObject())
-						{
-							CApiObject::parameters param;
-							if (!check_object.value.IsString())
-							{
-								continue;
-							}
-							if (!api_object.GetParameter(A2W(check_object.name.GetString()), param))
-							{
-								continue;
-							}
-							param.type_name = A2W(check_object.value.GetString());
-							inspect.define_array.push_back(param);
-						}
-					}
-
-					if (inspect_object.value.HasMember(SI_LOG) && inspect_object.value[SI_LOG].IsArray())
-					{
-						for (auto& array_element : inspect_object.value[SI_LOG].GetArray())
-						{
-							if (array_element.IsString())
-							{
-								CApiObject::param_shape shape;
-								if (api_object.InitializeMultipleMembersShape(A2W(array_element.GetString()), shape))
-								{
-									inspect.log_array.push_back(shape);
-								}
-							}
-						}
-					}
-
-					if (inspect_object.value.HasMember(SI_CHECK) && inspect_object.value[SI_CHECK].IsObject())
-					{
-						for (auto& check_object : inspect_object.value[SI_CHECK].GetObject())
-						{
-							CApiObject::checks post_check;
-							std::wstring string_array = A2W(check_object.name.GetString());
-							std::vector<std::wstring> param_array;
-							if (!check_object.value.IsString())
-								continue;
-							if (post_check.expr_object.SplitStringArray(string_array, param_array))
-							{
-								for (auto& shape_string : param_array)
-								{
-									CApiObject::param_shape shape;
-									if (api_object.InitializeMultipleMembersShape(shape_string, shape))
-									{
-										post_check.shape_array.push_back(shape);
-									}
-									else
-										continue;
-								}
-							}
-							else continue;
-							post_check.expr_object.SetLogicalExpr(A2W(check_object.value.GetString()));
-							if (!post_check.expr_object.InitializeLogicalExpr(param_array))
-								continue;
-							inspect.check_array.push_back(post_check);
-						}
-					}
-
-					if (inspect_object.value.HasMember(SI_MODIFY) && inspect_object.value[SI_MODIFY].IsObject())
-					{
-						for (auto& check_object : inspect_object.value[SI_MODIFY].GetObject())
-						{
-							CApiObject::checks post_check;
-							std::wstring string_array = A2W(check_object.name.GetString());
-							std::vector<std::wstring> param_array;
-							if (!check_object.value.IsString())
-								continue;
-							if (post_check.expr_object.SplitStringArray(string_array, param_array))
-							{
-								for (auto& shape_string : param_array)
-								{
-									CApiObject::param_shape shape;
-									if (api_object.InitializeMultipleMembersShape(shape_string, shape))
-									{
-										post_check.shape_array.push_back(shape);
-									}
-								}
-							}
-							post_check.expr_object.SetLogicalExpr(A2W(check_object.value.GetString()));
-							if (!post_check.expr_object.InitializeLogicalExpr(param_array))
-								continue;
-							inspect.modify_array.push_back(post_check);
-						}
-					}
-					api_object.SetPostCheck(inspect);
-				}
-			}
-			AddApiObject(api_object);
 		}
 	}
 	m_bValid = true;
 	return true;
 }
 
-CApiObject::CApiObject()
-{ 
-	m_call_conv = CApiObject::call_unknown;
-	m_sign_info.special = false;
-	m_logging = false;
-	m_hips_object = nullptr;
-}
-CApiObject::~CApiObject()
-{ 
-	;
-}
-
-void CApiObject::SetParameter(CApiObject::parameters& param)
+bool CSigsCfgObject::InitializePrototype(const std::shared_ptr<CFunction>& func_object, const rapidjson::Value& Object)
 {
-	m_parameters.push_back(param);
-}
-
-bool CApiObject::GetParameterOffset(int param_ord, int& offset)
-{
-	offset = 0;
-	bool bret = false;
-	if (param_ord >= 1 && param_ord < m_parameters.size())
+	if (!func_object) return false;
+	// set signature information
+	if (!Object.HasMember(SI_SIGNATURE) || !Object[SI_SIGNATURE].IsObject())
 	{
-		CApiObject::parameters param;
-		for (int i = 1; i < param_ord; i++)
+		error_log("CSigsConfigObject::InitializePrototype the signature not a object!");
+		return false;
+	}
+
+	auto& sign_object = Object[SI_SIGNATURE].GetObject();
+	if (!sign_object.HasMember(SI_LIBRARY) || !sign_object[SI_LIBRARY].IsString())
+	{
+		error_log("CSigsConfigObject::InitializePrototype the library not a object!");
+		return false;
+	}
+
+	func_object->SetLibrary(sign_object[SI_LIBRARY].GetString());
+
+	if (!sign_object.HasMember(SI_RETURN) || !sign_object[SI_RETURN].GetString())
+	{
+		error_log("CSigsConfigObject::InitializePrototype the return not a object!");
+		return false;
+	}
+
+	std::string return_iden = sign_object[SI_RETURN].GetString();
+	std::shared_ptr<CObObject> return_ptr = func_object->GetTyIdentifier(return_iden);
+	if (!return_ptr)
+	{
+		error_log("CSigsConfigObject::InitializePrototype function({}) has invalid return type({})!", func_object->GetName(), return_iden);
+		return false;
+	}
+	if (!func_object->AddReturn(IDENPAIR(SI_RETURN, return_ptr)))
+	{
+		error_log("CSigsConfigObject::InitializePrototype ({})AddReturn({}) failed!", func_object->GetName(), return_iden);
+		return false;
+	}
+	if (sign_object.HasMember(SI_SPECIAL) && sign_object[SI_SPECIAL].IsBool())
+	{
+		func_object->SetSpecial(sign_object[SI_SPECIAL].GetBool());
+	}
+	// set parameter information
+	if (Object.HasMember(SI_PARAMETERS) && Object[SI_PARAMETERS].IsObject())
+	{
+		for (auto& param_object : Object[SI_PARAMETERS].GetObject())
 		{
-			param = m_parameters[param_ord - 1];
-			offset = param.shape.size;
-		}
-		bret = true;
-	}
-	return bret;
-}
-
-bool CApiObject::GetParameter(int param_ord, CApiObject::parameters& param)
-{
-	if (param_ord >= 0 && param_ord < m_parameters.size())
-	{
-		param = m_parameters[param_ord-1];
-		return true;
-	}
-	return false;
-}
-
-bool CApiObject::GetParameter(std::wstring& param_name, parameters& param)
-{
-	for (int i = 0; i < m_parameters.size(); i++)
-	{
-		if (wcsicmp(param_name.c_str(), m_parameters[i].name.c_str()) == 0)
-		{
-			param = m_parameters[i];
-			return true;
-		}
-	}
-	return false;
-}
-
-bool CApiObject::GetParameter(std::vector<int>& param_ord_ar, std::vector<parameters>& param_ar)
-{
-	bool bret = false;
-	parameters param;
-	param_ar.clear();
-
-	for (int i = 0; i < param_ord_ar.size(); i++)
-	{
-		if (!GetParameter(param_ord_ar[i], param))
-		{
-			param_ar.clear();
-			bret = false;
-			break;
-		}
-		param_ar.push_back(param);
-	}
-	if (param_ar.size() > 0)
-		bret = true;
-	return bret;
-}
-
-bool CApiObject::GetParameter(std::vector<int>& param_ord_ar, std::vector<std::wstring>& param_name_ar)
-{
-	bool bret = false;
-	parameters param;
-	for (int i = 0; i < param_ord_ar.size(); i++)
-	{
-		if (GetParameter(param_ord_ar[i], param))
-		{
-			param_name_ar.push_back(param.name);
-			continue;
-		}
-		
-		param_name_ar.clear();
-		bret = false;
-		break;
-	}
-	return bret;
-}
-
-bool CApiObject::GetParameterOrd(std::wstring param_name, int& param_ord)
-{
-	param_ord = CApiObject::InvalidOrdinal;
-
-	for (int i = 0; i < m_parameters.size(); i++)
-	{
-		if (wcsicmp(param_name.c_str(), m_parameters[i].name.c_str()) == 0)
-		{
-			param_ord = i;
-			return true;
-		}
-	}
-	return false;
-}
-
-bool CApiObject::GetParameterOrd(std::vector<std::wstring>& param_name_ar, std::vector<int>& param_ord_ar)
-{
-	bool bret = false;
-	int param_ord = CApiObject::InvalidOrdinal;
-	param_ord_ar.clear();
-
-	for (int i = 0; i < param_name_ar.size(); i++)
-	{
-		if (!GetParameterOrd(param_name_ar[i], param_ord))
-		{
-			param_ord_ar.clear();
-			bret = false;
-			break;
-		}
-		param_ord_ar.push_back(param_ord);
-	}
-	if(param_ord_ar.size() > 0)
-		bret = true;
-	return bret;
-}
-
-int CApiObject::GetParamsSize()
-{
-	int params_size = 0;
-	int count = 0;
-	// don't add the size of the return value
-	for (auto& param : m_parameters)
-	{
-		if(count != 0)
-			params_size += param.shape.size;
-		count++;
-	}
-	return params_size;
-}
-
-int CApiObject::GetReturnValueSize()
-{
-	if (m_parameters.size() == 0) return 0;
-	return m_parameters[0].shape.size;
-}
-
-bool CApiObject::InitializeMultipleMembersShape(std::wstring& members_string, param_shape& shape)
-{
-	if (m_hips_object == nullptr) return false;
-
-	std::vector<std::wstring> str_array;
-	if (CMathExprObject::SplitStringMember(members_string, str_array))
-	{
-		CApiObject::parameters param;
-		CFlagsConfigObject::TypesInfo types_info;
-		shape.shape_name = members_string;
-		for (auto& it = str_array.begin(); it != str_array.end(); it++)
-		{
-			if (it == str_array.begin())
+			if (param_object.value.IsString())
 			{
-				if (GetParameter((*it), param))
+				std::string param_str = param_object.name.GetString();
+				std::string param_iden = param_object.value.GetString();
+				std::shared_ptr<CObObject> param_ptr = func_object->GetTyIdentifier(param_iden);
+				if (!param_ptr)
 				{
-					shape.param_array.push_back(param);
+					error_log("CSigsConfigObject::InitializePrototype the parameter {}({}) is a invalid parameter!", param_str, param_iden);
+					return false;
 				}
-				else if (GetHandle((*it), param))
+				if (!func_object->AddArgument(IDENPAIR(param_str, param_ptr)))
 				{
-					shape.param_array.push_back(param);
-				}
-				else
-				{
-					except_throw("CSigsConfigObject::Initialize fatal error! this value not define in api struct.");
+					error_log("CSigsConfigObject::InitializePrototype the function {} add parameter {} failed!", param_str, param_iden);
 					return false;
 				}
 			}
 			else
 			{
-				std::wstring pre_type_name = shape.param_array[shape.param_array.size() - 1].type_name;
-				if (m_hips_object->GetTypesInfo(pre_type_name, types_info))
-				{
-					if (types_info.types != CFlagsConfigObject::types_struct)
-					{
-						except_throw("CSigsConfigObject::Initialize fatal error! this value is not a struct, but expected to it is a structure type.");
-						return false;
-					}
-					param.name = (*it);
-					CFlagsConfigObject::ElementInfo element;
-					if (!types_info.struct_info->GetElementType(param.name, element))
-					{
-						except_throw("CSigsConfigObject::Initialize fatal error!");
-					}
-					param.type_name = element.value_name;
-					param.shape.size = element.element_size;
-					int offset = 0;
-					if (!types_info.struct_info->GetElementOffset(param.name, offset))
-					{
-						except_throw("CSigsConfigObject::Initialize fatal error!");
-						return false;
-					}
-					param.shape.offset = offset;
-					shape.param_array.push_back(param);
-				}
-				else
-				{
-					except_throw("CSigsConfigObject::Initialize fatal error!");
-					return false;
-				}
+				error_log("CSigsConfigObject::InitializePrototype the param {} not a string!", param_object.name.GetString());
+				return false;
 			}
 		}
 	}
-	else
+	return true;
+}
+
+bool CSigsCfgObject::InitializeHandle(const std::shared_ptr<CFunction>& func_object, const rapidjson::Value& Object)
+{
+	if (!func_object) return false;
+	// set handle information
+	//if (Object.HasMember(SI_HANDLE) && Object[SI_HANDLE].IsObject())
+	//{
+	//	for (auto& array_elem : Object[SI_HANDLE].GetObject())
+	//	{
+	//		if (array_elem.value.IsString())
+	//		{
+	//			// not finished now
+	//		}
+	//	}
+	//}
+
+	//if (Object.HasMember(SI_HANDLE) && Object[SI_HANDLE].IsObject())
+	//{
+	//	for (auto& array_elem : Object[SI_HANDLE].GetObject())
+	//	{
+	//		if (array_elem.value.IsString())
+	//		{
+	//			// not finished now
+	//		}
+	//	}
+	//}
+	return true;
+}
+
+bool CSigsCfgObject::InitializeEnsure(const std::shared_ptr<CFunction>& func_object, const rapidjson::Value& Object)
+{
+	if (!func_object) return false;
+	// set ensure information
+	if (Object.HasMember(SI_ENSURE) && Object[SI_ENSURE].IsArray())
 	{
-		except_throw("CSigsConfigObject::Initialize fatal error!");
-		return false;
+		for (auto& array_elem : Object[SI_ENSURE].GetArray())
+		{
+			if (array_elem.IsString())
+			{
+				if (!func_object->AddEnsure(array_elem.GetString()))
+					error_log("CSigsCfgObject::InitializeEnsure: add ensure {} failed!", array_elem.GetString());
+			}
+		}
 	}
 	return true;
 }
 
-float CMathExprObject::Value::toNumber()
+bool CSigsCfgObject::InitializeLog(const std::shared_ptr<CFunction>& func_object, const rapidjson::Value& Object)
 {
-	if (isToken()) return 0;
-	if (isNumber()) return number;
-
-	number = atof(string.c_str());
-	type |= va_number;
-
-	return number;
-}
-std::string CMathExprObject::Value::toString()
-{
-	if (isToken()) return string;
-	if (isString()) return string;
-
-	char str[16];
-	sprintf(str, "%f", number);
-	string = str;
-	type |= va_string;
-
-	return string;
-}
-
-CMathExprObject::CMathExprObject()
-{
-	// 1. Create the operator precedence map.
-	m_op_precedence["("] = -10;
-	m_op_precedence["&&"] = -2; m_op_precedence["||"] = -3;
-	m_op_precedence[">"] = -1; m_op_precedence[">="] = -1;
-	m_op_precedence["<"] = -1; m_op_precedence["<="] = -1;
-	m_op_precedence["=="] = -1; m_op_precedence["!="] = -1;
-	m_op_precedence["<<"] = 1; m_op_precedence[">>"] = 1;
-	m_op_precedence["+"] = 2; m_op_precedence["-"] = 2;
-	m_op_precedence["*"] = 3; m_op_precedence["/"] = 3;
-	m_op_precedence["^"] = 4;
-	m_op_precedence["!"] = 5;
-}
-
-bool CMathExprObject::InitializeLogicalExpr(std::vector<std::wstring>& param_array)
-{
-	wchar_t var_constant[20];
-	std::wstring logical_expr = GetLogicalExpr();
-
-	for (int i = 0; i < param_array.size(); i++)
+	if (!func_object) return false;
+	// set log information
+	bool blogging = true;
+	if (Object.HasMember(SI_PRELOG) && Object[SI_PRELOG].IsArray())
 	{
-		swprintf_s(var_constant, 20, VAR_CONSTANT, i);
-		for (std::wstring::size_type found = 0;;)
+		for (const auto& array_elem : Object[SI_PRELOG].GetArray())
 		{
-			found = logical_expr.find(var_constant, found);
-			if (found == std::string::npos)
-				break;
-			logical_expr.replace(found, wcslen(var_constant), param_array[i]);
+			if (array_elem.IsString())
+			{
+				if (!func_object->AddLogging(array_elem.GetString()))
+					error_log("CSigsCfgObject::InitializeLog: add logging {} failed!", array_elem.GetString());
+				blogging = false;
+			}
 		}
 	}
 
-	if (logical_expr.find(L"%%var") != std::string::npos)
-		return false;
-
-	SetLogicalExpr(logical_expr);
-	return true;
-}
-
-bool CMathExprObject::SplitStringArray(std::wstring input_string, std::vector<std::wstring>& out_array)
-{
-	out_array.clear();
-	if (input_string.length() == 0)
-		return false;
+	if (Object.HasMember(SI_POSTLOG) && Object[SI_POSTLOG].IsArray())
+	{
+		for (const auto& array_elem : Object[SI_POSTLOG].GetArray())
+		{
+			if (array_elem.IsString())
+			{
+				if (!func_object->AddLogging(array_elem.GetString(), false))
+					error_log("CSigsCfgObject::InitializeLog: add logging {} failed!", array_elem.GetString());
+				blogging = false;
+			}
+		}
+	}
 	
-	for(std::wstring::size_type found = 0;;)
+	if (Object.HasMember(SI_LOGGING) && Object[SI_LOGGING].IsBool())
 	{
-		found = input_string.find(L"|", found);
-		if (found == std::string::npos)
-			break;
-		out_array.push_back(input_string.substr(0, found));
-		input_string = input_string.substr(found+1);
+		if (Object[SI_LOGGING].GetBool() && blogging)
+		{
+			for (const auto& i : (*func_object).GetArguments())
+			{
+				if (!func_object->AddLogging(i.first))
+					error_log("CSigsCfgObject::InitializeLog: add logging {} failed!", i.first);
+			}
+			if (!func_object->AddLogging((*func_object).GetReturn().first, false))
+				error_log("CSigsCfgObject::InitializeLog: add logging {} failed!", (*func_object).GetReturn().first);
+		}
 	}
-	out_array.push_back(input_string);
 	return true;
 }
 
-size_t CMathExprObject::FindMemberDelimiter(std::wstring input_string, int& ntype)
+bool CSigsCfgObject::InitializeCheck(const std::shared_ptr<CFunction>& func_object, const rapidjson::Value& Object)
 {
-	if (input_string.length() <= 0) return std::string::npos;
+	if (!func_object) return false;
 
-	for (int i = 0; i < input_string.length(); i++)
+	// set precheck information
+	if (Object.HasMember(SI_PRECHECK) && Object[SI_PRECHECK].IsObject())
 	{
-		if (input_string[i] == L'.')
+		for (auto& inspect_object : Object[SI_PRECHECK].GetObject())
 		{
-			ntype = 1;
-			return i;
-		}
-		if ((i < input_string.length()-1) && input_string[i] == L'-' && input_string[i+1] == L'>')
-		{
-			ntype = 2;
-			return i;
-		}
-	}
-
-	return std::string::npos;
-}
-
-bool CMathExprObject::SplitStringMember(std::wstring input_string, std::vector<std::wstring>& out_array)
-{
-	out_array.clear();
-	if (input_string.length() == 0)
-		return false;
-	int ntype = 0;
-	for (std::wstring::size_type found = 0;;)
-	{
-		found = FindMemberDelimiter(input_string, ntype);
-		if (found == std::string::npos)
-			break;
-		out_array.push_back(input_string.substr(0, found));
-		if(ntype == 2)
-			input_string = input_string.substr(found + 2);
-		else
-			input_string = input_string.substr(found + 1);
-	}
-	out_array.push_back(input_string);
-	return true;
-}
-
-CMathExprObject::ValuePtrQueue CMathExprObject::toRPN(const char* expr, ValueMap* vars, IntMap opPrecedence)
-{
-	ValuePtrQueue rpnQueue; std::stack<std::string> operatorStack;
-	bool lastTokenWasOp = true;
-
-	// In one pass, ignore whitespace and parse the expression into RPN
-	// using Dijkstra's Shunting-yard algorithm.
-	while (*expr && isspace(*expr)) ++expr;
-	while (*expr)
-	{
-		if (isdigit(*expr))
-		{
-			// If the token is a number, add it to the output queue.
-			char* nextChar = 0;
-			float digit = strtod(expr, &nextChar);
-
-			rpnQueue.push(new Value(digit));
-			expr = nextChar;
-			lastTokenWasOp = false;
-		}
-		else if (isvariablechar(*expr))
-		{
-			// If the function is a variable, resolve it and
-			// add the parsed number to the output queue.
-			if (!vars)
-				error_log("Detected variable, but the variable map is null.");
-			std::stringstream ss;
-			ss << *expr;
-			++expr;
-			while (isvariablechar(*expr))
+			if (!inspect_object.value.IsObject())
 			{
-				ss << *expr;
-				++expr;
+				continue;
 			}
-
-			std::string key = ss.str();
-			if (key == "true")
-				rpnQueue.push(new Value(1));
-			else if (key == "false")
-				rpnQueue.push(new Value(0));
-			else {
-				ValueMap::iterator it = vars->find(key);
-				if (it == vars->end())
-					error_log("Unable to find the variable '" + key + "'.");
-
-				rpnQueue.push(new Value(it->second));
-			}
-
-			lastTokenWasOp = false;
-		}
-		else if (*expr == '\'' || *expr == '"')
-		{
-			// It's a string value
-
-			char startChr = *expr;
-
-			std::stringstream ss;
-			++expr;
-			while (*expr && *expr != startChr)
+			CFunction::_CheckPackage package;
+			if (inspect_object.value.HasMember(SI_DEFINE) && inspect_object.value[SI_DEFINE].IsObject())
 			{
-				ss << *expr;
-				++expr;
-			}
-			if (*expr) expr++;
-
-			rpnQueue.push(new Value(ss.str()));
-			lastTokenWasOp = false;
-		}
-		else
-		{
-			// Otherwise, the variable is an operator or paranthesis.
-			switch (*expr) {
-			case '(':
-				operatorStack.push("(");
-				++expr;
-				break;
-			case ')':
-				while (operatorStack.top().compare("(")) {
-					rpnQueue.push(new Value(operatorStack.top(), va_token));
-					operatorStack.pop();
-				}
-				operatorStack.pop();
-				++expr;
-				break;
-			default:
-			{
-				// The token is an operator.
-				//
-				// Let p(o) denote the precedence of an operator o.
-				//
-				// If the token is an operator, o1, then
-				//   While there is an operator token, o2, at the top
-				//       and p(o1) <= p(o2), then
-				//     pop o2 off the stack onto the output queue.
-				//   Push o1 on the stack.
-				std::stringstream ss;
-				ss << *expr;
-				++expr;
-				while (*expr && !isspace(*expr) && !isdigit(*expr)
-					&& !isvariablechar(*expr) && *expr != '(' && *expr != ')') {
-					ss << *expr;
-					++expr;
-				}
-				ss.clear();
-				std::string str;
-				ss >> str;
-
-				if (lastTokenWasOp) {
-					// Convert unary operators to binary in the RPN.
-					if (!str.compare("-") || !str.compare("+") || !str.compare("!"))
-						rpnQueue.push(new Value(0));
-					else
-						error_log("Unrecognized unary operator: '" + str + "'");
-
-				}
-
-				while (!operatorStack.empty() && opPrecedence[str] <= opPrecedence[operatorStack.top()])
+				CFunction::_CheckDefine::DefinePair define_pair;
+				for (auto& check_object : inspect_object.value[SI_DEFINE].GetObject())
 				{
-					rpnQueue.push(new Value(operatorStack.top(), va_token));
-					operatorStack.pop();
+					if (!check_object.value.IsString())
+					{
+						continue;
+					}
+					define_pair.first = check_object.name.GetString();
+					define_pair.second = check_object.value.GetString();
+					package.define_pairs.push_back(define_pair);
 				}
-				operatorStack.push(str);
-				lastTokenWasOp = true;
 			}
+
+			if (inspect_object.value.HasMember(SI_LOG) && inspect_object.value[SI_LOG].IsArray())
+			{
+				CFunction::_CheckDefine::CheckLog log;
+				for (auto& array_element : inspect_object.value[SI_LOG].GetArray())
+				{
+					if (array_element.IsString())
+					{
+						log = array_element.GetString();
+						package.logs.push_back(log);
+					}
+				}
 			}
+
+			if (inspect_object.value.HasMember(SI_HANDLE) && inspect_object.value[SI_HANDLE].IsArray())
+			{
+				CFunction::_CheckDefine::HandlePair handle_pair;
+				for (auto& handle_object : inspect_object.value[SI_HANDLE].GetObject())
+				{
+					if (handle_object.value.IsString())
+					{
+						handle_pair.first = handle_object.name.GetString();
+						handle_pair.second = handle_object.value.GetString();
+						package.handle_pair.push_back(handle_pair);
+					}
+				}
+			}
+
+			if (inspect_object.value.HasMember(SI_CHECK) && inspect_object.value[SI_CHECK].IsObject())
+			{
+				for (auto& check_object : inspect_object.value[SI_CHECK].GetObject())
+				{
+					package.check_pair.push_back(CFunction::_CheckDefine::CheckPair(check_object.name.GetString(), check_object.value.GetString()));
+				}
+			}
+
+			if (inspect_object.value.HasMember(SI_MODIFY) && inspect_object.value[SI_MODIFY].IsObject())
+			{
+				for (auto& modify_object : inspect_object.value[SI_MODIFY].GetObject())
+				{
+					package.modify_pair.push_back(CFunction::_CheckDefine::ModifyPair(modify_object.name.GetString(), modify_object.value.GetString()));
+				}
+			}
+			if (!func_object->AddChecks(package))
+				error_log("CSigsCfgObject::InitializeCheck: function({}) add pre checks failed!", func_object->GetName());
 		}
-		while (*expr && isspace(*expr)) ++expr;
 	}
-	while (!operatorStack.empty()) {
-		rpnQueue.push(new Value(operatorStack.top(), va_token));
-		operatorStack.pop();
+	// set postcheck information
+	if (Object.HasMember(SI_POSTCHECK) && Object[SI_POSTCHECK].IsObject())
+	{
+		for (auto& inspect_object : Object[SI_POSTCHECK].GetObject())
+		{
+			if (!inspect_object.value.IsObject())
+			{
+				continue;
+			}
+			CFunction::_CheckPackage package;
+			if (inspect_object.value.HasMember(SI_DEFINE) && inspect_object.value[SI_DEFINE].IsObject())
+			{
+				CFunction::_CheckDefine::DefinePair define_pair;
+				for (auto& check_object : inspect_object.value[SI_DEFINE].GetObject())
+				{
+					if (!check_object.value.IsString())
+					{
+						continue;
+					}
+					define_pair.first = check_object.name.GetString();
+					define_pair.second = check_object.value.GetString();
+					package.define_pairs.push_back(define_pair);
+				}
+			}
+
+			if (inspect_object.value.HasMember(SI_LOG) && inspect_object.value[SI_LOG].IsArray())
+			{
+				CFunction::_CheckDefine::CheckLog log;
+				for (auto& array_element : inspect_object.value[SI_LOG].GetArray())
+				{
+					if (array_element.IsString())
+					{
+						log = array_element.GetString();
+						package.logs.push_back(log);
+					}
+				}
+			}
+
+			if (inspect_object.value.HasMember(SI_HANDLE) && inspect_object.value[SI_HANDLE].IsObject())
+			{
+				CFunction::_CheckDefine::HandlePair handle_pair;
+				for (auto& handle_object : inspect_object.value[SI_HANDLE].GetObject())
+				{
+					if (handle_object.value.IsString())
+					{
+						handle_pair.first = handle_object.name.GetString();
+						handle_pair.second = handle_object.value.GetString();
+						package.handle_pair.push_back(handle_pair);
+					}
+				}
+			}
+
+			if (inspect_object.value.HasMember(SI_CHECK) && inspect_object.value[SI_CHECK].IsObject())
+			{
+				for (auto& check_object : inspect_object.value[SI_CHECK].GetObject())
+				{
+					package.check_pair.push_back(CFunction::_CheckDefine::CheckPair(check_object.name.GetString(), check_object.value.GetString()));
+				}
+			}
+
+			if (inspect_object.value.HasMember(SI_MODIFY) && inspect_object.value[SI_MODIFY].IsObject())
+			{
+				for (auto& modify_object : inspect_object.value[SI_MODIFY].GetObject())
+				{
+					package.modify_pair.push_back(CFunction::_CheckDefine::ModifyPair(modify_object.name.GetString(), modify_object.value.GetString()));
+				}
+			}
+			if (!func_object->AddChecks(package, false))
+				error_log("CSigsCfgObject::InitializeCheck: function({}) add pre checks failed!", func_object->GetName());
+		}
 	}
-	return rpnQueue;
-}
 
-bool CMathExprObject::fnmatch(const char *pat, const char *str) {
-	const char *s, *p;
-	bool star = false;
-
-loopStart:
-	for (s = str, p = pat; *s; ++s, ++p) {
-		switch (*p) {
-		case '?':
-			//if (*s == '.') goto starCheck;
-			break;
-		case '*':
-			star = true;
-			str = s, pat = p;
-			if (!*++pat) return true;
-			goto loopStart;
-		default:
-			if (towupper(*s) != towupper(*p))
-				goto starCheck;
-			break;
-		} /* endswitch */
-	} /* endfor */
-	if (*p == '*') ++p;
-	return (!*p);
-
-starCheck:
-	if (!star) return false;
-	str++;
-	goto loopStart;
-}
-
-bool CMathExprObject::widcardCompare(std::string str, std::string wc)
-{
-	return fnmatch(wc.c_str(), str.c_str());
-}
-
-bool CMathExprObject::Eval(CMathExprObject::Value& value, const char* expr, ValueMap* vars) {
-
-	// Convert to RPN with Dijkstra's Shunting-yard algorithm.
-	ValuePtrQueue rpn = toRPN(expr, vars, m_op_precedence);
-
-	// Evaluate the expression in RPN form.
-	ValueStack evaluation;
-
-	while (!rpn.empty()) {
-		Value* tok = rpn.front();
-		rpn.pop();
-
-		if (tok->isToken())
-		{
-			std::string str = tok->string;
-			if (evaluation.size() < 2) {
-				error_log("Invalid equation.");
-				return false;
-			}
-			Value right = evaluation.top(); evaluation.pop();
-			Value left = evaluation.top(); evaluation.pop();
-			if (!str.compare("+") && left.isNumber())
-				evaluation.push(left.number + right.toNumber());
-			if (!str.compare("+") && left.isString())
-				evaluation.push(left.string + right.toString());
-			else if (!str.compare("*"))
-				evaluation.push(left.toNumber() * right.toNumber());
-			else if (!str.compare("-"))
-				evaluation.push(left.toNumber() - right.toNumber());
-			else if (!str.compare("/"))
-			{
-				float r = right.toNumber();
-				if (r == 0)
-					evaluation.push(0);
-				else
-					evaluation.push(left.toNumber() / r);
-			}
-			else if (!str.compare("<<"))
-				evaluation.push((int)left.toNumber() << (int)right.toNumber());
-			else if (!str.compare("^"))
-				evaluation.push(pow(left.toNumber(), right.toNumber()));
-			else if (!str.compare(">>"))
-				evaluation.push((int)left.toNumber() >> (int)right.toNumber());
-			else if (!str.compare(">"))
-				evaluation.push(left.toNumber() > right.toNumber());
-			else if (!str.compare(">="))
-				evaluation.push(left.toNumber() >= right.toNumber());
-			else if (!str.compare("<"))
-				evaluation.push(left.toNumber() < right.toNumber());
-			else if (!str.compare("<="))
-				evaluation.push(left.toNumber() <= right.toNumber());
-			else if (!str.compare("&&"))
-				evaluation.push(left.toNumber() && right.toNumber());
-			else if (!str.compare("||"))
-				evaluation.push(left.toNumber() || right.toNumber());
-			else if (!str.compare("=="))
-			{
-				if (left.isNumber() && right.isNumber())
-					evaluation.push(left.number == right.number);
-				else if (left.isString() && right.isString())
-					evaluation.push(left.string == right.string);
-				else if (left.isString())
-					evaluation.push(left.string == right.toString());
-				else
-					evaluation.push(left.toNumber() == right.toNumber());
-			}
-			else if (!str.compare("!="))
-			{
-				if (left.isNumber() && right.isNumber())
-					evaluation.push(left.number != right.number);
-				else if (left.isString() && right.isString())
-					evaluation.push(left.string != right.string);
-				else if (left.isString())
-					evaluation.push(left.string != right.toString());
-				else
-					evaluation.push(left.toNumber() != right.toNumber());
-			}
-			else if (!str.compare("=~"))
-				evaluation.push(widcardCompare(left.toString(), right.toString()));
-			else if (!str.compare("!~"))
-				evaluation.push(!widcardCompare(left.toString(), right.toString()));
-			else if (!str.compare("!"))
-				evaluation.push(!right.toNumber());
-			else
-			{
-				error_log("Unknown operator: " + left.toString() + " " + str + " " + right.toString() + ".");
-				return false;
-			}
-		}
-		else if (tok->isNumber() || tok->isString())
-		{
-			evaluation.push(*tok);
-		}
-		else
-		{
-			error_log("Invalid token '" + tok->toString() + "'.");
-			return false;
-		}
-
-		delete tok;
-	}
-	value = evaluation.top();
 	return true;
 }
+
+bool CSigsCfgObject::InitializeFunction(CFunction::_call_convention call_conv, const std::string& func_name, const rapidjson::Value& Object, std::shared_ptr<CFunctionProtos> func_protos)
+{
+	if (!Object.IsObject() || Object.IsNull())
+	{
+		error_log("CSigsCfgObject::InitializeFunction the {} not a object!", func_name);
+		return false;
+	}
+	// create api object
+	std::shared_ptr<CFunction> func_object = std::make_shared<CFunction>(call_conv, func_name.c_str());
+	if (!func_object)
+	{
+		error_log("CSigsConfigObject::InitializeFunction create func_object({}) failed!", func_name);
+		return false;
+	}
+
+	if (!InitializePrototype(func_object, Object))
+	{
+		error_log("CSigsConfigObject::InitializePrototype failed!");
+		return false;
+	}
+	if (!InitializeHandle(func_object, Object))
+	{
+		error_log("CSigsConfigObject::InitializeHandle failed!");
+		return false;
+	}
+	if (!InitializeEnsure(func_object, Object))
+	{
+		error_log("CSigsConfigObject::InitializeEnsure failed!");
+		return false;
+	}
+	if (!InitializeLog(func_object, Object))
+	{
+		error_log("CSigsConfigObject::InitializeLog failed!");
+		return false;
+	}
+	if (!InitializeCheck(func_object, Object))
+	{
+		error_log("CSigsConfigObject::InitializeCheck failed!");
+		return false;
+	}
+	std::shared_ptr<CFunctionProtos> protos = func_protos;
+	if (!protos) protos = g_impl_object;
+	assert(protos != nullptr);
+
+	if (!protos || !protos->AddFunction(func_object))
+	{
+		error_log("g_impl_object->AddFunction({}) failed!", func_object->GetName());
+		return false;
+	}
+	return true;
+}
+
+} // namespace cchips

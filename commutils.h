@@ -7,6 +7,9 @@
 #include <WMIUtils.h>
 #include <OCIdl.h>
 #include <winioctl.h>
+#include "HipsCfgObject.h"
+
+using namespace cchips;
 
 // for kernel dll inject service, get config from kernel.
 #define IOCTL_HIPS_GET_INJECT32_CONFIG	(ULONG) CTL_CODE(FILE_DEVICE_FIPS,\
@@ -62,7 +65,6 @@ typedef interface idIWbemObjectSink idIWbemObjectSink;
 typedef interface idIWbemQualifierSet idIWbemQualifierSet;
 typedef interface idIEnumWbemClassObject idIEnumWbemClassObject;
 
-bool InitializeConfig();
-bool InitializeHook();
-bool test_initializeHook();
+std::shared_ptr<CHipsCfgObject> InitializeConfig();
+bool InitializeHook(std::shared_ptr<CHipsCfgObject>& hipsConfigObject);
 void UninitialHook();

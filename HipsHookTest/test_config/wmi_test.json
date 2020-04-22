@@ -1,0 +1,237 @@
+{
+  "Category": "WMIObject",
+  "Calling convention": "WINAPI",
+  
+  "Win32_PhysicalMemory": {
+    "MIDL_INTERFACE": "{FAF76B93-798C-11D2-AAD1-006008C78BC7}",
+    "Data": {
+      "__GENUS": "UINT",
+      "__PATH": "BSTR",
+      "__CLASS": "BSTR",
+      "Attributes": "UINT",
+      "BankLabel": "BSTR",
+      "Capacity": "BSTR",
+      "Caption": "BSTR",
+      "ConfiguredClockSpeed": "BSTR",
+      "ConfiguredVoltage": "BSTR",
+      "CreationClassName": "BSTR",
+      "DataWidth": "UINT",
+      "Description": "BSTR",
+      "DeviceLocator": "BSTR",
+      "FormFactor": "UINT",
+      "HotSwappable": "BSTR",
+      "InstallDate": "BSTR",
+      "InterleaveDataDepth": "UINT",
+      "InterleavePosition": "UINT",
+      "Manufacturer": "BSTR",
+      "MaxVoltage": "BSTR",
+      "MemoryType": "UINT",
+      "MinVoltage": "BSTR",
+      "Model": "BSTR",
+      "Name": "BSTR",
+      "OtherIdentifyingInfo": "BSTR",
+      "PartNumber": "BSTR",
+      "PositionInRow": "UINT",
+      "PoweredOn": "BSTR",
+      "Removable": "BSTR",
+      "Replaceable": "BSTR",
+      "SerialNumber": "BSTR",
+      "SKU": "BSTR",
+      "SMBIOSMemoryType": "BSTR",
+      "Speed": "UINT",
+      "Status": "BSTR",
+      "Tag": "BSTR",
+      "TotalWidth": "UINT",
+      "TypeDetail": "UINT",
+      "Version": "BSTR"
+    },
+	
+	"PreCheck": {
+	  "0": {  
+	    "Handle": {
+		"Win32_PhysicalMemory": "Duplicate"
+		},
+      "Modify": {
+        "__GENUS": "%var0 = 2",
+        "__PATH": "%var1 = '\\\\Administrator\\ROOT\\cimv2:Win32_PhysicalMemory'",
+        "__CLASS": "%var2 = 'Win32_PhysicalMemory'",
+        "BankLabel": "%var3 = 'Bank 0'",
+        "Capacity": "%var4 = '17179869184'",
+        "Caption": "%var5 = 'Physical Memory'",
+        "CreationClassName": "%var6 = 'Win32_PhysicalMemory'",
+        "DataWidth": "%var7 = 64",
+        "Description": "%var8 = 'Physical Memory'",
+        "DeviceLocator": "%var9 = 'DIMM1'",
+        "FormFactor": "%var10 = 8",
+        "InterleaveDataDepth": "%var11 = 1",
+        "InterleavePosition": "%var12 = 1",
+        "Manufacturer": "%var13 = 'Hynix/Hyundai'",
+        "MemoryType": "%var14 = 0",
+        "Name": "%var15 = 'Physical Memory'",
+        "PartNumber": "%var16 = 'HMT451U6AFR8C-PB'",
+        "PositionInRow": "%var17 = 1",
+        "SerialNumber": "%var18 = '4234ECAB'",
+        "Speed": "%var19 = 1600",
+        "Tag": "%var20 = 'Physical Memory 0'",
+        "TotalWidth": "%var21 = 64",
+        "TypeDetail": "%var22 = 128"
+      }
+	  }
+	}
+  },
+
+  "Win32_PhysicalMemoryArray": {
+    "MIDL_INTERFACE": "{FAF76B99-798C-11D2-AAD1-006008C78BC7}",
+    "Data": {
+      "__GENUS": "UINT",
+      "__PATH": "BSTR",
+      "__CLASS": "BSTR",
+      "Caption": "BSTR",
+      "CreationClassName": "BSTR",
+      "Depth": "UINT",
+      "Description": "BSTR",
+      "Height": "BSTR",
+      "HotSwappable": "BSTR",
+      "InstallDate": "BSTR",
+      "Location": "UINT",
+      "Manufacturer": "BSTR",
+      "MaxCapacity": "UINT",
+      "MaxCapacityEx": "UINT",
+      "MemoryDevices": "UINT",
+      "MemoryErrorCorrection": "UINT",
+      "Model": "BSTR",
+      "Name": "BSTR",
+      "OtherIdentifyingInfo": "BSTR",
+      "PartNumber": "BSTR",
+      "PoweredOn": "BSTR",
+      "Removable": "BSTR",
+      "Replaceable": "BSTR",
+      "SerialNumber": "BSTR",
+      "SKU": "BSTR",
+      "Status": "BSTR",
+      "Tag": "BSTR",
+      "Use": "UINT",
+      "Version": "BSTR",
+      "Weight": "BSTR",
+      "Width": "BSTR"
+    },
+
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "Win32_PhysicalMemoryArray": "Duplicate"
+        },
+        "Modify": {
+          "__GENUS": "%var0 = 2",
+          "__PATH": "%var1 = '\\\\Administrator\\ROOT\\cimv2:Win32_PhysicalMemoryArray'",
+          "__CLASS": "%var2 = 'Win32_PhysicalMemoryArray'",
+          "Caption": "%var3 = 'Physical Memory Array'",
+          "CreationClassName": "%var4 = 'Win32_PhysicalMemoryArray'",
+          "Description": "%var5 = 'Physical Memory Array'",
+          "Location": "%var6 = 3",
+          "Manufacturer": "%var7 = 'SK Hynix'",
+          "MaxCapacity": "%var8 = 16777216",
+          "MemoryDevices": "%var9 = 1",
+          "MemoryErrorCorrection": "%var10 = 3",
+          "Name": "%var11 = 'Physical Memory Array'",
+          "Tag": "%var12 = 'Physical Memory Array 0'",
+          "Use": "%var13 = 3"
+        }
+      }
+    }
+  },
+  
+  "Win32_DiskDrive": {
+    "MIDL_INTERFACE": "{8502C4B2-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "CreationClassName": "BSTR",
+      "Name": "BSTR",
+      "Caption": "BSTR",
+      "DeviceID": "BSTR",
+      "Size": "ULONGLONG"
+    },
+	"PostCheck": {
+	  "0": {
+      "Check": {
+        "Size": "%var0 <= 3298534883328"
+      },
+      "Modify": {
+        "Size": "%var1 = 3298534883328"
+      },
+      "Log": [
+        "CreationClassName",
+        "Name",
+        "Caption"
+      ]
+	  }
+	}
+  },
+  
+  "Win32_Process": {
+    "MIDL_INTERFACE": "{8502C4DC-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "CommandLine": "BSTR",
+      "ExecutablePath": "BSTR"
+    },
+    "Methods": {
+	  "AttachDebugger": {
+	    "Signature": {
+		  "Library": "IWbemServices.ExecMethod",
+	      "Return": "HRESULT"
+	    },
+        "Logging": true
+      },
+	  
+	  "Create": {
+	    "Signature": {
+		  "Library": "IWbemServices.ExecMethod",
+	      "Return": "HRESULT"
+	    },
+      "Parameters": {
+        "CommandLine": "BSTR",
+        "CurrentDirectory": "BSTR",
+        "ProcessStartupInformation": "LPVOID",
+        "ProcessId": "UINT"
+      },
+        "PostCheck": {
+	      "0": {  
+	        "Check": {
+	          "ProcessId": "%var0 != 0"
+	        },
+	        "Handle": {
+		      "ProcessId": "AddTarget"
+		    },
+          "Log": [
+            "CommandLine",
+            "CurrentDirectory",
+            "ProcessId"
+          ]
+	      }
+	    }
+      },
+
+      "GetOwner": {
+	    "Signature": {
+		  "Library": "IWbemServices.ExecMethod",
+	      "Return": "HRESULT"
+	    },
+        "Parameters": {
+          "User": "BSTR",
+          "Domain": "BSTR"
+        },
+		"Logging": true
+      },
+
+      "Terminate": {
+	    "Signature": {
+		  "Library": "IWbemServices.ExecMethod",
+	      "Return": "HRESULT"
+	    },
+		"Parameters": {
+	      "Reason": "UINT"
+	    },
+		"Logging": true
+      }
+	}
+  }
+}

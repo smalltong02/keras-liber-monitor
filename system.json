@@ -8,18 +8,18 @@
 	  "Return": "HMODULE",
 	  "Special": false
 	},
-	
-	"Parameters": {
-	 "lpLibFileName": "LPCSTR"
-	},
+
+    "Parameters": {
+      "lpLibFileName": "LPCSTR"
+    },
 	
 	"Ensure": [
 	  "lpLibFileName"
 	],
-	
-	"PreLog": [
-	  "lpLibFileName"
-	]
+
+    "PreLog": [
+      "lpLibFileName"
+    ]
   },
   
   "LoadLibraryW": {
@@ -119,15 +119,16 @@
 	},
 	
 	"PostCheck": {
-	  "0": {
-	    "Check": {
-	      "lpDirectoryName|lpTotalNumberOfBytes": "(%var0 == '' || %var0 =~ 'C:*') && (%var1 <= 64424509440)"
-	    },
-	  
-	    "Modify": {
-	      "lpTotalNumberOfBytes": "%var0=1099511627776"
-	    }
-	  }
+    "0": {
+      "Check": {
+        "lpDirectoryName": "(%var0 == 'nullptr' || %var0 =~ '^C:.*')",
+		"*lpTotalNumberOfBytes": "(%var1 <= 64424509440)"
+      },
+
+      "Modify": {
+        "*lpTotalNumberOfBytes": "%var2=1099511627776"
+      }
+    }
 	}
   },
   
@@ -145,15 +146,16 @@
 	},
 	
 	"PostCheck": {
-	  "0": {
-	    "Check": {
-	      "lpDirectoryName|lpTotalNumberOfBytes": "(%var0 == '' || %var0 =~ 'C:*') && (%var1 <= 64424509440)"
-	    },
-	  
-	    "Modify": {
-	      "lpTotalNumberOfBytes": "%var0=1099511627776"
-	    }
-	  }
+    "0": {
+      "Check": {
+        "lpDirectoryName": "(%var0 == 'nullptr' || %var0 =~ '^C:.*')",
+        "*lpTotalNumberOfBytes": "(%var1 <= 64424509440)"
+      },
+
+      "Modify": {
+        "*lpTotalNumberOfBytes": "%var2=1099511627776"
+      }
+    }
 	}
   },
   
@@ -249,7 +251,7 @@
 	    },
 	  
 	    "Check": {
-	      "ProcessInformationClass": "(%var0 == ProcessDebugPort)"
+	      "ProcessInformationClass": "(%var0 == 'ProcessDebugPort')"
 	    },
 	  
 	    "Log": [
@@ -263,7 +265,7 @@
 	    },
 	  
 	    "Check": {
-	      "ProcessInformationClass": "(%var0 == ProcessBreakOnTermination)"
+	      "ProcessInformationClass": "(%var0 == 'ProcessBreakOnTermination')"
 	    },
 	  
 	    "Log": [
@@ -297,11 +299,12 @@
 		},
 		
 		"Check": {
-		  "SystemInformationClass|SystemInformation->dwNumberOfProcessors": "(%var0 == SystemBasicInformation) && (%var1 < 2)"
+		  "SystemInformationClass": "%var0 == 'SystemBasicInformation'",
+		  "SystemInformation->NumberOfProcessors": "%var1 < 2"
 		},
 		  
 		"Modify": {
-		  "SystemInformation->dwNumberOfProcessors": "2"
+		  "SystemInformation->NumberOfProcessors": "%var2=2"
 		}
       }
 	}

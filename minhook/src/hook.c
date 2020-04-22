@@ -370,8 +370,24 @@ static MH_STATUS EnableHookLL(UINT pos, BOOL enable)
 		// add assist buffer for push context address to detour func.
 		ULONG_PTR pAssistBuf = ((ULONG_PTR)pHook->pTrampoline) + MEMORY_ASSIST_POSIT;
 		PPUSH_CON pPush = (PPUSH_CON)pAssistBuf;
+#ifdef _DEBUG
+		pPush->opdebug = 0x90;
+#endif
+#ifdef _X86_
 		pPush->opcode = 0x68;
-		pPush->operand = pHook->pContext;
+		pPush->operand = (UINT32)pHook->pContext;
+#endif
+#ifdef _AMD64_
+		// sub rsp, 8
+		// mov dword ptr[rsp], low32
+		// mov dword ptr[rsp + 4], high32
+		pPush->opcode1[0] = 0x48; pPush->opcode1[1] = 0x83; pPush->opcode1[2] = 0xec;
+		pPush->operand1 = 0x08;
+		pPush->opcode2[0] = 0xc7; pPush->opcode2[1] = 0x04; pPush->opcode2[2] = 0x24;
+		pPush->operand2 = (UINT32)pHook->pContext;
+		pPush->opcode3[0] = 0xc7; pPush->opcode3[1] = 0x44; pPush->opcode3[2] = 0x24; pPush->opcode3[3] = 0x04;
+		pPush->operand3 = (UINT32)((LONGLONG)(pHook->pContext) >> 32);
+#endif
 		PJMP_REL pJmpAss = (PJMP_REL)(((ULONG_PTR)pHook->pTrampoline) + MEMORY_ASSIST_POSIT + sizeof(PUSH_CON));
 		pJmpAss->opcode = 0xE9;
 		pJmpAss->operand = (UINT32)((LPBYTE)pHook->pDetour - ((LPBYTE)pJmpAss + sizeof(JMP_REL)));
@@ -844,7 +860,7 @@ MH_STATUS WINAPI MH_ApplyQueued(VOID)
 
 //-------------------------------------------------------------------------
 MH_STATUS WINAPI MH_CreateHookApiEx(
-    LPCWSTR pszModule, LPCSTR pszProcName, LPVOID pDetour,
+    LPCWSTR pszModule, LPCSTR pszProcName, const LPVOID pDetour,
     LPVOID *ppOriginal, LPVOID pContext, LPVOID *ppTarget)
 {
     HMODULE hModule;

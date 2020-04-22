@@ -51,13 +51,7 @@
     <ClInclude Include="FlagsObject.h">
       <Filter>HipsObject</Filter>
     </ClInclude>
-    <ClInclude Include="HipsConfigObject.h">
-      <Filter>HipsObject</Filter>
-    </ClInclude>
     <ClInclude Include="HookImplementObject.h">
-      <Filter>HipsObject</Filter>
-    </ClInclude>
-    <ClInclude Include="OleConfigObject.h">
       <Filter>HipsObject</Filter>
     </ClInclude>
     <ClInclude Include="SigsObject.h">
@@ -111,6 +105,24 @@
     <ClInclude Include="LogObject.h">
       <Filter>Log</Filter>
     </ClInclude>
+    <ClInclude Include="MetadataTypeImpl.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="memleak.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HipsCfgObject.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="ParsingImpl.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="SafePtr.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="OleConfigObject.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -134,13 +146,7 @@
     <ClCompile Include="FlagsObject.cpp">
       <Filter>HipsObject</Filter>
     </ClCompile>
-    <ClCompile Include="HipsConfigObject.cpp">
-      <Filter>HipsObject</Filter>
-    </ClCompile>
     <ClCompile Include="HookImplementObject.cpp">
-      <Filter>HipsObject</Filter>
-    </ClCompile>
-    <ClCompile Include="OleConfigObject.cpp">
       <Filter>HipsObject</Filter>
     </ClCompile>
     <ClCompile Include="SigsObject.cpp">
@@ -193,6 +199,18 @@
     </ClCompile>
     <ClCompile Include="LogObject.cpp">
       <Filter>Log</Filter>
+    </ClCompile>
+    <ClCompile Include="MetadataTypeImpl.cpp">
+      <Filter>HipsObject</Filter>
+    </ClCompile>
+    <ClCompile Include="HipsCfgObject.cpp">
+      <Filter>HipsObject</Filter>
+    </ClCompile>
+    <ClCompile Include="ParsingImpl.cpp">
+      <Filter>HipsObject</Filter>
+    </ClCompile>
+    <ClCompile Include="OleConfigObject.cpp">
+      <Filter>HipsObject</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

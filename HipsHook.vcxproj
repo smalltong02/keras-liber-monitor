@@ -43,7 +43,7 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -88,11 +88,16 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;WIN32_HOOK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;WIN32_HOOK_EXPORTS;WIN32_HOOK_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\minhook\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DisableSpecificWarnings>4244;4290;4800;4200;4214;4018</DisableSpecificWarnings>
       <TreatSpecificWarningsAsErrors>4013;4020;4022;4047;4098;4113;4129;4163;4229;4700;4603;4716;4189</TreatSpecificWarningsAsErrors>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -107,17 +112,20 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;WIN32_HOOK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\ThirdParty\minhook\include;..\..\ThirdParty\jsoncpp\include\json;../../FortiTracer/fortihipstracer/public;../../FortiTracer/loki/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;WIN32_HOOK_EXPORTS;WIN32_HOOK_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.\minhook\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DisableSpecificWarnings>4244;4290;4800;4200;4214;4018</DisableSpecificWarnings>
       <TreatSpecificWarningsAsErrors>4013;4020;4022;4047;4098;4113;4129;4163;4229;4700;4603;4716;4189</TreatSpecificWarningsAsErrors>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\..\ThirdParty\minhook\lib;..\..\ThirdParty\jsoncpp\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libMinHook.x64.lib;lib64_json_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libMinHook.x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -128,11 +136,14 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;WIN32_HOOK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;WIN32_HOOK_EXPORTS;WIN32_HOOK_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalIncludeDirectories>.\minhook\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4244;4290;4800;4200;4214;4018</DisableSpecificWarnings>
       <TreatSpecificWarningsAsErrors>4013;4020;4022;4047;4098;4113;4129;4163;4229;4700;4603;4716;4189</TreatSpecificWarningsAsErrors>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+      <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -173,13 +184,17 @@
     <ClInclude Include="commutils.h" />
     <ClInclude Include="ComsObject.h" />
     <ClInclude Include="FlagsObject.h" />
-    <ClInclude Include="HipsConfigObject.h" />
+    <ClInclude Include="HipsCfgObject.h" />
     <ClInclude Include="HipsHook.h" />
     <ClInclude Include="hookimpl.h" />
     <ClInclude Include="HookImplementObject.h" />
     <ClInclude Include="LogObject.h" />
+    <ClInclude Include="memleak.h" />
+    <ClInclude Include="MetadataTypeImpl.h" />
     <ClInclude Include="OleConfigObject.h" />
+    <ClInclude Include="ParsingImpl.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="SafePtr.h" />
     <ClInclude Include="SigsObject.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -217,12 +232,14 @@
       </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="FlagsObject.cpp" />
-    <ClCompile Include="HipsConfigObject.cpp" />
+    <ClCompile Include="HipsCfgObject.cpp" />
     <ClCompile Include="HipsHook.cpp" />
     <ClCompile Include="hookimpl.cpp" />
     <ClCompile Include="HookImplementObject.cpp" />
     <ClCompile Include="LogObject.cpp" />
+    <ClCompile Include="MetadataTypeImpl.cpp" />
     <ClCompile Include="OleConfigObject.cpp" />
+    <ClCompile Include="ParsingImpl.cpp" />
     <ClCompile Include="SigsObject.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

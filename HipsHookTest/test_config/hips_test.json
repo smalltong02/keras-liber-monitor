@@ -1,0 +1,24 @@
+{
+  "Name": "hipshook",
+  "Version": "1.0.0.0",
+  "CreateDate": "24//12//2019 2:24PM",
+  "Description": "Creating hooks and signature format config information head file",
+
+  "Sigs": [
+    104,
+    105,
+    108
+  ],
+
+  "Coms": [
+    106
+  ],
+  
+  "Flags": [
+    107
+  ],
+  
+  "Wmis": [
+    109
+  ]
+}

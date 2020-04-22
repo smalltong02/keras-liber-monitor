@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Coms">
+      <UniqueIdentifier>{ba552f6b-9314-4470-88fb-2b3d936c4b81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HipsObject">
+      <UniqueIdentifier>{f28ab36f-0882-4162-be7c-c36f3411d86b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Log">
+      <UniqueIdentifier>{35eb0983-7f29-46ec-91d3-8ec6ca90b38b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="HipsHookLib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="commutils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hookimpl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FlagsObject.cpp">
+      <Filter>HipsObject</Filter>
+    </ClCompile>
+    <ClCompile Include="HipsCfgObject.cpp">
+      <Filter>HipsObject</Filter>
+    </ClCompile>
+    <ClCompile Include="HookImplementObject.cpp">
+      <Filter>HipsObject</Filter>
+    </ClCompile>
+    <ClCompile Include="MetadataTypeImpl.cpp">
+      <Filter>HipsObject</Filter>
+    </ClCompile>
+    <ClCompile Include="SigsObject.cpp">
+      <Filter>HipsObject</Filter>
+    </ClCompile>
+    <ClCompile Include="ParsingImpl.cpp">
+      <Filter>HipsObject</Filter>
+    </ClCompile>
+    <ClCompile Include="ComsObject.cpp">
+      <Filter>HipsObject</Filter>
+    </ClCompile>
+    <ClCompile Include="LogObject.cpp">
+      <Filter>Log</Filter>
+    </ClCompile>
+    <ClCompile Include="utils.cpp">
+      <Filter>Coms</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="FlagsObject.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="HipsCfgObject.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="HookImplementObject.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="MetadataTypeImpl.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="SafePtr.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="SigsObject.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="ParsingImpl.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="ComsObject.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="commutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LogObject.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hookimpl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="memleak.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CBaseType.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="asmfunction.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="utils.h">
+      <Filter>Coms</Filter>
+    </ClInclude>
+    <ClInclude Include="SpecialLog.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="asmfunction.asm">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>

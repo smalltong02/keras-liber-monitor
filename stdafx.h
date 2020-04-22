@@ -12,6 +12,10 @@
 #include <windows.h>
 #include <string>
 #include <sstream>
+#include <cassert>
+#include "memleak.h"
+
+#define NTSTATUS ULONG
 
 
 // TODO: reference additional headers your program requires here

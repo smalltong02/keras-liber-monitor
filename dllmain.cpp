@@ -1,12 +1,11 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
 #include "stdafx.h"
 #include "commutils.h"
+#include "utils.h"
+
+using namespace cchips;
 
 BOOL g_initSuccess = FALSE;
-
-typedef	void (WINAPI *PDbgBreakPoint)();
-PDbgBreakPoint DbgBreakPoint = NULL;
-
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -17,27 +16,16 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	{
 	case DLL_PROCESS_ATTACH:
 		{
-//#ifdef _DEBUG
-//	#ifdef _AMD64_
-//			HMODULE hntdll = LoadLibraryA("ntdll.dll");
-//			if (hntdll != NULL)
-//			{
-//				DbgBreakPoint = (void (WINAPI *)())GetProcAddress(hntdll, "DbgBreakPoint");
-//				if(DbgBreakPoint)
-//					DbgBreakPoint();
-//		}
-//	#else
-//			__asm int 3;
-//	#endif
-//#endif
-
+			BreakPoint;
 #ifdef _DEBUG
-			if (InitializeConfig() && InitializeHook())
+			std::shared_ptr<CHipsCfgObject> hipsCfgObject = InitializeConfig();
+			if (hipsCfgObject != nullptr && InitializeHook(hipsCfgObject))
 			{
 				g_initSuccess = TRUE;
 			}
 #else
-			if (InitializeConfig() && InitializeHook())
+			std::shared_ptr<CHipsCfgObject> hipsCfgObject = InitializeConfig();
+			if (hipsCfgObject != nullptr && InitializeHook(hipsCfgObject))
 			{
 				g_initSuccess = TRUE;
 			}
