@@ -13,11 +13,11 @@ using namespace cchips;
 
 // for kernel dll inject service, get config from kernel.
 #define IOCTL_HIPS_GET_INJECT32_CONFIG	(ULONG) CTL_CODE(FILE_DEVICE_FIPS,\
-	0xA01, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
+    0xA01, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
 
 // for kernel dll inject service, set cmdline to kernel.
 #define IOCTL_HIPS_SETTARGETCMD		(ULONG) CTL_CODE(FILE_DEVICE_FIPS,\
-	0xA02, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
+    0xA02, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
 
 extern GUID CLSID_idWbemDefPath;
 extern GUID CLSID_idWbemLocator;
@@ -68,3 +68,5 @@ typedef interface idIEnumWbemClassObject idIEnumWbemClassObject;
 std::shared_ptr<CHipsCfgObject> InitializeConfig();
 bool InitializeHook(std::shared_ptr<CHipsCfgObject>& hipsConfigObject);
 void UninitialHook();
+
+extern bool g_is_dll_module;

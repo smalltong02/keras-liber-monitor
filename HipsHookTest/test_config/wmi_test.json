@@ -1,7 +1,7 @@
 {
   "Category": "WMIObject",
   "Calling convention": "WINAPI",
-  
+
   "Win32_PhysicalMemory": {
     "MIDL_INTERFACE": "{FAF76B93-798C-11D2-AAD1-006008C78BC7}",
     "Data": {
@@ -45,39 +45,39 @@
       "TypeDetail": "UINT",
       "Version": "BSTR"
     },
-	
-	"PreCheck": {
-	  "0": {  
-	    "Handle": {
-		"Win32_PhysicalMemory": "Duplicate"
-		},
-      "Modify": {
-        "__GENUS": "%var0 = 2",
-        "__PATH": "%var1 = '\\\\Administrator\\ROOT\\cimv2:Win32_PhysicalMemory'",
-        "__CLASS": "%var2 = 'Win32_PhysicalMemory'",
-        "BankLabel": "%var3 = 'Bank 0'",
-        "Capacity": "%var4 = '17179869184'",
-        "Caption": "%var5 = 'Physical Memory'",
-        "CreationClassName": "%var6 = 'Win32_PhysicalMemory'",
-        "DataWidth": "%var7 = 64",
-        "Description": "%var8 = 'Physical Memory'",
-        "DeviceLocator": "%var9 = 'DIMM1'",
-        "FormFactor": "%var10 = 8",
-        "InterleaveDataDepth": "%var11 = 1",
-        "InterleavePosition": "%var12 = 1",
-        "Manufacturer": "%var13 = 'Hynix/Hyundai'",
-        "MemoryType": "%var14 = 0",
-        "Name": "%var15 = 'Physical Memory'",
-        "PartNumber": "%var16 = 'HMT451U6AFR8C-PB'",
-        "PositionInRow": "%var17 = 1",
-        "SerialNumber": "%var18 = '4234ECAB'",
-        "Speed": "%var19 = 1600",
-        "Tag": "%var20 = 'Physical Memory 0'",
-        "TotalWidth": "%var21 = 64",
-        "TypeDetail": "%var22 = 128"
+
+    "PreCheck": {
+      "0": {
+        "Handle": {
+          "Win32_PhysicalMemory": "Duplicate"
+        },
+        "Modify": {
+          "__GENUS": "%var0 = 2",
+          "__PATH": "%var1 = '\\\\Administrator\\ROOT\\cimv2:Win32_PhysicalMemory'",
+          "__CLASS": "%var2 = 'Win32_PhysicalMemory'",
+          "BankLabel": "%var3 = 'Bank 0'",
+          "Capacity": "%var4 = '17179869184'",
+          "Caption": "%var5 = 'Physical Memory'",
+          "CreationClassName": "%var6 = 'Win32_PhysicalMemory'",
+          "DataWidth": "%var7 = 64",
+          "Description": "%var8 = 'Physical Memory'",
+          "DeviceLocator": "%var9 = 'DIMM1'",
+          "FormFactor": "%var10 = 8",
+          "InterleaveDataDepth": "%var11 = 1",
+          "InterleavePosition": "%var12 = 1",
+          "Manufacturer": "%var13 = 'Hynix/Hyundai'",
+          "MemoryType": "%var14 = 0",
+          "Name": "%var15 = 'Physical Memory'",
+          "PartNumber": "%var16 = 'HMT451U6AFR8C-PB'",
+          "PositionInRow": "%var17 = 1",
+          "SerialNumber": "%var18 = '4234ECAB'",
+          "Speed": "%var19 = 1600",
+          "Tag": "%var20 = 'Physical Memory 0'",
+          "TotalWidth": "%var21 = 64",
+          "TypeDetail": "%var22 = 128"
+        }
       }
-	  }
-	}
+    }
   },
 
   "Win32_PhysicalMemoryArray": {
@@ -140,7 +140,7 @@
       }
     }
   },
-  
+
   "Win32_DiskDrive": {
     "MIDL_INTERFACE": "{8502C4B2-5FBB-11D2-AAC1-006008C78BC7}",
     "Data": {
@@ -150,23 +150,23 @@
       "DeviceID": "BSTR",
       "Size": "ULONGLONG"
     },
-	"PostCheck": {
-	  "0": {
-      "Check": {
-        "Size": "%var0 <= 3298534883328"
-      },
-      "Modify": {
-        "Size": "%var1 = 3298534883328"
-      },
-      "Log": [
-        "CreationClassName",
-        "Name",
-        "Caption"
-      ]
-	  }
-	}
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "Size": "%var0 <= 3298534883328"
+        },
+        "Modify": {
+          "Size": "%var1 = 3298534883328"
+        },
+        "Log": [
+          "CreationClassName",
+          "Name",
+          "Caption"
+        ]
+      }
+    }
   },
-  
+
   "Win32_Process": {
     "MIDL_INTERFACE": "{8502C4DC-5FBB-11D2-AAC1-006008C78BC7}",
     "Data": {
@@ -174,64 +174,64 @@
       "ExecutablePath": "BSTR"
     },
     "Methods": {
-	  "AttachDebugger": {
-	    "Signature": {
-		  "Library": "IWbemServices.ExecMethod",
-	      "Return": "HRESULT"
-	    },
+      "AttachDebugger": {
+        "Signature": {
+          "Library": "IWbemServices.ExecMethod",
+          "Return": "HRESULT"
+        },
         "Logging": true
       },
-	  
-	  "Create": {
-	    "Signature": {
-		  "Library": "IWbemServices.ExecMethod",
-	      "Return": "HRESULT"
-	    },
-      "Parameters": {
-        "CommandLine": "BSTR",
-        "CurrentDirectory": "BSTR",
-        "ProcessStartupInformation": "LPVOID",
-        "ProcessId": "UINT"
-      },
+
+      "Create": {
+        "Signature": {
+          "Library": "IWbemServices.ExecMethod",
+          "Return": "HRESULT"
+        },
+        "Parameters": {
+          "CommandLine": "BSTR",
+          "CurrentDirectory": "BSTR",
+          "ProcessStartupInformation": "LPVOID",
+          "ProcessId": "UINT"
+        },
         "PostCheck": {
-	      "0": {  
-	        "Check": {
-	          "ProcessId": "%var0 != 0"
-	        },
-	        "Handle": {
-		      "ProcessId": "AddTarget"
-		    },
-          "Log": [
-            "CommandLine",
-            "CurrentDirectory",
-            "ProcessId"
-          ]
-	      }
-	    }
+          "0": {
+            "Check": {
+              "ProcessId": "%var0 != 0"
+            },
+            "Handle": {
+              "ProcessId": "AddTarget"
+            },
+            "Log": [
+              "CommandLine",
+              "CurrentDirectory",
+              "ProcessId"
+            ]
+          }
+        }
       },
 
       "GetOwner": {
-	    "Signature": {
-		  "Library": "IWbemServices.ExecMethod",
-	      "Return": "HRESULT"
-	    },
+        "Signature": {
+          "Library": "IWbemServices.ExecMethod",
+          "Return": "HRESULT"
+        },
         "Parameters": {
           "User": "BSTR",
           "Domain": "BSTR"
         },
-		"Logging": true
+        "Logging": true
       },
 
       "Terminate": {
-	    "Signature": {
-		  "Library": "IWbemServices.ExecMethod",
-	      "Return": "HRESULT"
-	    },
-		"Parameters": {
-	      "Reason": "UINT"
-	    },
-		"Logging": true
+        "Signature": {
+          "Library": "IWbemServices.ExecMethod",
+          "Return": "HRESULT"
+        },
+        "Parameters": {
+          "Reason": "UINT"
+        },
+        "Logging": true
       }
-	}
+    }
   }
 }

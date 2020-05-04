@@ -4,11 +4,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 15.0.28307.960
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HipsHook", "HipsHook.vcxproj", "{26F9570B-F5BE-444E-A1B0-D839735C5265}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8D954A72-7929-478A-B6DA-ACDA7631F4C4} = {8D954A72-7929-478A-B6DA-ACDA7631F4C4}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libMinHook", "minhook\build\VC15\libMinHook.vcxproj", "{F142A341-5EE0-442D-A15F-98AE9B48DBAE}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HipsHookTest", "HipsHookTest\HipsHookTest.vcxproj", "{356EA1DD-869B-4871-B8D5-612782A3C543}"
 	ProjectSection(ProjectDependencies) = postProject
+		{26F9570B-F5BE-444E-A1B0-D839735C5265} = {26F9570B-F5BE-444E-A1B0-D839735C5265}
 		{F142A341-5EE0-442D-A15F-98AE9B48DBAE} = {F142A341-5EE0-442D-A15F-98AE9B48DBAE}
 		{8D954A72-7929-478A-B6DA-ACDA7631F4C4} = {8D954A72-7929-478A-B6DA-ACDA7631F4C4}
 	EndProjectSection

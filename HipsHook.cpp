@@ -6,7 +6,7 @@
 
 
 // This is an example of an exported variable
-WIN32_HOOK_API int nwin32_hook=0;
+WIN32_HOOK_API int nwin32_hook = 0;
 
 // This is an example of an exported function.
 WIN32_HOOK_API int fnwin32_hook(void)

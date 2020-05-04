@@ -69,6 +69,9 @@
     <ClCompile Include="HookWmiMethodsTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="HookLogObjectTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
@@ -155,17 +158,34 @@
     <Filter Include="benchmark">
       <UniqueIdentifier>{eebe8c84-3902-46b3-81af-a39b870badb2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="config">
+      <UniqueIdentifier>{d9fd69b2-c16b-4e25-92d5-8d2f3cf3c61d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="HipsHookTest.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="test_config\wmi_test.json" />
-    <None Include="test_config\hips_test.json" />
-    <None Include="test_config\system_test.json" />
-    <None Include="test_config\com_test.json" />
-    <None Include="test_config\types_test.json" />
-    <None Include="test_config\ole32_test.json" />
-    <None Include="test_config\services_test.json" />
+    <None Include="test_config\com_test.json">
+      <Filter>config</Filter>
+    </None>
+    <None Include="test_config\hips_test.json">
+      <Filter>config</Filter>
+    </None>
+    <None Include="test_config\ole32_test.json">
+      <Filter>config</Filter>
+    </None>
+    <None Include="test_config\services_test.json">
+      <Filter>config</Filter>
+    </None>
+    <None Include="test_config\system_test.json">
+      <Filter>config</Filter>
+    </None>
+    <None Include="test_config\wmi_test.json">
+      <Filter>config</Filter>
+    </None>
+    <None Include="test_config\types_test.json">
+      <Filter>config</Filter>
+    </None>
   </ItemGroup>
 </Project>

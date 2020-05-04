@@ -6,7 +6,8 @@
     "Signature": {
 	  "Library": "kernel32.dll",
 	  "Return": "HMODULE",
-	  "Special": false
+	  "Special": false,
+	  "Feature": "L1"
 	},
 
     "Parameters": {
@@ -26,7 +27,8 @@
     "Signature": {
 	  "Library": "kernel32.dll",
 	  "Return": "HMODULE",
-	  "Special": false
+	  "Special": false,
+	  "Feature": "L1"
 	},
 	
 	"Parameters": {
@@ -46,7 +48,8 @@
     "Signature": {
 	  "Library": "kernel32.dll",
 	  "Return": "HMODULE",
-	  "Special": false
+	  "Special": false,
+	  "Feature": "L1"
 	},
 	
 	"Parameters": {
@@ -69,7 +72,8 @@
     "Signature": {
 	  "Library": "kernel32.dll",
 	  "Return": "HMODULE",
-	  "Special": false
+	  "Special": false,
+	  "Feature": "L1"
 	},
 	
 	"Parameters": {
@@ -91,7 +95,8 @@
   "ExitWindowsEx": {
     "Signature": {
 	  "Library": "user32.dll",
-	  "Return": "BOOL"
+	  "Return": "BOOL",
+	  "Feature": "P41"
 	},
 	
 	"Parameters": {
@@ -108,38 +113,12 @@
   "GetDiskFreeSpaceExA": {
     "Signature": {
 	  "Library": "kernel32.dll",
-	  "Return": "BOOL"
+	  "Return": "BOOL",
+	  "Feature": "H10"
 	},
 	
 	"Parameters": {
 	  "lpDirectoryName": "LPCSTR",
-      "lpFreeBytesAvailableToCaller": "LPULARGE_INTEGER",
-	  "lpTotalNumberOfBytes": "LPULARGE_INTEGER",
-	  "lpTotalNumberOfFreeBytes": "LPULARGE_INTEGER"
-	},
-	
-	"PostCheck": {
-    "0": {
-      "Check": {
-        "lpDirectoryName": "(%var0 == 'nullptr' || %var0 =~ '^C:.*')",
-		"*lpTotalNumberOfBytes": "(%var1 <= 64424509440)"
-      },
-
-      "Modify": {
-        "*lpTotalNumberOfBytes": "%var2=1099511627776"
-      }
-    }
-	}
-  },
-  
-  "GetDiskFreeSpaceExW": {
-    "Signature": {
-	  "Library": "kernel32.dll",
-	  "Return": "BOOL"
-	},
-	
-	"Parameters": {
-	  "lpDirectoryName": "LPCWSTR",
       "lpFreeBytesAvailableToCaller": "LPULARGE_INTEGER",
 	  "lpTotalNumberOfBytes": "LPULARGE_INTEGER",
 	  "lpTotalNumberOfFreeBytes": "LPULARGE_INTEGER"
@@ -159,21 +138,75 @@
 	}
   },
   
+  "GetDiskFreeSpaceExW": {
+    "Signature": {
+	  "Library": "kernel32.dll",
+	  "Return": "BOOL",
+	  "Feature": "H11"
+	},
+	
+	"Parameters": {
+	  "lpDirectoryName": "LPCWSTR",
+      "lpFreeBytesAvailableToCaller": "LPULARGE_INTEGER",
+	  "lpTotalNumberOfBytes": "LPULARGE_INTEGER",
+	  "lpTotalNumberOfFreeBytes": "LPULARGE_INTEGER"
+	},
+	
+	"PostCheck": {
+    "0": {
+      "Check": {
+        "lpDirectoryName": "(%var0 == 'nullptr' || %var0 =~ '^C:.*')",
+		"*lpTotalNumberOfBytes": "(%var1 <= 64424509440)"
+      },
+
+      "Modify": {
+        "*lpTotalNumberOfBytes": "%var2=1099511627776"
+      }
+    }
+	}
+  },
+  
   "GetTickCount": {
     "Signature": {
 	  "Library": "kernel32.dll",
-	  "Return": "DWORD"
+	  "Return": "DWORD",
+	  "Feature": "H12"
 	},
-	
-	"PostLog": [
-	  "Return"
-	]
+		
+	"PostCheck": {
+	  "0": {
+	    "Modify": {
+		  "Return": "%var0 = 1234567"
+		}
+	  }
+	}
+  },
+  
+  "GetSystemTime": {
+    "Signature": {
+	  "Library": "kernel32.dll",
+	  "Return": "VOID",
+	  "Feature": "H13"
+	},
+    "Parameters": {
+	  "lpSystemTime": "LPSYSTEMTIME"
+	},
+	"PostCheck": {
+	  "0": {
+	    "Modify": {
+	      "lpSystemTime->wYear": "%var0 = 2010",
+		  "lpSystemTime->wMonth": "%var1 = 12",
+		  "lpSystemTime->wDay": "%var2 = 31"
+		}
+      }
+	}
   },
   
   "GetModuleHandleA": {
     "Signature": {
 	  "Library": "kernel32.dll",
-	  "Return": "HMODULE"
+	  "Return": "HMODULE",
+	  "Feature": "P60"
 	},
 	
 	"Parameters": {
@@ -188,7 +221,8 @@
   "GetModuleHandleW": {
     "Signature": {
 	  "Library": "kernel32.dll",
-	  "Return": "HMODULE"
+	  "Return": "HMODULE",
+	  "Feature": "P60"
 	},
 	
 	"Parameters": {
@@ -203,7 +237,8 @@
   "GetProcAddress": {
     "Signature": {
 	  "Library": "kernel32.dll",
-	  "Return": "FARPROC"
+	  "Return": "FARPROC",
+	  "Feature": "P61"
 	},
 	
 	"Parameters": {
@@ -224,7 +259,8 @@
   "NtQueryInformationProcess": {
     "Signature": {
 	  "Library": "ntdll.dll",
-	  "Return": "NTSTATUS"
+	  "Return": "NTSTATUS",
+	  "Feature": "P62"
 	},
 	
 	"Parameters": {
@@ -278,7 +314,8 @@
   "NtQuerySystemInformation": {
     "Signature": {
 	  "Library": "ntdll.dll",
-	  "Return": "NTSTATUS"
+	  "Return": "NTSTATUS",
+	  "Feature": "P63"
 	},
 	
 	"Parameters": {
@@ -304,7 +341,7 @@
 		},
 		  
 		"Modify": {
-		  "SystemInformation->NumberOfProcessors": "%var2=2"
+		  "SystemInformation->NumberOfProcessors": "%var2 = 2"
 		}
       }
 	}

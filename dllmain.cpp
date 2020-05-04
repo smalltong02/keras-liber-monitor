@@ -7,42 +7,43 @@ using namespace cchips;
 
 BOOL g_initSuccess = FALSE;
 
-BOOL APIENTRY DllMain( HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-					 )
+BOOL APIENTRY DllMain(HMODULE hModule,
+    DWORD  ul_reason_for_call,
+    LPVOID lpReserved
+)
 {
-	switch (ul_reason_for_call)
-	{
-	case DLL_PROCESS_ATTACH:
-		{
-			BreakPoint;
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH:
+    {
+        BreakPoint;
+        g_is_dll_module = true;
 #ifdef _DEBUG
-			std::shared_ptr<CHipsCfgObject> hipsCfgObject = InitializeConfig();
-			if (hipsCfgObject != nullptr && InitializeHook(hipsCfgObject))
-			{
-				g_initSuccess = TRUE;
-			}
+        std::shared_ptr<CHipsCfgObject> hipsCfgObject = InitializeConfig();
+        if (hipsCfgObject != nullptr && InitializeHook(hipsCfgObject))
+        {
+            g_initSuccess = TRUE;
+        }
 #else
-			std::shared_ptr<CHipsCfgObject> hipsCfgObject = InitializeConfig();
-			if (hipsCfgObject != nullptr && InitializeHook(hipsCfgObject))
-			{
-				g_initSuccess = TRUE;
-			}
+        std::shared_ptr<CHipsCfgObject> hipsCfgObject = InitializeConfig();
+        if (hipsCfgObject != nullptr && InitializeHook(hipsCfgObject))
+        {
+            g_initSuccess = TRUE;
+        }
 #endif
-		}
-		break;
-	case DLL_THREAD_ATTACH:
-		break;
-	case DLL_THREAD_DETACH:
-		break;
-	case DLL_PROCESS_DETACH:
-		if (g_initSuccess)
-		{
-			UninitialHook();
-		}
-		break;
-	}
-	return TRUE;
+    }
+    break;
+    case DLL_THREAD_ATTACH:
+        break;
+    case DLL_THREAD_DETACH:
+        break;
+    case DLL_PROCESS_DETACH:
+        if (g_initSuccess)
+        {
+            UninitialHook();
+        }
+        break;
+    }
+    return TRUE;
 }
 

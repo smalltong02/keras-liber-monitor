@@ -22,6 +22,9 @@
     <Filter Include="Log">
       <UniqueIdentifier>{35eb0983-7f29-46ec-91d3-8ec6ca90b38b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="bson">
+      <UniqueIdentifier>{adcefcc0-7e66-4dc7-ac5d-497f9c0a6f69}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HipsHookLib.cpp">
@@ -62,6 +65,18 @@
     </ClCompile>
     <ClCompile Include="utils.cpp">
       <Filter>Coms</Filter>
+    </ClCompile>
+    <ClCompile Include="ExceptionThrow.cpp">
+      <Filter>HipsObject</Filter>
+    </ClCompile>
+    <ClCompile Include="bson\bson.c">
+      <Filter>bson</Filter>
+    </ClCompile>
+    <ClCompile Include="bson\encoding.c">
+      <Filter>bson</Filter>
+    </ClCompile>
+    <ClCompile Include="bson\numbers.c">
+      <Filter>bson</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -122,10 +137,27 @@
     <ClInclude Include="SpecialLog.h">
       <Filter>Log</Filter>
     </ClInclude>
+    <ClInclude Include="deffeature.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="ExceptionThrow.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="bson\bson.h">
+      <Filter>bson</Filter>
+    </ClInclude>
+    <ClInclude Include="bson\encoding.h">
+      <Filter>bson</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="asmfunction.asm">
       <Filter>Source Files</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="bson\LICENSE">
+      <Filter>bson</Filter>
+    </None>
   </ItemGroup>
 </Project>

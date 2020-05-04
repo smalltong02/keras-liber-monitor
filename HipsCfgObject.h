@@ -27,35 +27,35 @@ namespace cchips {
 #define FL_WMIS "Wmis"
 #define FL_FLAGS "Flags"
 
-class CSigsCfgObject;
+    class CSigsCfgObject;
 
-class CHipsCfgObject : public std::enable_shared_from_this<CHipsCfgObject>
-{
-public:
-	// save base header information
-	typedef struct _HipsInfo {
-		std::string Name;
-		std::string Version;
-		std::string CreateDate;
-		std::string Description;
-	}HipsInfo, *PHipsInfo;
+    class CHipsCfgObject : public std::enable_shared_from_this<CHipsCfgObject>
+    {
+    public:
+        // save base header information
+        typedef struct _HipsInfo {
+            std::string Name;
+            std::string Version;
+            std::string CreateDate;
+            std::string Description;
+        }HipsInfo, *PHipsInfo;
 
-	CHipsCfgObject() : m_bValid(false) { }
-	~CHipsCfgObject() = default;
+        CHipsCfgObject() : m_bValid(false) { }
+        ~CHipsCfgObject() = default;
 
-	bool InitializeFlagsObjects(const HMODULE handle, const rapidjson::Document& document); // initialize flags array.
-	bool InitializeSignsObjects(const HMODULE handle, const rapidjson::Document& document); // initialize sigs array.
-	bool InitializeWmisObjects(const HMODULE handle, const rapidjson::Document& document); // initialize wmis array.
-	bool InitializeComsObjects(const HMODULE handle, const rapidjson::Document& document); // initialize coms array.
-	bool Initialize(const std::string& json_str);
-	static const int InvalidOrdinal = -1;
-private:
-	bool m_bValid;
-	HipsInfo m_Info;
-	std::vector<std::unique_ptr<CSigsCfgObject>> m_SigsObjects;
-	std::vector<std::unique_ptr<CComsCfgObject>> m_ComsObjects;
-	std::vector<std::unique_ptr<CWmisCfgObject>> m_WmisObjects;
-	std::vector<std::unique_ptr<CFlagsCfgObject>> m_FlagsObjects;
-};
+        bool InitializeFlagsObjects(const HMODULE handle, const rapidjson::Document& document); // initialize flags array.
+        bool InitializeSignsObjects(const HMODULE handle, const rapidjson::Document& document); // initialize sigs array.
+        bool InitializeWmisObjects(const HMODULE handle, const rapidjson::Document& document); // initialize wmis array.
+        bool InitializeComsObjects(const HMODULE handle, const rapidjson::Document& document); // initialize coms array.
+        bool Initialize(const std::string& json_str);
+        static const int InvalidOrdinal = -1;
+    private:
+        bool m_bValid;
+        HipsInfo m_Info;
+        std::vector<std::unique_ptr<CSigsCfgObject>> m_SigsObjects;
+        std::vector<std::unique_ptr<CComsCfgObject>> m_ComsObjects;
+        std::vector<std::unique_ptr<CWmisCfgObject>> m_WmisObjects;
+        std::vector<std::unique_ptr<CFlagsCfgObject>> m_FlagsObjects;
+    };
 
 } // namespace cchips

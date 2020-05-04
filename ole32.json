@@ -5,7 +5,8 @@
   "CoCreateInstance": {
     "Signature": {
       "Library": "ole32.dll",
-      "Return": "HRESULT"
+      "Return": "HRESULT",
+	  "Feature": "O0"
     },
 
     "Parameters": {
@@ -25,7 +26,8 @@
   "CoCreateInstanceEx": {
     "Signature": {
 	  "Library": "ole32.dll",
-	  "Return": "HRESULT"
+	  "Return": "HRESULT",
+	  "Feature": "O0"
 	},
 	
 	"Parameters": {
@@ -46,7 +48,8 @@
   "CoGetClassObject": {
     "Signature": {
 	  "Library": "ole32.dll",
-	  "Return": "HRESULT"
+	  "Return": "HRESULT",
+	  "Feature": "O3"
 	},
 	
 	"Parameters": {
@@ -66,7 +69,8 @@
   "CoInitialize": {
     "Signature": {
 	  "Library": "ole32.dll",
-	  "Return": "HRESULT"
+	  "Return": "HRESULT",
+	  "Feature": "O1"
 	},
 	
 	"Parameters": {
@@ -79,7 +83,8 @@
   "CoInitializeEx": {
     "Signature": {
 	  "Library": "ole32.dll",
-	  "Return": "HRESULT"
+	  "Return": "HRESULT",
+	  "Feature": "O1"
 	},
 	
 	"Parameters": {
@@ -93,7 +98,8 @@
   "CoUninitialize": {
     "Signature": {
 	  "Library": "ole32.dll",
-	  "Return": "VOID"
+	  "Return": "VOID",
+	  "Feature": "O2"
 	},
 	
 	"Logging": true

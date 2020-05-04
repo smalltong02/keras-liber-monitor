@@ -1,4 +1,4 @@
-// test_minihook.cpp : Defines the entry point for the console application.
+// hipshooktest.cpp : Defines the entry point for the console application.
 //
 
 #include "stdafx.h"

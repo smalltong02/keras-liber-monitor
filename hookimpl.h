@@ -9,8 +9,8 @@
 #include <winioctl.h>
 
 typedef enum _processing_status {
-	processing_continue,
-	processing_skip,
+    processing_continue,
+    processing_skip,
 }processing_status;
 
 //typedef HMODULE(WINAPI *PDEFLOADLIBRARYW)(LPCWSTR lpLibFileName);

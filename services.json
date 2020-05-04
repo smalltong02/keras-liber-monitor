@@ -5,7 +5,8 @@
   "OpenSCManagerA": {
     "Signature": {
 	  "Library": "advapi32.dll",
-	  "Return": "SC_HANDLE"
+	  "Return": "SC_HANDLE",
+	  "Feature": "S0"
 	},
 	
 	"Parameters": {
@@ -20,7 +21,8 @@
   "OpenSCManagerW": {
     "Signature": {
 	  "Library": "advapi32.dll",
-	  "Return": "SC_HANDLE"
+	  "Return": "SC_HANDLE",
+	  "Feature": "S0"
 	},
 	
 	"Parameters": {
@@ -35,7 +37,8 @@
   "CreateServiceA": {
     "Signature": {
 	  "Library": "advapi32.dll",
-	  "Return": "SC_HANDLE"
+	  "Return": "SC_HANDLE",
+	  "Feature": "S1"
 	},
 	
 	"Parameters": {
@@ -65,7 +68,8 @@
   "CreateServiceW": {
     "Signature": {
 	  "Library": "advapi32.dll",
-	  "Return": "SC_HANDLE"
+	  "Return": "SC_HANDLE",
+	  "Feature": "S1"
 	},
 	
 	"Parameters": {
@@ -95,7 +99,8 @@
   "OpenServiceA": {
     "Signature": {
 	  "Library": "advapi32.dll",
-	  "Return": "SC_HANDLE"
+	  "Return": "SC_HANDLE",
+	  "Feature": "S2"
 	},
 	
 	"Parameters": {
@@ -112,7 +117,8 @@
   "OpenServiceW": {
     "Signature": {
 	  "Library": "advapi32.dll",
-	  "Return": "SC_HANDLE"
+	  "Return": "SC_HANDLE",
+	  "Feature": "S2"
 	},
 	
 	"Parameters": {
@@ -129,7 +135,8 @@
   "StartServiceA": {
     "Signature": {
 	  "Library": "advapi32.dll",
-	  "Return": "SC_HANDLE"
+	  "Return": "SC_HANDLE",
+	  "Feature": "S4"
 	},
 	
 	"Parameters": {
@@ -146,7 +153,8 @@
   "DeleteService": {
     "Signature": {
 	  "Library": "advapi32.dll",
-	  "Return": "BOOL"
+	  "Return": "BOOL",
+	  "Feature": "S3"
 	},
 	
 	"Parameters": {

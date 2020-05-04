@@ -5,124 +5,13 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="HipsObject">
-      <UniqueIdentifier>{1103d1ae-5062-460e-96b9-7be0e32ab904}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Coms">
-      <UniqueIdentifier>{52632530-5c2a-4a54-ab0d-e4210ea909b0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Log">
-      <UniqueIdentifier>{15339b59-a0b3-48de-9f8a-53a92fcfabc9}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="commutils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="hookimpl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="HipsHook.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ComsObject.h">
-      <Filter>HipsObject</Filter>
-    </ClInclude>
-    <ClInclude Include="FlagsObject.h">
-      <Filter>HipsObject</Filter>
-    </ClInclude>
-    <ClInclude Include="HookImplementObject.h">
-      <Filter>HipsObject</Filter>
-    </ClInclude>
-    <ClInclude Include="SigsObject.h">
-      <Filter>HipsObject</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32ClassFactory.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32ClassFactory2.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32ClientSecurity.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32EnumWbemClassObject.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32Marshal.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32Unknown.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32WbemCallResult.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32WbemClassObject.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32WbemContext.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32WbemLocator.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32WbemObjectSink.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32WbemPath.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32WbemQualifierSet.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32WbemServices.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="utils.h">
-      <Filter>Coms</Filter>
-    </ClInclude>
-    <ClInclude Include="LogObject.h">
-      <Filter>Log</Filter>
-    </ClInclude>
-    <ClInclude Include="MetadataTypeImpl.h">
-      <Filter>HipsObject</Filter>
-    </ClInclude>
-    <ClInclude Include="memleak.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="HipsCfgObject.h">
-      <Filter>HipsObject</Filter>
-    </ClInclude>
-    <ClInclude Include="ParsingImpl.h">
-      <Filter>HipsObject</Filter>
-    </ClInclude>
-    <ClInclude Include="SafePtr.h">
-      <Filter>HipsObject</Filter>
-    </ClInclude>
-    <ClInclude Include="OleConfigObject.h">
-      <Filter>HipsObject</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -131,86 +20,8 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="commutils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="hookimpl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="HipsHook.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ComsObject.cpp">
-      <Filter>HipsObject</Filter>
-    </ClCompile>
-    <ClCompile Include="FlagsObject.cpp">
-      <Filter>HipsObject</Filter>
-    </ClCompile>
-    <ClCompile Include="HookImplementObject.cpp">
-      <Filter>HipsObject</Filter>
-    </ClCompile>
-    <ClCompile Include="SigsObject.cpp">
-      <Filter>HipsObject</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32ClassFactory.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32ClassFactory2.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32ClientSecurity.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32EnumWbemClassObject.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32Marshal.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32Unknown.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32WbemCallResult.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32WbemClassObject.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32WbemContext.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32WbemLocator.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32WbemObjectSink.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32WbemPath.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32WbemQualifierSet.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32WbemServices.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="utils.cpp">
-      <Filter>Coms</Filter>
-    </ClCompile>
-    <ClCompile Include="LogObject.cpp">
-      <Filter>Log</Filter>
-    </ClCompile>
-    <ClCompile Include="MetadataTypeImpl.cpp">
-      <Filter>HipsObject</Filter>
-    </ClCompile>
-    <ClCompile Include="HipsCfgObject.cpp">
-      <Filter>HipsObject</Filter>
-    </ClCompile>
-    <ClCompile Include="ParsingImpl.cpp">
-      <Filter>HipsObject</Filter>
-    </ClCompile>
-    <ClCompile Include="OleConfigObject.cpp">
-      <Filter>HipsObject</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
