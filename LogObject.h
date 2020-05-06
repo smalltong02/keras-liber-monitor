@@ -277,7 +277,6 @@ namespace cchips {
         FILE* m_tempfp = nullptr;
         int m_logs_total_count = 0;
     };
-
     class CLpcPipeObject : public CSocketObject
     {
     public:
@@ -375,12 +374,8 @@ namespace cchips {
             return hPipe;
         }
         void StopLpcService() {
-
-            if (ValidHandle())
-                CloseHandle(m_pipe_handle);
             if (m_sync_event)
                 CloseHandle(m_sync_event);
-            m_pipe_handle = INVALID_HANDLE_VALUE;
             m_sync_event = nullptr;
             return;
         }
@@ -430,7 +425,10 @@ namespace cchips {
                     break;
                 }
                 else
+                {
                     warning("The log pipe handler has failed, last error %d.", error);
+                    break;
+                }
             }
             if (hpipe != INVALID_HANDLE_VALUE)
             {
@@ -485,17 +483,15 @@ namespace cchips {
             return;
         }
         VOID WINAPI ConnectThread(CSocketObject::func_getdata& getdata) {
-            assert(m_pipe_handle == INVALID_HANDLE_VALUE);
             assert(m_sync_event);
-            if (m_pipe_handle != INVALID_HANDLE_VALUE)
-                return;
             if (!m_sync_event) return;
+            HANDLE hpipe = INVALID_HANDLE_VALUE;
             auto func_open = [&]() {
                 int count = 0;
                 while (count < CSocketObject::lpc_connect_try_times)
                 {
-                    m_pipe_handle = CreateFile(lpc_pipe_name, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-                    if (ValidHandle())
+                    hpipe = CreateFile(lpc_pipe_name, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+                    if (ValidHandle(hpipe))
                         break;
                     if (DWORD error = GetLastError() != ERROR_PIPE_BUSY)
                     {
@@ -508,7 +504,7 @@ namespace cchips {
                         break;
                     }
                 }
-                if (ValidHandle())
+                if (ValidHandle(hpipe))
                     return true;
                 return false;
             };
@@ -516,7 +512,7 @@ namespace cchips {
                 while (len)
                 {
                     DWORD byte_writes = 0;
-                    bool bsuccess = WriteFile(m_pipe_handle, buffer, len, &byte_writes, nullptr);
+                    bool bsuccess = WriteFile(hpipe, buffer, len, &byte_writes, nullptr);
                     if (!bsuccess)
                     {
                         if (GetLastError() == ERROR_INVALID_HANDLE)
@@ -540,11 +536,7 @@ namespace cchips {
                 return true;
             };
 
-            if (!func_open())
-            {
-                // The optional is to write log to a local temp directory.
-                return;
-            }
+            if (!func_open()) return;
             m_brunning = true;
             // write log to the pipe server
             while (m_brunning) {
@@ -569,9 +561,10 @@ namespace cchips {
                     break;
                 }
             }
+            if(ValidHandle(hpipe)) CloseHandle(hpipe);
+            return;
         }
-        bool ValidHandle() const { if (m_pipe_handle == INVALID_HANDLE_VALUE || m_pipe_handle == nullptr) return false; else return true; }
-        HANDLE m_pipe_handle = INVALID_HANDLE_VALUE;
+        bool ValidHandle(HANDLE hpipe) const { if (hpipe == INVALID_HANDLE_VALUE || hpipe == nullptr) return false; else return true; }
         HANDLE m_sync_event = nullptr;
         std::atomic_bool m_brunning;
         std::unique_ptr<std::thread> m_listen_thread;
@@ -682,7 +675,7 @@ namespace cchips {
                     ss << "{ ";
                 else
                     ss << "; ";
-                ss << entry.first << ": " << entry.second;
+                ss << "\"" << entry.first << "\"" << ": " << "\"" << entry.second << "\"";
             }
             if (ss.str().length())
             {
@@ -701,7 +694,7 @@ namespace cchips {
                     ss << "{ ";
                 else
                     ss << "; ";
-                ss << elem.first << ": " << elem.second;
+                ss << "\"" << elem.first << "\"" << ": " << "\"" << elem.second << "\"";
             }
             if (ss.str().length())
             {
@@ -711,10 +704,10 @@ namespace cchips {
             return nullptr;
         }
 
-        iterator		begin() { return log_elements.begin(); }
-        const_iterator	begin() const { return log_elements.begin(); }
-        iterator		end() { return log_elements.end(); }
-        const_iterator	end() const { return log_elements.end(); }
+        iterator        begin() { return log_elements.begin(); }
+        const_iterator  begin() const { return log_elements.begin(); }
+        iterator        end() { return log_elements.end(); }
+        const_iterator  end() const { return log_elements.end(); }
     private:
         std::string log_name;
         CLogObject::logtype m_log_type;
