@@ -20,8 +20,6 @@ protected:
 
     virtual void SetUp() override {
         HRESULT hr;
-        //hr = CoInitializeSecurity(NULL, -1, NULL, NULL, RPC_C_AUTHN_LEVEL_PKT, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE, NULL);
-        //ASSERT_TRUE(SUCCEEDED(hr));
         hr = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&m_wbemLoc);
         ASSERT_TRUE(SUCCEEDED(hr));
         hr = m_wbemLoc->ConnectServer(CComBSTR(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &m_wbemSvc);
@@ -151,14 +149,6 @@ TEST_F(HookWmiMethodsTest, Win32ProcessTest)
     ASSERT_TRUE(SUCCEEDED(hr));
     ASSERT_TRUE(GetValueString(vtProp, chRetValue));
     VariantClear(&vtProp);
-    //hr = pWbemClsObj->Get(CComBSTR("CommandLine"), 0, &vtProp, 0, 0);
-    //ASSERT_TRUE(SUCCEEDED(hr));
-    //ASSERT_TRUE(GetValueString(vtProp, chRetValue));
-    //VariantClear(&vtProp);
-    //hr = pWbemClsObj->Get(CComBSTR("ExecutablePath"), 0, &vtProp, 0, 0);
-    //ASSERT_TRUE(SUCCEEDED(hr));
-    //ASSERT_TRUE(GetValueString(vtProp, chRetValue));
-    //VariantClear(&vtProp);
     hr = pWbemClsObj->Get(CComBSTR("Name"), 0, &vtProp, 0, 0);
     ASSERT_TRUE(SUCCEEDED(hr));
     ASSERT_TRUE(GetValueString(vtProp, chRetValue));

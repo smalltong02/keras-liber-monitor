@@ -149,6 +149,9 @@
     <ClInclude Include="bson\encoding.h">
       <Filter>bson</Filter>
     </ClInclude>
+    <ClInclude Include="crc32.h">
+      <Filter>Log</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="asmfunction.asm">

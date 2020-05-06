@@ -14,14 +14,22 @@ namespace cchips {
                 exception_throw* p = reinterpret_cast<exception_throw*>(ep->ExceptionRecord->ExceptionInformation[1]);
                 if (p)
                 {
-                    std::unique_ptr<CLogHandle> assert_handle = std::make_unique<CLogHandle>(ASSERT_FEATURE, CLogObject::logtype::log_exception, true);
-                    if (assert_handle) (*assert_handle).AddLog(LOGPAIR("assert failed", p->what()));
+                    {
+                        std::unique_ptr<CLogHandle> assert_handle = std::make_unique<CLogHandle>(ASSERT_FEATURE, CLogObject::logtype::log_exception, true);
+                        if (assert_handle) (*assert_handle).AddLog(LOGPAIR("exit process", p->what()));
+                    }
                     DISABLE_LOG();
                     // waiting all log output and terminate self.
-
+                    // waiting for 1 second.
+                    int count = 0;
+                    do {
+                        if (IS_LOGS_NULL()) break;
+                        std::this_thread::sleep_for(std::chrono::milliseconds(exception_sleep_wait_timeout));
+                        if ((count++) > exception_try_loop_count) break;
+                    } while (1);
                 }
             }
-            return EXCEPTION_CONTINUE_EXECUTION;
+            std::abort();
         }
         return EXCEPTION_CONTINUE_SEARCH;
     }

@@ -39,6 +39,8 @@ namespace cchips {
         }
         static LONG WINAPI VehHandler(struct _EXCEPTION_POINTERS *ep);
         static const ULONG cplusplus_exception_code = 0xe06d7363;
+        static const int exception_sleep_wait_timeout = 100;
+        static const int exception_try_loop_count = 10;
     private:
         CExceptionObject() { m_veh_handle = AddVectoredExceptionHandler(1, VehHandler); }
         PVOID m_veh_handle;

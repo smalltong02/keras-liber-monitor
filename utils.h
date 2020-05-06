@@ -14,10 +14,9 @@ std::string W2AString(const std::wstring& str);
 bool GetValueString(const VARIANT& Value, std::string& ValueString);
 bool SetValueString(const std::string& ValueString, VARIANT& Value);
 
-#ifdef _DEBUG 
+#ifdef _DEBUGGER 
 #ifdef _AMD64_
 #define BreakPoint BreakInt3();
-
 #else
 #define BreakPoint __asm int 3
 #endif

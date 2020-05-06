@@ -28,7 +28,14 @@ namespace cchips {
     class CBsonWrapper
     {
     public:
-        CBsonWrapper() = default;
+        enum _verifier_type {
+            verifier_invalid = -1,
+            verifier_crc16 = 0,
+            verifier_crc32,
+            verifier_md5,
+            verifier_sha1,
+        };
+        CBsonWrapper() : m_bverifier(false), m_verifier_type(verifier_crc32) { ; }
         ~CBsonWrapper() = default;
 
         std::unique_ptr<bson> Pack(const std::unique_ptr<LOGPAIR>& data) {
@@ -49,6 +56,11 @@ namespace cchips {
             if (!bson_ptr) return nullptr;
             bson_init(&(*bson_ptr));
             func_get_timestamp(time_string);
+            if (IsVerifier())
+            {
+                bson_append_int(&(*bson_ptr), "VerifierType", (int)m_verifier_type);
+                bson_append_int(&(*bson_ptr), "Verifier", GetVerifier(data, m_verifier_type));
+            }
             bson_append_string(&(*bson_ptr), "TraceTime", time_string.c_str());
             bson_append_string(&(*bson_ptr), "Action", data->first.c_str());
             bson_append_string(&(*bson_ptr), "R3Log", data->second.c_str());
@@ -66,6 +78,10 @@ namespace cchips {
                 bson_iterator_from_buffer(&i, bson_data(&bson_unpack));
                 std::unique_ptr<std::stringstream> ss_ptr = std::make_unique<std::stringstream>();
                 if (!ss_ptr) return nullptr;
+                _verifier_type verifier_type = verifier_invalid;
+                ULONG verifier = 0;
+                std::string action;
+                std::string r3log;
                 while (bson_iterator_next(&i)) {
                     bson_type t = bson_iterator_type(&i);
                     if (t == 0)
@@ -73,8 +89,33 @@ namespace cchips {
                     const char* key = bson_iterator_key(&i);
                     if (key[0] == '\0') continue;
                     switch (t) {
+                    case BSON_INT:
+                    {
+                        if (stricmp(key, "VerifierType") == 0)
+                        {
+                            verifier_type = (_verifier_type)bson_iterator_int(&i);
+                        }
+                        else if (stricmp(key, "Verifier") == 0)
+                        {
+                            verifier = (_verifier_type)bson_iterator_int(&i);
+                        }
+                        if (!(*ss_ptr).str().length())
+                            (*ss_ptr) << "{ ";
+                        else
+                            (*ss_ptr) << "; ";
+                        (*ss_ptr) << "\"" << key << "\"" << ": " << "\"" << bson_iterator_int(&i) << "\"";
+                    }
+                    break;
                     case BSON_STRING:
                     {
+                        if (stricmp(key, "Action") == 0)
+                        {
+                            action = bson_iterator_string(&i);
+                        }
+                        else if (stricmp(key, "R3Log") == 0)
+                        {
+                            r3log = bson_iterator_string(&i);
+                        }
                         if (!(*ss_ptr).str().length())
                             (*ss_ptr) << "{ ";
                         else
@@ -86,6 +127,13 @@ namespace cchips {
                         warning("can't get bson type : %d\n", t);
                     }
                 }
+                if (verifier_type != verifier_invalid && verifier != 0 && action.length() != 0 && r3log.length() != 0)
+                {
+                    if (GetVerifier(std::make_unique<LOGPAIR>(action, r3log), verifier_type) == verifier)
+                        (*ss_ptr) << ",\"" << "verifier_result" << "\"" << ": " << "\"" << "success" << "\"";
+                    else
+                        (*ss_ptr) << ",\"" << "verifier_result" << "\"" << ": " << "\"" << "failed" << "\"";
+                }
                 if ((*ss_ptr).str().length())
                 {
                     (*ss_ptr) << " }";
@@ -94,8 +142,14 @@ namespace cchips {
             }
             return nullptr;
         }
-
+        bool IsVerifier() { return m_bverifier; }
+        void EnableVerifier() { m_bverifier = true; }
+        void DisableVerifier() { m_bverifier = false; }
     private:
+        ULONG GetVerifier(const std::unique_ptr<LOGPAIR>& data, _verifier_type type);
+
+        bool m_bverifier;
+        _verifier_type m_verifier_type;
     };
 
     class CSocketObject : public CBsonWrapper
@@ -562,6 +616,7 @@ namespace cchips {
         int GetTotalLogs() const { return m_socket_object->GetTotalLogs(); }
         void EnableLog() { m_valid = true; }
         void DisableLog() { m_valid = false; }
+        bool IsLogsNull() { return m_cache_logs->empty(); }
         static std::unique_ptr<CLogObject> GetInstance()
         {
             if (m_reference_count == 0)
@@ -754,6 +809,7 @@ namespace cchips {
 		std::reinterpret_pointer_cast<CLogEntry>(LOGOBJ)->AddLog(std::reinterpret_pointer_cast<CLogEntry>(LOGGER->GetHandle()));
 #define ENABLE_LOG() if(g_log_object != nullptr) g_log_object->EnableLog();
 #define DISABLE_LOG() if(g_log_object != nullptr) g_log_object->DisableLog();
+#define IS_LOGS_NULL() []() { if(g_log_object != nullptr) return g_log_object->IsLogsNull(); else return false; }()
 
 #ifdef _OUTPUT_CONSOLE_STREAM
 #define error_log(format,...) SAMPLE_LOG_STREAM(std::cerr,format, ##__VA_ARGS__)

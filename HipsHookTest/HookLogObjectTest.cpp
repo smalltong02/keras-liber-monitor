@@ -6,6 +6,7 @@
 #include <functional>
 #include <future>
 #include <atomic>
+#include <random>
 #include "commutils.h"
 #include "LogObject.h"
 #include "HipsHookTest.h"
@@ -32,9 +33,17 @@ public:
     }
     int GetTotalLogs() const { return m_pipe_object->GetTotalLogs(); }
 private:
+    bool CheckVerifier(const std::unique_ptr<std::stringstream>& log) const
+    {
+        if (!log) return true;
+        if (log->str().find("\"verifier_result\": \"failed\"") != std::string::npos)
+            return false;
+        return true;
+    }
     void LogCallBack(const std::unique_ptr<std::stringstream> log) {
         ASSERT_TRUE(log);
         if (!log) return;
+        ASSERT_TRUE(CheckVerifier(log));
         m_logs_total_count++;
         {
             std::lock_guard lock(m_mutex);
@@ -57,6 +66,7 @@ private:
 class CClientObject
 {
 public:
+#define long_log_test_size 10*1024 // 10k
     CClientObject(int tag) : m_tag(tag) {
         std::function<std::unique_ptr<LOGPAIR>()> getdata(std::bind(&CClientObject::GetData, this));
         m_pipe_object = std::make_unique<CLpcPipeObject>();
@@ -69,12 +79,26 @@ public:
             return std::move(m_log);
         else return nullptr;
     }
+    void EnableVerifier() { m_pipe_object->EnableVerifier(); }
+    void DisableVerifier() { m_pipe_object->DisableVerifier(); }
     int GetTotalLogs() const { return m_pipe_object->GetTotalLogs(); }
     // for test
     void SendData() {
         std::stringstream send_ss;
         send_ss << "test-" << m_tag << ": " << m_count++;
-        m_log = std::make_unique<LOGPAIR>(LOGPAIR("CClientObject", send_ss.str()));
+        m_log = std::make_unique<LOGPAIR>(LOGPAIR("Test", send_ss.str()));
+        m_pipe_object->Activated();
+    }
+    void SendLongData() {
+        std::stringstream send_ss;
+        std::mt19937 generator{ std::random_device{}() };
+        std::uniform_int_distribution<int> distribution('a', 'z');
+        int generate_len = long_log_test_size;
+        std::string str(generate_len, '\0');
+        for (auto& c : str)
+            c = distribution(generator);
+        send_ss << str << "-" << m_tag << ": " << m_count++;
+        m_log = std::make_unique<LOGPAIR>(LOGPAIR("Test", send_ss.str()));
         m_pipe_object->Activated();
     }
 private:
@@ -116,7 +140,7 @@ TEST_F(HookLogObjectTest, PipeLogsCountTest)
                 while (brunning)
                 {
                     client.SendData();
-                    Sleep(100);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
                 return client.GetTotalLogs();
             });
@@ -124,7 +148,7 @@ TEST_F(HookLogObjectTest, PipeLogsCountTest)
         std::thread thread(std::move(task), i);
         thread.detach();
     }
-    Sleep(10000);
+    std::this_thread::sleep_for(std::chrono::seconds(10));
     brunning = false;
     int send_logs_count = g_log_object->GetTotalLogs();
     for (auto& r : results) {
@@ -132,6 +156,26 @@ TEST_F(HookLogObjectTest, PipeLogsCountTest)
     }
     int receive_logs_count = g_server_object->GetTotalLogs();
     ASSERT_TRUE(send_logs_count == receive_logs_count);
+}
+
+TEST_F(HookLogObjectTest, PipeLongLogTest)
+{
+    std::atomic_bool brunning = true;
+    unsigned task_count = 1;
+    std::thread thread( 
+        [&]() {
+            CClientObject client(1);
+            client.EnableVerifier();
+            while (brunning)
+            {
+                client.SendLongData();
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+            client.DisableVerifier();
+        });
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    brunning = false;
+    thread.join();
 }
 
 #endif

@@ -18,19 +18,11 @@ BOOL APIENTRY DllMain(HMODULE hModule,
     {
         BreakPoint;
         g_is_dll_module = true;
-#ifdef _DEBUG
         std::shared_ptr<CHipsCfgObject> hipsCfgObject = InitializeConfig();
         if (hipsCfgObject != nullptr && InitializeHook(hipsCfgObject))
         {
             g_initSuccess = TRUE;
         }
-#else
-        std::shared_ptr<CHipsCfgObject> hipsCfgObject = InitializeConfig();
-        if (hipsCfgObject != nullptr && InitializeHook(hipsCfgObject))
-        {
-            g_initSuccess = TRUE;
-        }
-#endif
     }
     break;
     case DLL_THREAD_ATTACH:
