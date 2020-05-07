@@ -78,6 +78,9 @@
     <ClCompile Include="bson\numbers.c">
       <Filter>bson</Filter>
     </ClCompile>
+    <ClCompile Include="R3LogObject.cpp">
+      <Filter>Log</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FlagsObject.h">
@@ -149,7 +152,7 @@
     <ClInclude Include="bson\encoding.h">
       <Filter>bson</Filter>
     </ClInclude>
-    <ClInclude Include="crc32.h">
+    <ClInclude Include="R3LogObject.h">
       <Filter>Log</Filter>
     </ClInclude>
   </ItemGroup>

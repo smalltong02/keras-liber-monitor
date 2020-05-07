@@ -344,6 +344,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugger|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="R3LogObject.cpp" />
     <ClCompile Include="SigsObject.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugger|Win32'">NotUsing</PrecompiledHeader>
@@ -361,7 +362,6 @@
     <ClInclude Include="CBaseType.h" />
     <ClInclude Include="commutils.h" />
     <ClInclude Include="ComsObject.h" />
-    <ClInclude Include="crc32.h" />
     <ClInclude Include="deffeature.h" />
     <ClInclude Include="ExceptionThrow.h" />
     <ClInclude Include="FlagsObject.h" />
@@ -372,6 +372,7 @@
     <ClInclude Include="memleak.h" />
     <ClInclude Include="MetadataTypeImpl.h" />
     <ClInclude Include="ParsingImpl.h" />
+    <ClInclude Include="R3LogObject.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SafePtr.h" />
     <ClInclude Include="SigsObject.h" />
