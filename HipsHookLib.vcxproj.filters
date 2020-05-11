@@ -81,6 +81,12 @@
     <ClCompile Include="R3LogObject.cpp">
       <Filter>Log</Filter>
     </ClCompile>
+    <ClCompile Include="Win32WbemClassObject.cpp">
+      <Filter>Coms</Filter>
+    </ClCompile>
+    <ClCompile Include="drivermgr.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FlagsObject.h">
@@ -154,6 +160,12 @@
     </ClInclude>
     <ClInclude Include="R3LogObject.h">
       <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Win32WbemClassObject.h">
+      <Filter>Coms</Filter>
+    </ClInclude>
+    <ClInclude Include="drivermgr.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

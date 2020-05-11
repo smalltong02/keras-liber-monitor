@@ -11,6 +11,7 @@
 #include "SafePtr.h"
 #include "asmfunction.h"
 #include "ExceptionThrow.h"
+#include "drivermgr.h"
 
 namespace cchips {
 
@@ -171,8 +172,12 @@ namespace cchips {
             LONGLONG rbx;
 #endif
         };
+        enum _filter_type {
+            filter_invalid = -1,
+            filter_threadid = 0,
+        };
         CHookImplementObject() :
-            m_bValid(false), m_benable(false), m_configObject(nullptr) {
+            m_bValid(false), m_benable(false), m_configObject(nullptr), m_drivermgr(nullptr) {
             CoInitializeEx(0, COINIT_MULTITHREADED);
         }//for hook wmi methods
         ~CHookImplementObject() {
@@ -223,6 +228,29 @@ namespace cchips {
 #ifdef _AMD64_
         static bool ForwardPropagationArgs(ULONG_PTR* new_addr, CHookImplementObject::REGISTERS* backup_regs, std::shared_ptr<CFunction> function, void* addr);
 #endif
+        void AddFilterThread(std::thread::id thread_id) { 
+            auto x_safe_filter_id = xlock_safe_ptr(m_filterids);
+            if (x_safe_filter_id->find(thread_id) != x_safe_filter_id->end())
+                return;
+            (*x_safe_filter_id)[thread_id] = filter_threadid;
+            return;
+        }
+        void DelFilterThread(std::thread::id thread_id) {
+            auto x_safe_filter_id = xlock_safe_ptr(m_filterids);
+            if (x_safe_filter_id->find(thread_id) != x_safe_filter_id->end())
+            {
+                if ((*x_safe_filter_id)[thread_id] == filter_threadid)
+                    x_safe_filter_id->erase(thread_id);
+            }
+            return;
+        }
+        bool IsFilterThread(std::thread::id thread_id) {
+            auto s_safe_filter_id = slock_safe_ptr(m_filterids);
+            if (s_safe_filter_id->find(thread_id) != s_safe_filter_id->end())
+                return true;
+            return false;
+        }
+        const std::unique_ptr< CDriverMgr>& GetDriverMgr() const { return m_drivermgr; }
         bool HookAllApis();
         bool EnableAllApis() {
             if (!m_benable)
@@ -297,7 +325,9 @@ namespace cchips {
         std::vector<hook_node> m_hookNodeList;
         wmi_methods_define m_wmi_methods_define = {};
         sf::contfree_safe_ptr<std::map<std::string, std::vector<int>>> m_delayNodeList;
+        sf::contfree_safe_ptr<std::map<std::thread::id, _filter_type>> m_filterids;
         static const std::unique_ptr<CExceptionObject> m_exceptionObject;
+        std::unique_ptr< CDriverMgr> m_drivermgr;
     };
 
     extern std::shared_ptr<CHookImplementObject> g_impl_object;

@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "utils.h"
+#include "MetadataTypeImpl.h"
 
 std::wstring A2WString(const std::string& str)
 {
@@ -93,6 +94,16 @@ bool vir_strcpy_s(char* dst, size_t dst_len, const char* src)
         }
     }
     return false;
+}
+
+VARTYPE ConvertObTypeToVarintType(const std::string& type_name)
+{
+    VARTYPE var_type = VT_EMPTY;
+    if (_stricmp(type_name.c_str(), "UINT") == 0)
+        var_type = VT_I4;
+    else if (_stricmp(type_name.c_str(), "OLECHAR*") == 0)
+        var_type = VT_BSTR;
+    return var_type;
 }
 
 bool GetValueString(const VARIANT& Value, std::string& ValueString)
@@ -227,5 +238,4 @@ bool SetValueString(const std::string& ValueString, VARIANT& Value)
     }
 
     return false;
-
 }

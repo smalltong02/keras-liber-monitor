@@ -977,6 +977,7 @@ namespace cchips {
         BEGIN_LOG("handling");
         CHookImplementObject::detour_node* de_node = reinterpret_cast<CHookImplementObject::detour_node*>(pnode);
         if (!de_node && !de_node->log_entry) return false;
+        std::shared_ptr<CHookImplementObject> hook_implement_object = de_node->hook_implement_object;
         bool bhandle = true;
         for (const auto& handle : pcheck->GetHandles())
         {
@@ -1010,6 +1011,18 @@ namespace cchips {
                 {
                     // send process id to driver for add target.
                     LOGGING("AddTarget", ss.str());
+                    if (hook_implement_object && hook_implement_object->GetDriverMgr())
+                    {
+                        char* nodig = nullptr;
+                        DWORD BytesReturned = 0;
+                        DWORD pid = (DWORD)std::strtoll(ss.str().c_str(), &nodig, 10);
+                        if (hook_implement_object->GetDriverMgr()->IoControl(IOCTL_HIPS_SETTARGETPID, &pid, sizeof(DWORD), NULL, 0, &BytesReturned))
+                        {
+                            debug_log("add target pid({}) success!", pid);
+                        }
+                        else
+                            debug_log("add target pid({}) failed!", pid);
+                    }
                 }
             }
         }

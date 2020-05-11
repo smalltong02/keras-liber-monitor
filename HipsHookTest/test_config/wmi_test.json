@@ -46,7 +46,7 @@
       "Version": "BSTR"
     },
 
-    "PreCheck": {
+    "PostCheck": {
       "0": {
         "Handle": {
           "Win32_PhysicalMemory": "Duplicate"

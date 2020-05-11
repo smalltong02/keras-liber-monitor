@@ -209,7 +209,6 @@ namespace cchips {
     {
         std::stringstream ss;
 
-        const std::string hex = "0123456789abcdef";
         if (_value == 0)
             ss << "false";
         else
@@ -221,7 +220,6 @@ namespace cchips {
         std::stringstream ss;
         if (IsValidValue(pdata))
         {
-            const std::string hex = "0123456789abcdef";
             BOOL* p = reinterpret_cast<BOOL*>(pdata);
             if (*p == 0)
                 ss << "false";

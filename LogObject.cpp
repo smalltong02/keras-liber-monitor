@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "LogObject.h"
+#include "HookImplementObject.h"
 
 namespace cchips {
 
@@ -114,6 +115,8 @@ namespace cchips {
     }
 
     std::unique_ptr<LOGPAIR> CLogObject::GetData() {
+        static std::once_flag flag;
+        std::call_once(flag, &CHookImplementObject::AddFilterThread, g_impl_object, std::this_thread::get_id());
         std::shared_ptr<CLogEntry> log = nullptr;
         do {
             auto x_safe_log = xlock_safe_ptr(m_cache_logs);

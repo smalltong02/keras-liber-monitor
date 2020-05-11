@@ -223,11 +223,11 @@ namespace cchips {
         {
             if (Object[SI_LOGGING].GetBool() && blogging)
             {
-                for (const auto& i : (*func_object).GetArguments())
-                {
-                    if (!func_object->AddLogging(i.first))
-                        error_log("CSigsCfgObject::InitializeLog: add logging {} failed!", i.first);
-                }
+                //for (const auto& i : (*func_object).GetArguments())
+                //{
+                //    if (!func_object->AddLogging(i.first))
+                //        error_log("CSigsCfgObject::InitializeLog: add logging {} failed!", i.first);
+                //}
                 if (!func_object->AddLogging((*func_object).GetReturn().first, false))
                     error_log("CSigsCfgObject::InitializeLog: add logging {} failed!", (*func_object).GetReturn().first);
             }

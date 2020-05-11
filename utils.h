@@ -13,6 +13,7 @@ std::wstring A2WString(const std::string& str);
 std::string W2AString(const std::wstring& str);
 bool GetValueString(const VARIANT& Value, std::string& ValueString);
 bool SetValueString(const std::string& ValueString, VARIANT& Value);
+VARTYPE ConvertObTypeToVarintType(const std::string& type_name);
 
 #ifdef _DEBUGGER 
 #ifdef _AMD64_

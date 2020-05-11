@@ -132,7 +132,7 @@
         },
 
         "Modify": {
-          "*lpTotalNumberOfBytes": "%var2=1099511627776"
+          "*lpTotalNumberOfBytes": "%var2 = 1099511627776"
         }
       }
     }
@@ -160,7 +160,7 @@
         },
 
         "Modify": {
-          "*lpTotalNumberOfBytes": "%var2=1099511627776"
+          "*lpTotalNumberOfBytes": "%var2 = 1099511627776"
         }
       }
     }
@@ -172,6 +172,10 @@
       "Return": "DWORD",
       "Feature": "H12"
     },
+
+    "PostLog": [
+      "Return"
+    ],
 
     "PostCheck": {
       "0": {

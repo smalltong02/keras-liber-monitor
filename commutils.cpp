@@ -12,7 +12,6 @@
 extern BOOL g_initSuccess;
 bool g_is_dll_module = false;
 
-CDriverMgr* g_driverMgr = nullptr;
 std::shared_ptr<CHipsCfgObject> InitializeConfig()
 {
     //TODO: read hook config information from json file.

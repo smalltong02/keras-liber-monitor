@@ -52,6 +52,7 @@ namespace cchips {
     bool CHookImplementObject::Initialize(std::shared_ptr<CHipsCfgObject>& configObject)
     {
         m_configObject = configObject;
+        m_drivermgr = std::make_unique<CDriverMgr>();
 
         if (m_threadTlsIdx == TLS_OUT_OF_INDEXES)
             return m_bValid;
@@ -124,6 +125,7 @@ namespace cchips {
 
         std::shared_ptr<CFunction> func_object = node_elem->function;
         std::shared_ptr<CHookImplementObject> hook_implement_object = node_elem->hook_implement_object;
+        if (hook_implement_object->IsFilterThread(std::this_thread::get_id())) return processing_continue;
         if (params_size == 0) params_size = (int)func_object->GetArgumentAlignSize();
 #ifdef _X86_
         char* __params = reinterpret_cast<char*>(reinterpret_cast<ULONG_PTR>(param_addr) + CFunction::stack_aligned_bytes);
@@ -178,6 +180,7 @@ namespace cchips {
         std::unique_ptr<CLogHandle> log_handle(*__log);
         std::shared_ptr<CFunction> func_object = node_elem->function;
         std::shared_ptr<CHookImplementObject> hook_implement_object = node_elem->hook_implement_object;
+        if (hook_implement_object->IsFilterThread(std::this_thread::get_id())) return processing_continue;
         if (params_size == 0) params_size = (int)func_object->GetArgumentAlignSize();
 #ifdef _X86_
         char* __params = reinterpret_cast<char*>(reinterpret_cast<ULONG_PTR>(param_addr) + CFunction::stack_aligned_bytes);
@@ -200,9 +203,6 @@ namespace cchips {
         ASSERT(log_handle != nullptr);
         detour_node node = { &func_return, __params, (size_t)params_size, node_elem->function, node_elem->hook_implement_object, log_handle->GetHandle() };
         detour_node* pnode = &node;
-
-        if (node_elem->function->CheckReturn(pnode) == processing_skip)
-            return processing_skip;
 #ifdef _X86_
         char** __rev_params = (char**)((ULONG_PTR)param_addr + params_size);
 #endif
@@ -213,7 +213,8 @@ namespace cchips {
         {
             MACRO_PUSH_PARAMS_(pnode, __rev_params, params_size, post_func)
         }
-
+        if (node_elem->function->CheckReturn(pnode) == processing_skip)
+            return processing_skip;
         if (node_elem->function->PostprocessingLog(pnode) == processing_skip)
             return processing_skip;
         if (node_elem->function->PostprocessingChecks(pnode) == processing_skip)

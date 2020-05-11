@@ -127,6 +127,62 @@ TEST_F(HookWmiMethodsTest, Win32DiskDriveTest)
     pEnumClsObj->Release();
 }
 
+TEST_F(HookWmiMethodsTest, Win32RamSlotsTest)
+{
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    query += CComBSTR("Win32_PhysicalMemoryArray");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    ASSERT_TRUE(SUCCEEDED(hr) && uReturn > 0);
+    hr = pWbemClsObj->Get(CComBSTR("MemoryDevices"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    // check for modify size success, size = 3TG if successful.
+    //ASSERT_TRUE(_wcsicmp(chRetValue.c_str(), L"1") == 0);
+    VariantClear(&vtProp);
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+}
+
+TEST_F(HookWmiMethodsTest, Win32PhysicalMemoryTest)
+{
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    query += CComBSTR("Win32_PhysicalMemory");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    ASSERT_TRUE(SUCCEEDED(hr) && uReturn > 0);
+    hr = pWbemClsObj->Get(CComBSTR("Capacity"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    // check for modify size success, size = 3TG if successful.
+    //ASSERT_TRUE(_wcsicmp(chRetValue.c_str(), L"17179869184") == 0);
+    VariantClear(&vtProp);
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+}
+
 TEST_F(HookWmiMethodsTest, Win32ProcessTest)
 {
     CComBSTR query("SELECT * FROM ");

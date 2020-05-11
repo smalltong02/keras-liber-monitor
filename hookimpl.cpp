@@ -2,6 +2,7 @@
 #include "hookimpl.h"
 #include "HookImplementObject.h"
 #include "utils.h"
+#include "Win32WbemClassObject.h"
 
 using namespace cchips;
 
@@ -77,7 +78,10 @@ processing_status WINAPI CHookImplementObject::detour_loadLibraryA(CHookImplemen
     ASSERT(node != nullptr);
     ASSERT(node->return_va != nullptr);
     ASSERT(node->log_entry != nullptr);
+    ASSERT(node->function != nullptr);
     if (!node || !node->return_va || !node->log_entry) return processing_continue;
+    if (node->function->CheckReturn(node) == processing_skip)
+        return processing_skip;
     BEGIN_LOG("delay_hooking");
     HMODULE hmod = *reinterpret_cast<HMODULE*>(node->return_va);
     if (hmod != nullptr && lpLibFileName)
@@ -95,7 +99,10 @@ processing_status WINAPI CHookImplementObject::detour_loadLibraryExA(CHookImplem
     ASSERT(node != nullptr);
     ASSERT(node->return_va != nullptr);
     ASSERT(node->log_entry != nullptr);
+    ASSERT(node->function != nullptr);
     if (!node || !node->return_va || !node->log_entry) return processing_continue;
+    if (node->function->CheckReturn(node) == processing_skip)
+        return processing_skip;
     BEGIN_LOG("delay_hooking");
     HMODULE hmod = *reinterpret_cast<HMODULE*>(node->return_va);
     if (hmod != nullptr && lpLibFileName)
@@ -113,7 +120,10 @@ processing_status WINAPI CHookImplementObject::detour_loadLibraryW(CHookImplemen
     ASSERT(node != nullptr);
     ASSERT(node->return_va != nullptr);
     ASSERT(node->log_entry != nullptr);
+    ASSERT(node->function != nullptr);
     if (!node || !node->return_va || !node->log_entry) return processing_continue;
+    if (node->function->CheckReturn(node) == processing_skip)
+        return processing_skip;
     BEGIN_LOG("delay_hooking");
     HMODULE hmod = *reinterpret_cast<HMODULE*>(node->return_va);
     if (hmod != nullptr && lpLibFileName)
@@ -131,7 +141,10 @@ processing_status WINAPI CHookImplementObject::detour_loadLibraryExW(CHookImplem
     ASSERT(node != nullptr);
     ASSERT(node->return_va != nullptr);
     ASSERT(node->log_entry != nullptr);
+    ASSERT(node->function != nullptr);
     if (!node || !node->return_va || !node->log_entry) return processing_continue;
+    if (node->function->CheckReturn(node) == processing_skip)
+        return processing_skip;
     BEGIN_LOG("delay_hooking");
     HMODULE hmod = *reinterpret_cast<HMODULE*>(node->return_va);
     if (hmod != nullptr && lpLibFileName)
@@ -176,12 +189,60 @@ bool process_log_for_wmiobject(CHookImplementObject::detour_node* node, const st
     return true;
 }
 
+bool process_duplicate_for_wmiobject(CHookImplementObject::detour_node* node, const std::shared_ptr<CWmiObject>& wmi_object, IWbemClassObject **apObjects, ULONG *puReturned, std::shared_ptr<CLogHandle>& log_handle)
+{
+    bool duplicate = false;
+    ASSERT(apObjects);
+    ASSERT(puReturned);
+    if (apObjects == nullptr) return false;
+    if (puReturned == nullptr) return false;
+    BEGIN_LOG("duplicate");
+    for (const auto& pcheck : wmi_object->GetChecks(false))
+    {
+        ASSERT(pcheck != nullptr);
+        if (pcheck == nullptr)
+            continue;
+        for (const auto& handle : pcheck->GetHandles())
+        {
+            if (handle.second == CCheck::handle_duplicate)
+            {
+                duplicate = true;
+                break;
+            }
+        }
+        if (duplicate)
+        {
+            idIWbemClassObject* p_IWbemClassObject = (idIWbemClassObject *)malloc(sizeof(idIWbemClassObject));
+            if (p_IWbemClassObject)
+            {
+                p_IWbemClassObject->lpVtbl = (idIWbemClassObjectVtbl *)malloc(sizeof(idIWbemClassObjectVtbl));
+                if (p_IWbemClassObject->lpVtbl)
+                {
+                    memset(p_IWbemClassObject->lpVtbl, 0, sizeof(idIWbemClassObjectVtbl));
+                    InitializeWin32WbemClassObject(p_IWbemClassObject, wmi_object);
+                    *apObjects = (IWbemClassObject*)p_IWbemClassObject;
+                    *puReturned = 1;
+                    std::shared_ptr<CObObject> return_ptr = node->function->GetVarIdentifier(SI_RETURN);
+                    ASSERT(return_ptr != nullptr);
+                    if (return_ptr)
+                    {
+                        node->function->SetValue(return_ptr, (char*)node->return_va, std::stringstream("0"));
+                    }
+                }
+            }
+        }
+    }
+    END_LOG(log_handle->GetHandle());
+    return true;
+}
+
 processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IEnumWbemClassObject_Next(detour_node* node, IEnumWbemClassObject * This, long lTimeout, ULONG uCount, IWbemClassObject **apObjects, ULONG *puReturned)
 {
     BreakPoint;
     ASSERT(node != nullptr);
     ASSERT(node->return_va != nullptr);
     ASSERT(node->log_entry != nullptr);
+    ASSERT(node->function != nullptr);
     ASSERT(node->hook_implement_object != nullptr);
     if (!node || !node->return_va || !node->log_entry) return processing_continue;
     if (!node->hook_implement_object) return processing_continue;
@@ -200,6 +261,11 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IEnumWbemClassO
         if (wmi_object.second == nullptr) continue;
         if (_stricmp(wmi_object.first.c_str(), class_name.c_str()) == 0)
         {
+            if (node->function->CheckReturn(node) == processing_skip)
+            {
+                if (!process_duplicate_for_wmiobject(node, wmi_object.second, apObjects, puReturned, LOGGER))
+                    return processing_skip;
+            }
             if (!process_log_for_wmiobject(node, wmi_object.second, pWbemClassObject, LOGGER))
                 return processing_skip;
             break;
@@ -296,67 +362,17 @@ bool process_check_for_wmiobject(CHookImplementObject::detour_node* node, const 
     return true;
 }
 
-bool process_duplicate_for_wmiobject(CHookImplementObject::detour_node* node, const std::shared_ptr<CWmiObject>& wmi_object, const std::string& val_name, VARIANT& vt_value, std::shared_ptr<CLogHandle>& log_handle)
-{
-    bool duplicate = false;
-    BEGIN_LOG("duplicate");
-    for (const auto& pcheck : wmi_object->GetChecks(false))
-    {
-        ASSERT(pcheck != nullptr);
-        if (pcheck == nullptr)
-            continue;
-        for (const auto& handle : pcheck->GetHandles())
-        {
-            if (handle.second == CCheck::handle_duplicate)
-            {
-                duplicate = true;
-                break;
-            }
-        }
-        if (duplicate)
-        {
-            for (const auto& modify : pcheck->GetModifys())
-            {
-                ASSERT(modify != nullptr);
-                if (!modify) continue;
-                for (const auto& iden : modify->GetIdenifierSymbol())
-                {
-                    if (_stricmp(pcheck->GetRealName(iden.first).c_str(), val_name.c_str()) == 0)
-                    {
-                        std::stringstream ss; ss << "0";
-                        if (!modify->SetIdentifierValue(CExpParsing::ValuePair(iden.first, ss.str())))
-                        {
-                            return false;
-                        }
-                        // back propagation
-                        std::unique_ptr<CExpParsing::ValuePair> value = std::get<std::unique_ptr<CExpParsing::ValuePair>>(modify->EvalExpression());
-                        if (value == nullptr)
-                            break;
-                        if (_stricmp(iden.first.c_str(), value->first.c_str()) != 0)
-                        {
-                            ASSERT(0); continue;
-                        }
-                        if (!SetValueString(value->second.str().c_str(), vt_value))
-                            return false;
-                        LOGGING(iden.first, value->second.str().c_str());
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    END_LOG(log_handle->GetHandle());
-    return true;
-}
-
 processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemClassObject_Get(detour_node* node, IWbemClassObject* This, LPCWSTR wszName, long lFlags, VARIANT *pVal, long *pType, long *plFlavor)
 {
     BreakPoint;
     ASSERT(node != nullptr);
     ASSERT(node->return_va != nullptr);
     ASSERT(node->log_entry != nullptr);
+    ASSERT(node->function != nullptr);
     ASSERT(node->hook_implement_object != nullptr);
     if (!node || !node->return_va || !node->log_entry) return processing_continue;
+    if (node->function->CheckReturn(node) == processing_skip)
+        return processing_skip;
     if (!node->hook_implement_object) return processing_continue;
 
     HRESULT hr;
@@ -378,8 +394,6 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemClassObjec
         {
             if (!process_check_for_wmiobject(node, wmi_object.second, W2AString(wszName), *pVal, LOGGER))
                 return processing_skip;
-            if (!process_duplicate_for_wmiobject(node, wmi_object.second, W2AString(wszName), *pVal, LOGGER))
-                return processing_skip;
             break;
         }
     }
@@ -393,8 +407,11 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemClassObjec
     ASSERT(node != nullptr);
     ASSERT(node->return_va != nullptr);
     ASSERT(node->log_entry != nullptr);
+    ASSERT(node->function != nullptr);
     ASSERT(node->hook_implement_object != nullptr);
     if (!node || !node->return_va || !node->log_entry) return processing_continue;
+    if (node->function->CheckReturn(node) == processing_skip)
+        return processing_skip;
     if (!node->hook_implement_object) return processing_continue;
 
     HRESULT hr;
@@ -507,8 +524,11 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_E
     ASSERT(node != nullptr);
     ASSERT(node->return_va != nullptr);
     ASSERT(node->log_entry != nullptr);
+    ASSERT(node->function != nullptr);
     ASSERT(node->hook_implement_object != nullptr);
     if (!node || !node->return_va || !node->log_entry) return processing_continue;
+    if (node->function->CheckReturn(node) == processing_skip)
+        return processing_skip;
     if (!node->hook_implement_object) return processing_continue;
     std::shared_ptr<PVOID> log_handle = node->log_entry;
 

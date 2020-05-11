@@ -187,7 +187,7 @@ namespace cchips {
                     }
                 }
 
-                if (inspect_object.value.HasMember(SI_HANDLE) && inspect_object.value[SI_HANDLE].IsArray())
+                if (inspect_object.value.HasMember(SI_HANDLE) && inspect_object.value[SI_HANDLE].IsObject())
                 {
                     CFunction::_CheckDefine::HandlePair handle_pair;
                     for (auto& handle_object : inspect_object.value[SI_HANDLE].GetObject())
