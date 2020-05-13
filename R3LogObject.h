@@ -33,7 +33,7 @@ namespace cchips {
         CBsonWrapper() : m_bverifier(false), m_verifier_type(verifier_crc32) { ; }
         ~CBsonWrapper() = default;
 
-        std::unique_ptr<bson> Pack(const std::unique_ptr<LOGPAIR>& data) {
+        std::unique_ptr<bson> Pack(const std::unique_ptr<LOGPAIR>& data, bool braw = true) {
             if (!data) return nullptr;
             std::string time_string;
             auto func_get_timestamp = [](std::string& time_buffer) {
@@ -50,13 +50,13 @@ namespace cchips {
             assert(bson_ptr != nullptr);
             if (!bson_ptr) return nullptr;
             bson_init(&(*bson_ptr));
-            func_get_timestamp(time_string);
+            if (!braw) func_get_timestamp(time_string);
             if (IsVerifier())
             {
                 bson_append_int(&(*bson_ptr), "VerifierType", (int)m_verifier_type);
                 bson_append_int(&(*bson_ptr), "Verifier", GetVerifier(data, m_verifier_type));
             }
-            bson_append_string(&(*bson_ptr), "TraceTime", time_string.c_str());
+            if (!braw && time_string.length()) bson_append_string(&(*bson_ptr), "TraceTime", time_string.c_str());
             bson_append_string(&(*bson_ptr), "Action", data->first.c_str());
             bson_append_string(&(*bson_ptr), "R3Log", data->second.c_str());
             bson_append_finish_array(&(*bson_ptr));
@@ -86,11 +86,11 @@ namespace cchips {
                     switch (t) {
                     case BSON_INT:
                     {
-                        if (stricmp(key, "VerifierType") == 0)
+                        if (_stricmp(key, "VerifierType") == 0)
                         {
                             verifier_type = (_verifier_type)bson_iterator_int(&i);
                         }
-                        else if (stricmp(key, "Verifier") == 0)
+                        else if (_stricmp(key, "Verifier") == 0)
                         {
                             verifier = (_verifier_type)bson_iterator_int(&i);
                         }
@@ -103,11 +103,11 @@ namespace cchips {
                     break;
                     case BSON_STRING:
                     {
-                        if (stricmp(key, "Action") == 0)
+                        if (_stricmp(key, "Action") == 0)
                         {
                             action = bson_iterator_string(&i);
                         }
-                        else if (stricmp(key, "R3Log") == 0)
+                        else if (_stricmp(key, "R3Log") == 0)
                         {
                             r3log = bson_iterator_string(&i);
                         }
@@ -238,7 +238,7 @@ namespace cchips {
             // reference: http://stackoverflow.com/questions/3282365/opening-a-named-pipe-in-low-integrity-level
             // for ensure all of the be injected samples could write log to tracer by named pipe, the server need low integrity level
             memset(&sa, 0, sizeof(SECURITY_ATTRIBUTES));
-            if (ConvertStringSecurityDescriptorToSecurityDescriptor(lpc_security_sddl, SDDL_REVISION_1, &psd, &size))
+            if (ConvertStringSecurityDescriptorToSecurityDescriptorA(lpc_security_sddl, SDDL_REVISION_1, &psd, &size))
             {
                 sa.nLength = sizeof(SECURITY_ATTRIBUTES);
                 sa.bInheritHandle = FALSE;
@@ -251,7 +251,7 @@ namespace cchips {
 
             DWORD open_mode = PIPE_ACCESS_INBOUND | FILE_FLAG_FIRST_PIPE_INSTANCE | FILE_FLAG_OVERLAPPED;
             if (!bfirst) open_mode = PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED;
-            hPipe = CreateNamedPipe(
+            hPipe = CreateNamedPipeA(
                 lpc_pipe_name,
                 // This mode gives the server the equivalent of GENERIC_READ access to the pipe. The client must specify GENERIC_WRITE access when connecting to the pipe.
                 // Overlapped mode is enabled.
@@ -392,7 +392,7 @@ namespace cchips {
                 int count = 0;
                 while (count < CSocketObject::lpc_connect_try_times)
                 {
-                    hpipe = CreateFile(lpc_pipe_name, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+                    hpipe = CreateFileA(lpc_pipe_name, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
                     if (ValidHandle(hpipe))
                         break;
                     if (DWORD error = GetLastError() != ERROR_PIPE_BUSY)
@@ -400,7 +400,7 @@ namespace cchips {
                         warning("The log pipe handler connect failed, last error %d.", error);
                         break;
                     }
-                    if (WaitNamedPipe(lpc_pipe_name, lpc_connect_wait_timeout))
+                    if (WaitNamedPipeA(lpc_pipe_name, lpc_connect_wait_timeout))
                     {
                         warning("Could not open pipe: 0.1 second wait timed out.");
                         break;
@@ -474,295 +474,5 @@ namespace cchips {
         //for test
         std::atomic_int m_logs_total_count = 0;
     };
-
-    //
-    // Author: Colin Mahoney (cmahoney@readysoft.es)
-    //
-    // C++ implementation of CRC error checking
-    //
-    // Based on Ross Williams' Rocksoft^tm Model CRC Algorithm,
-    // available as part of the document "A Painless Guide to
-    // CRC Error Detection Algorithms", also by Ross Williams.
-    //
-    //    Ref 1:  C-Users Journal, June 1999
-    //    Ref 2:  www.ross.net/crc/.
-    //
-
-    static const int CRCMaxBits = 32;
-
-    template<int Width, unsigned long Poly, unsigned long Init,
-        unsigned long XOrOut, bool Ref, bool Direct = true>
-
-        class CRCGenerator
-    {
-    public:
-        class CRCTable
-        {
-            unsigned long Table[256];
-            // Calculate the table entry at 'index'
-            //
-            unsigned long CalcTableEntry(int index)
-            {
-                unsigned long inbyte = (unsigned long)index;
-                if (Ref)
-                {
-                    inbyte = Reflect(inbyte, 8);
-                }
-                unsigned long topbit = Bitmask(Width - 1);
-                unsigned long reg = inbyte << (Width - 8);
-                for (int i = 0; i < 8; i++)
-                {
-                    if (reg & topbit)
-                    {
-                        reg = (reg << 1) ^ Poly;
-                    }
-                    else
-                    {
-                        reg <<= 1;
-                    }
-                }
-                if (Ref)
-                {
-                    reg = Reflect(reg, Width);
-                }
-                return reg & WidthMask(Width);
-            }
-
-        public:
-
-            CRCTable()
-            {
-                for (int i = 0; i < 256; i++)
-                {
-                    Table[i] = CalcTableEntry(i);
-                }
-            }
-            unsigned long operator[](int i) const { return Table[i]; }
-
-        };
-
-    private:
-
-        static const CRCTable Table;
-
-        // Register holds the current value of the CRC calculation
-        unsigned long Register;
-
-        // Return an unsigned long with i'th bit set to one
-        static unsigned long Bitmask(int i) { return 1UL << i; }
-
-        // Reflect the bottom b bits of val
-
-        static unsigned long Reflect(unsigned long val, int b)
-        {
-            unsigned long t = val;
-            for (int i = 0; i < b; i++)
-            {
-                if (t & 1L)
-                {
-                    val |= Bitmask((b - 1) - i);
-                }
-                else
-                {
-                    val &= ~Bitmask((b - 1) - i);
-                }
-                t >>= 1;
-            }
-            return val;
-        }
-
-        // Return an unsigned long with value ( 2^width )-1
-
-        static unsigned long WidthMask(int width)
-        {
-            return (((1UL << (width - 1)) - 1UL) << 1) | 1UL;
-        }
-
-    public:
-
-        CRCGenerator() :
-            Register(Init) {}
-        unsigned long GetCRC() const
-        {
-            return (XOrOut ^ Register) & WidthMask(Width);
-        }
-        unsigned long GetNormalCRC() const
-        {
-            unsigned long normCRC;
-            if (!Ref)
-            {
-                normCRC = GetCRC();
-                normCRC <<= (CRCMaxBits - Width);
-            }
-            else
-            {
-                normCRC = 0;
-                unsigned long crc = GetCRC();
-                for (int i = 8; i <= CRCMaxBits; i += 8)
-                {
-                    normCRC |= (crc & 0xFF) << (CRCMaxBits - i);
-                    crc >>= 8;
-                }
-            }
-            return normCRC;
-        }
-
-        bool GetDirect() const { return Direct; }
-
-        bool GetReflect() const { return Ref; }
-
-        int  GetWidth() const { return Width; }
-
-        void LoadRegister(unsigned long val)
-        {
-            if (Ref)
-            {
-                unsigned long v = 0;
-                int i;
-                for (i = 0; i < Width - 8; i += 8)
-                {
-                    v <<= 8;
-                    v |= (val & 0xFF);
-                    val >>= 8;
-                }
-                int extraBits = Width & 0x07;
-                v <<= extraBits;
-                v |= (val & 0xFF) >> (8 - extraBits);
-                val = v;
-            }
-            Register ^= val;
-        }
-
-        void Process(unsigned char ch)
-        {
-            if (!Ref)
-            {
-                if (Direct)
-                {
-                    Register = Table[((Register >> (Width - 8)) ^ ch) & 0xFFL]
-                        ^ (Register << 8);
-                }
-                else
-                {
-                    Register = Table[(Register >> (Width - 8)) & 0xFFL] ^
-                        (Register << 8);
-                    Register ^= ch;
-                }
-            }
-            else
-            {
-                if (Direct)
-                {
-                    Register = Table[(Register ^ ch) & 0xFFL] ^
-                        (Register >> 8);
-                }
-                else
-                {
-                    Register = Table[Register & 0xFFL] ^ (Register >> 8);
-                    Register ^= ch << (Width - 8);
-                }
-            }
-        }
-
-        void Process(unsigned char* block, int block_length)
-        {
-            for (int i = 0; i < block_length; i++)
-            {
-                Process(*block++);
-            }
-        }
-
-        // Un-comment the following version if no member templates
-        ///  void Process( unsigned char* first, unsigned char* last )
-        ///   {
-        ///   while( first != last )
-        ///    {
-        ///    Process( *first++ );
-        ///    }
-        ///   }
-        // Comment out the following version if no member templates
-
-        template<class InIter>
-
-        void Process(InIter first, InIter last)
-        {
-            while (first != last)
-            {
-                Process(*first);
-                ++first;
-            }
-        }
-
-        // Process 'count' bits from 'bits'. if 'Ref' is false reads
-        // starting from MSB of 'bits'. If 'Ref' is true starts from
-        // LSB
-
-        void ProcessBits(unsigned char bits, int count)
-        {
-            if (!Ref)
-            {
-                if (Direct)
-                {
-                    Register = Table[((Register >> (Width - count)) ^
-                        (bits >> (8 - count))) & (0xFF >> (8 - count))] ^
-                        (Register << count);
-                }
-                else
-                {
-                    Register = Table[(Register >> (Width - count)) &
-                        (0xFF >> (8 - count))] ^ (Register << count);
-                    Register ^= bits >> (8 - count);
-                }
-            }
-            else
-            {
-                if (Direct)
-                {
-                    Register = Table[((Register ^ bits) & (0xFF >> (8 - count)))
-                        << (8 - count)] ^ (Register >> count);
-                }
-                else
-                {
-                    Register = Table[(Register & (0xFF >> (8 - count))) <<
-                        (8 - count)] ^ (Register >> count);
-                    Register ^= bits << (Width - count);
-                }
-            }
-        }
-
-        void Reset()
-        {
-            Register = Init;
-        }
-
-        void Write(std::ostream& os) const
-        {
-            unsigned long ncrc = GetNormalCRC();
-            for (int i = 0; i < Width; i += 8)
-            {
-                unsigned char byte =
-                    (unsigned char)(ncrc >> (CRCMaxBits - i - 8));
-                os << byte;
-            }
-        }
-
-    };
-    template<int Width, unsigned long Poly, unsigned long Init,
-        unsigned long XOrOut, bool Ref, bool Direct>
-        const typename CRCGenerator<Width, Poly, Init, XOrOut, Ref,
-        Direct>::CRCTable
-        CRCGenerator<Width, Poly, Init, XOrOut, Ref, Direct>::Table;
-
-    template<int Width, unsigned long Poly, unsigned long Init,
-        unsigned long XOrOut, bool Ref, bool Direct>
-        std::ostream& operator<<(std::ostream& os,
-            CRCGenerator<Width, Poly, Init, XOrOut, Ref, Direct>& crc)
-    {
-        crc.Write(os);
-        return os;
-    }
-
-    typedef CRCGenerator<16, 0x8005, 0, 0, true> CRC16;
-    typedef CRCGenerator<32, 0x80000005, -1, 0, true> CRC32;
 
 } // namespace cchips

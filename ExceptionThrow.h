@@ -53,8 +53,8 @@ namespace cchips {
 #define ASSERT(condition) if(!(condition)) {\
     std::stringstream os; \
     cchips::special_log::sm_log(os, __FILE__, __LINE__, "{}", #condition); \
-	cchips::exception_throw exception_msg(os.str().c_str()); \
-	throw exception_msg;}
+    cchips::exception_throw exception_msg(os.str().c_str()); \
+    throw exception_msg;}
 #endif
 } // namespace cchips
 

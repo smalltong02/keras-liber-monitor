@@ -1,3 +1,4 @@
+#include "crc.h"
 #include "R3LogObject.h"
 
 namespace cchips {

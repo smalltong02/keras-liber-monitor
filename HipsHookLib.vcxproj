@@ -364,6 +364,7 @@
     <ClInclude Include="CBaseType.h" />
     <ClInclude Include="commutils.h" />
     <ClInclude Include="ComsObject.h" />
+    <ClInclude Include="crc.h" />
     <ClInclude Include="deffeature.h" />
     <ClInclude Include="drivermgr.h" />
     <ClInclude Include="ExceptionThrow.h" />

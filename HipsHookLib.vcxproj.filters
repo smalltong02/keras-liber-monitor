@@ -167,6 +167,9 @@
     <ClInclude Include="drivermgr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="crc.h">
+      <Filter>Log</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="asmfunction.asm">
