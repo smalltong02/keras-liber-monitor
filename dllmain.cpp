@@ -2,10 +2,24 @@
 #include "stdafx.h"
 #include "commutils.h"
 #include "utils.h"
+#include "LogObject.h"
 
 using namespace cchips;
 
 BOOL g_initSuccess = FALSE;
+
+DWORD WINAPI main_thread(LPVOID lpParameter)
+{
+    BreakPoint;
+    std::shared_ptr<CHipsCfgObject> hipsCfgObject = InitializeConfig();
+    if (hipsCfgObject != nullptr && InitializeHook(hipsCfgObject))
+    {
+        debug_log("Hipshook initialize success!");
+    }
+    else
+        debug_log("Hipshook initialize failed!");
+    return 0;
+}
 
 BOOL APIENTRY DllMain(HMODULE hModule,
     DWORD  ul_reason_for_call,
@@ -16,13 +30,10 @@ BOOL APIENTRY DllMain(HMODULE hModule,
     {
     case DLL_PROCESS_ATTACH:
     {
-        BreakPoint;
+        // please don't block the dllmain, We can not do much more here, because it is risky.
         g_is_dll_module = true;
-        std::shared_ptr<CHipsCfgObject> hipsCfgObject = InitializeConfig();
-        if (hipsCfgObject != nullptr && InitializeHook(hipsCfgObject))
-        {
-            g_initSuccess = TRUE;
-        }
+        HANDLE thread_handle = CreateThread(NULL, 0, main_thread, NULL, 0, NULL);
+        CloseHandle(thread_handle);
     }
     break;
     case DLL_THREAD_ATTACH:

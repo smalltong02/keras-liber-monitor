@@ -178,7 +178,6 @@ namespace cchips {
         };
         CHookImplementObject() :
             m_bValid(false), m_benable(false), m_configObject(nullptr), m_drivermgr(nullptr) {
-            CoInitializeEx(0, COINIT_MULTITHREADED);
         }//for hook wmi methods
         ~CHookImplementObject() {
             if (m_threadTlsIdx != TLS_OUT_OF_INDEXES)

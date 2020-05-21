@@ -757,8 +757,8 @@ namespace cchips {
                 if (flag.second == flag_value)
                     return flag.first;
             }
-            ASSERT(0);
-            return std::string({});
+            std::string ret_string = std::string("unknown-flags:") + std::to_string(flag_value);
+            return ret_string;
         }
         virtual const bool IsValidValue(char* pdata) const override {
             if (!m_pdata) return false;

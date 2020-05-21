@@ -72,6 +72,12 @@
     <ClCompile Include="HookLogObjectTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="HookServicesTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ServicesBase.cpp">
+      <Filter>Others</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
@@ -138,6 +144,9 @@
     <ClInclude Include="packages\benchmark\src\timers.h">
       <Filter>benchmark</Filter>
     </ClInclude>
+    <ClInclude Include="ServicesBase.h">
+      <Filter>Others</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -160,6 +169,9 @@
     </Filter>
     <Filter Include="config">
       <UniqueIdentifier>{d9fd69b2-c16b-4e25-92d5-8d2f3cf3c61d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Others">
+      <UniqueIdentifier>{ff30e32c-922f-4754-9409-f6e41a621845}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

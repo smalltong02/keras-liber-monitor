@@ -99,6 +99,25 @@ protected:
     IWbemServices* m_wbemSvc = nullptr;
 };
 
+//TEST_F(HookWmiMethodsTest, RemoteTest)
+//{
+//#define service_ip L"192.168.0.1 "
+//const CLSID CLSID_Account = { 0x5939F232,0x7B5F,0x11D4,{0x8B,0xEC,0x34,0x8F,0xBB,0x00,0x00,0x00} };
+//
+//    COSERVERINFO si;
+//    memset(&si, 0, sizeof(COSERVERINFO));
+//    si.pwszName = service_ip;
+//    si.pAuthInfo = nullptr;
+//    si.dwReserved1 = 0;
+//    si.dwReserved2 = 0;
+//    MULTI_QI qi[1];
+//    qi[0].pIID = &IID_IUnknown;
+//    qi[0].pItf = NULL;
+//    qi[0].hr = S_OK;
+//
+//    HRESULT hr = CoCreateInstanceEx(CLSID_WbemLocator, NULL, CLSCTX_REMOTE_SERVER, &si, 1, qi);
+//}
+
 TEST_F(HookWmiMethodsTest, Win32DiskDriveTest)
 {
     CComBSTR query("SELECT * FROM ");

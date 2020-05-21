@@ -163,16 +163,6 @@ namespace cchips {
         }
     private:
         CLogObject() {
-            std::function<std::unique_ptr<LOGPAIR>()> getdata(std::bind(&CLogObject::GetData, this));
-            std::unique_ptr<CLpcPipeObject> pipe_ptr = std::make_unique<CLpcPipeObject>();
-            if (pipe_ptr->Connect(getdata))
-                m_socket_object = std::move(pipe_ptr);
-            else
-            {
-                std::unique_ptr<CLpcLocalObject> local_ptr = std::make_unique<CLpcLocalObject>();
-                if (local_ptr->Connect(getdata))
-                    m_socket_object = std::move(local_ptr);
-            }
         }
         bool m_valid = true;
         static int m_reference_count;
@@ -191,6 +181,7 @@ namespace cchips {
         ~CLogEntry() = default;
         const std::string& GetName() const { return log_name; }
         const CLogObject::logtype GetLogType() const { return m_log_type; }
+        void SetLogType(CLogObject::logtype type) { m_log_type = type; }
         const int GetLogSize() const { return (int)log_elements.size(); }
         bool AddLog(const LOGPAIR& log_pair) {
             ASSERT(log_pair.first.length());
@@ -320,7 +311,9 @@ namespace cchips {
                 return std::reinterpret_pointer_cast<PVOID>(m_handle);
             return nullptr;
         }
-        bool FreeHandle() {
+        bool FreeHandle(CLogObject::logtype type = CLogObject::logtype::log_invalid) {
+            if (type != CLogObject::logtype::log_invalid)
+                m_handle->SetLogType(type);
             m_valid = false;
             return true;
         }

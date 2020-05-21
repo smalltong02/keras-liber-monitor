@@ -51,6 +51,8 @@ namespace cchips {
 
     bool CHookImplementObject::Initialize(std::shared_ptr<CHipsCfgObject>& configObject)
     {
+        CoInitializeEx(0, COINIT_MULTITHREADED);
+
         m_configObject = configObject;
         m_drivermgr = std::make_unique<CDriverMgr>();
 
@@ -146,7 +148,7 @@ namespace cchips {
                 return processing_continue;
         }
 
-        std::unique_ptr<CLogHandle> log_handle = std::make_unique<CLogHandle>(func_object->GetFeature(), CLogObject::logtype::log_event);
+        std::unique_ptr<CLogHandle> log_handle = std::make_unique<CLogHandle>(func_object->GetFeature(), CLogObject::logtype::log_invalid);
         ASSERT(log_handle != nullptr);
         detour_node node = { &func_return, __params, (size_t)params_size, node_elem->function, node_elem->hook_implement_object, log_handle->GetHandle() };
         detour_node* pnode = &node;
@@ -219,7 +221,11 @@ namespace cchips {
             return processing_skip;
         if (node_elem->function->PostprocessingChecks(pnode) == processing_skip)
             return processing_skip;
-        if (log_handle->LogCounts()) log_handle->AddLog(LOGPAIR("function", func_object->GetName()));
+        if (log_handle->LogCounts())
+        {
+            log_handle->AddLog(LOGPAIR("API", func_object->GetName()));
+            log_handle->FreeHandle(CLogObject::logtype::log_event);
+        }
         return processing_continue;
     }
 

@@ -15,54 +15,6 @@
 #include "gmock\gmock.h"
 
 #ifdef _FUNCTION_TEST
-class CServerObject
-{
-public:
-    CServerObject() {
-        m_tempfp = tmpfile();
-        std::function<void(const std::unique_ptr<std::stringstream>)> callback(std::bind(&CServerObject::LogCallBack, this, std::placeholders::_1));
-        m_pipe_object = std::make_unique<CLpcPipeObject>();
-        if (m_pipe_object)
-            m_pipe_object->Listen(std::move(callback));
-    }
-    ~CServerObject() {
-        if (m_pipe_object)
-            m_pipe_object->StopListen();
-        if (m_tempfp)
-            fclose(m_tempfp);
-    }
-    int GetTotalLogs() const { return m_pipe_object->GetTotalLogs(); }
-private:
-    bool CheckVerifier(const std::unique_ptr<std::stringstream>& log) const
-    {
-        if (!log) return true;
-        if (log->str().find("\"verifier_result\": \"failed\"") != std::string::npos)
-            return false;
-        return true;
-    }
-    void LogCallBack(const std::unique_ptr<std::stringstream> log) {
-        ASSERT_TRUE(log);
-        if (!log) return;
-        ASSERT_TRUE(CheckVerifier(log));
-        m_logs_total_count++;
-        {
-            std::lock_guard lock(m_mutex);
-            if (m_tempfp)
-            {
-                *log << std::endl;
-                fputs(log->str().c_str(), m_tempfp);
-            }
-            else
-                std::cout << log->str() << std::endl;
-        }
-        return;
-    }
-    std::atomic_int m_logs_total_count = 0;
-    std::mutex m_mutex;
-    FILE* m_tempfp = nullptr;
-    std::unique_ptr<CLpcPipeObject> m_pipe_object;
-};
-
 class CClientObject
 {
 public:
@@ -107,8 +59,6 @@ private:
     std::unique_ptr<LOGPAIR> m_log;
     std::unique_ptr<CLpcPipeObject> m_pipe_object;
 };
-
-std::unique_ptr<CServerObject> g_server_object = std::make_unique<CServerObject>();
 
 class HookLogObjectTest : public testing::Test
 {

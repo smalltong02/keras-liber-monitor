@@ -111,7 +111,19 @@ namespace cchips {
 
     bool CLogObject::Initialize()
     {
-        return true;
+        std::function<std::unique_ptr<LOGPAIR>()> getdata(std::bind(&CLogObject::GetData, this));
+        std::unique_ptr<CLpcPipeObject> pipe_ptr = std::make_unique<CLpcPipeObject>();
+        if (pipe_ptr->Connect(getdata))
+            m_socket_object = std::move(pipe_ptr);
+        else
+        {
+            std::unique_ptr<CLpcLocalObject> local_ptr = std::make_unique<CLpcLocalObject>();
+            if (local_ptr->Connect(getdata))
+                m_socket_object = std::move(local_ptr);
+        }
+        if(m_socket_object)
+            return true;
+        return false;
     }
 
     std::unique_ptr<LOGPAIR> CLogObject::GetData() {
