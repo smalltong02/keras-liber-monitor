@@ -51,6 +51,7 @@ namespace cchips {
                 fclose(m_tempfp);
         }
         void Activated() override { if (m_sync_event) SetEvent(m_sync_event); }
+        void ClearLogsCount() override { m_logs_total_count = 0; }
         int GetTotalLogs() const override { return m_logs_total_count; }
     private:
         VOID WINAPI ConnectThread(CSocketObject::func_getdata& getdata) {

@@ -158,7 +158,7 @@ bool ServiceInstaller::Install(const ServiceBase& service) {
     ServiceHandle servHandle = ::CreateService(svcControlManager,
         service.GetName(),
         service.GetDisplayName(),
-        SERVICE_QUERY_STATUS,
+        SERVICE_ALL_ACCESS,
         SERVICE_WIN32_OWN_PROCESS,
         service.GetStartType(),
         service.GetErrorControlType(),
@@ -170,6 +170,13 @@ bool ServiceInstaller::Install(const ServiceBase& service) {
         (pass.IsEmpty() ? nullptr : pass.GetString()));
     if (!servHandle) {
         return false;
+    }
+
+    BOOL bSuccess = StartServiceA(servHandle, 0, NULL);
+    if (!bSuccess)
+    {
+        DWORD error = GetLastError();
+        error = 0;
     }
 
     return true;

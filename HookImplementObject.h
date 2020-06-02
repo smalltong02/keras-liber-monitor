@@ -55,7 +55,7 @@ namespace cchips {
     __asm {lea  eax, dword ptr[ebp + 40]}      \
     __asm {mov  __backup_regs.esp, eax}
 
-#define MACRO_PUSH_PARAMS_(__pnode, __params, __psize, __post_func)   \
+#define MACRO_PUSH_PARAMS_(__pnode, __params, __psize, __post_func, __status)   \
     __asm {push ebx}                            \
     for (int i = 0; i < __psize / 4; i++)       \
     {                                           \
@@ -71,7 +71,8 @@ namespace cchips {
     __asm {mov  eax, __post_func}               \
     __asm {mov  eax, dword ptr [eax]}           \
     __asm {call eax}                            \
-    __asm {pop  ebx}                            
+    __asm {pop  ebx}                            \
+    __asm {mov __status, eax}
 
 #define MACRO_CALL_ORGINAL_(__params, __psize, __call_conv, __func, __return) \
     __asm {push ebx}                            \

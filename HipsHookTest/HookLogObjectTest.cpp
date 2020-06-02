@@ -27,6 +27,7 @@ public:
     }
     ~CClientObject() { m_pipe_object->StopConnect(); }
     std::unique_ptr<LOGPAIR> GetData() {
+        std::lock_guard lock(m_mutex);
         if (m_log)
             return std::move(m_log);
         else return nullptr;
@@ -38,6 +39,7 @@ public:
     void SendData() {
         std::stringstream send_ss;
         send_ss << "test-" << m_tag << ": " << m_count++;
+        std::lock_guard lock(m_mutex);
         m_log = std::make_unique<LOGPAIR>(LOGPAIR("Test", send_ss.str()));
         m_pipe_object->Activated();
     }
@@ -56,6 +58,7 @@ public:
 private:
     int m_count = 0;
     int m_tag;
+    std::mutex m_mutex;
     std::unique_ptr<LOGPAIR> m_log;
     std::unique_ptr<CLpcPipeObject> m_pipe_object;
 };
@@ -81,6 +84,7 @@ TEST_F(HookLogObjectTest, PipeLogsCountTest)
 {
     std::atomic_bool brunning = true;
     std::vector<std::future<int>> results;
+    int send_logs_count = g_server_object->GetTotalLogs();
     unsigned task_count = std::thread::hardware_concurrency();
     for (unsigned int i = 1; i <= task_count; i++)
     {
@@ -90,7 +94,7 @@ TEST_F(HookLogObjectTest, PipeLogsCountTest)
                 while (brunning)
                 {
                     client.SendData();
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    //std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
                 return client.GetTotalLogs();
             });
@@ -99,13 +103,13 @@ TEST_F(HookLogObjectTest, PipeLogsCountTest)
         thread.detach();
     }
     std::this_thread::sleep_for(std::chrono::seconds(10));
+    g_server_object->Stop();
     brunning = false;
-    int send_logs_count = g_log_object->GetTotalLogs();
     for (auto& r : results) {
         send_logs_count += r.get();
     }
     int receive_logs_count = g_server_object->GetTotalLogs();
-    ASSERT_TRUE(send_logs_count == receive_logs_count);
+    ASSERT_TRUE(receive_logs_count >= send_logs_count);
 }
 
 TEST_F(HookLogObjectTest, PipeLongLogTest)

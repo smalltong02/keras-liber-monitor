@@ -160,7 +160,10 @@ namespace cchips {
 #endif
         for (const auto& pre_func : func_object->GetPreProcessing())
         {
-            MACRO_PUSH_PARAMS_(pnode, __rev_params, params_size, pre_func)
+            processing_status status = processing_skip;
+            MACRO_PUSH_PARAMS_(pnode, __rev_params, params_size, pre_func, status)
+            if (status == processing_skip)
+                return processing_skip;
         }
 
         if (node_elem->function->ProcessingEnsure(pnode) == processing_skip)
@@ -213,7 +216,10 @@ namespace cchips {
 #endif
         for (const auto& post_func : func_object->GetPostProcessing())
         {
-            MACRO_PUSH_PARAMS_(pnode, __rev_params, params_size, post_func)
+            processing_status status = processing_skip;
+            MACRO_PUSH_PARAMS_(pnode, __rev_params, params_size, post_func, status)
+            if (status == processing_skip)
+                return processing_skip;
         }
         if (node_elem->function->CheckReturn(pnode) == processing_skip)
             return processing_skip;

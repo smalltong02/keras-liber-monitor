@@ -7,7 +7,7 @@ namespace cchips {
     const DWORD CSocketObject::lpc_server_wait_timeout = 2000; // 2 seconds
     const DWORD CSocketObject::lpc_client_wait_timeout = 1000; // 1 second
     const DWORD CSocketObject::lpc_connect_wait_timeout = 100;  // 0.1 second
-    const int CSocketObject::lpc_connect_try_times = 10;
+    const int CSocketObject::lpc_connect_try_times = 50;
 
     ULONG CBsonWrapper::GetVerifier(const std::unique_ptr<LOGPAIR>& data, _verifier_type type)
     {

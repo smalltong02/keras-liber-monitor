@@ -11,6 +11,7 @@
 #include <cassert>
 #include <functional>
 #include <thread>
+#include <mutex>
 extern "C" {
 #include "bson\bson.h"
 }
@@ -30,7 +31,7 @@ namespace cchips {
             verifier_md5,
             verifier_sha1,
         };
-        CBsonWrapper() : m_bverifier(false), m_verifier_type(verifier_crc32) { ; }
+        CBsonWrapper() : m_bverifier(false), m_verifier_type(verifier_crc32), m_log_serialnum(0) { ; }
         ~CBsonWrapper() = default;
 
         std::unique_ptr<bson> Pack(const std::unique_ptr<LOGPAIR>& data, bool braw = true) {
@@ -59,6 +60,7 @@ namespace cchips {
             if (!braw && time_string.length()) bson_append_string(&(*bson_ptr), "TraceTime", time_string.c_str());
             bson_append_string(&(*bson_ptr), "Action", data->first.c_str());
             bson_append_string(&(*bson_ptr), "R3Log", data->second.c_str());
+            bson_append_long(&(*bson_ptr), "SerialN", m_log_serialnum++);
             bson_append_finish_array(&(*bson_ptr));
             bson_finish(&(*bson_ptr));
             return bson_ptr;
@@ -99,6 +101,15 @@ namespace cchips {
                         else
                             (*ss_ptr) << "; ";
                         (*ss_ptr) << "\"" << key << "\"" << ": " << "\"" << bson_iterator_int(&i) << "\"";
+                    }
+                    break;
+                    case BSON_LONG:
+                    {
+                        if (!(*ss_ptr).str().length())
+                            (*ss_ptr) << "{ ";
+                        else
+                            (*ss_ptr) << "; ";
+                        (*ss_ptr) << "\"" << key << "\"" << ": " << "\"" << bson_iterator_long(&i) << "\"";
                     }
                     break;
                     case BSON_STRING:
@@ -145,6 +156,7 @@ namespace cchips {
 
         bool m_bverifier;
         _verifier_type m_verifier_type;
+        std::atomic_ulong m_log_serialnum;
     };
 
     class CSocketObject : public CBsonWrapper
@@ -172,6 +184,7 @@ namespace cchips {
         static const DWORD lpc_connect_wait_timeout;
         static const int lpc_connect_try_times;
         // for test
+        virtual void ClearLogsCount() = 0;
         virtual int GetTotalLogs() const = 0;
     protected:
         void SetOutputType(outputtype type) { m_output_type = type; }
@@ -203,6 +216,7 @@ namespace cchips {
         }
         void StopListen() override {
             m_brunning = false;
+            SetEvent(m_sync_event);
             if (m_listen_thread && m_listen_thread->joinable())
                 m_listen_thread->join();
             m_listen_thread = nullptr;
@@ -225,6 +239,7 @@ namespace cchips {
         }
         void Activated() override { if (m_sync_event) SetEvent(m_sync_event); }
         //for test
+        void ClearLogsCount() override { m_logs_total_count = 0; }
         int GetTotalLogs() const override { return m_logs_total_count; }
 
     private:
@@ -281,17 +296,24 @@ namespace cchips {
             m_sync_event = nullptr;
             return;
         }
-        DWORD WINAPI ReceiveThread(HANDLE hpipe, func_callback callback) {
+        DWORD WINAPI ReceiveThread(std::shared_ptr<HANDLE> hpipe, func_callback callback) {
             bool bsuccess = false;
             DWORD bytes_read = 0;
             DWORD error;
+            if (!hpipe) return 0;
             std::vector<char> recv_buffer(CSocketObject::lpc_buffer_kb * 1024);
             std::string decode_buffer;
             size_t decode_len = 0;
+            HANDLE read_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+            OVERLAPPED overlapped = {};
+            overlapped.hEvent = read_event;
+            HANDLE handle_array[2];
+            handle_array[0] = overlapped.hEvent;
+            handle_array[1] = m_sync_event;
 
             while (m_brunning)
             {
-                bsuccess = ReadFile(hpipe, &recv_buffer[0], (DWORD)recv_buffer.size(), &bytes_read, nullptr);
+                bsuccess = ReadFile(*hpipe, &recv_buffer[0], (DWORD)recv_buffer.size(), &bytes_read, nullptr);
                 if (bsuccess || (error = GetLastError()) == ERROR_MORE_DATA)
                 {
                     decode_buffer += std::string(&recv_buffer[0], bytes_read);
@@ -321,9 +343,15 @@ namespace cchips {
                     // loop and make the socket "inactive", that is, another pipe
                     // connection can in theory pick it up. (This will only happen in
                     // cases where malware for some reason broke our pipe connection).
-                    FlushFileBuffers(hpipe);
-                    CloseHandle(hpipe);
-                    hpipe = INVALID_HANDLE_VALUE;
+                    {
+                        std::lock_guard lock(m_hpipes_mutex);
+                        if ((*hpipe) != INVALID_HANDLE_VALUE)
+                        {
+                            FlushFileBuffers(*hpipe);
+                            CloseHandle(*hpipe);
+                        }
+                        *hpipe = INVALID_HANDLE_VALUE;
+                    }
                     break;
                 }
                 else
@@ -332,32 +360,37 @@ namespace cchips {
                     break;
                 }
             }
-            if (hpipe != INVALID_HANDLE_VALUE)
             {
-                FlushFileBuffers(hpipe);
-                DisconnectNamedPipe(hpipe);
-                CloseHandle(hpipe);
+                std::lock_guard lock(m_hpipes_mutex);
+                if (*hpipe != INVALID_HANDLE_VALUE)
+                {
+                    FlushFileBuffers(*hpipe);
+                    DisconnectNamedPipe(*hpipe);
+                    CloseHandle(*hpipe);
+                    *hpipe = INVALID_HANDLE_VALUE;
+                }
             }
             return 0;
         }
         VOID WINAPI ListenThread(func_callback callback) {
-            HANDLE hpipe = StartLPCServer();
+            std::shared_ptr<HANDLE> hpipe =std::make_shared<HANDLE>(StartLPCServer());
             assert(m_sync_event);
-            if (hpipe == INVALID_HANDLE_VALUE) return;
+            if (hpipe == nullptr) return;
+            if (*hpipe == INVALID_HANDLE_VALUE) return;
             if (!m_sync_event) return;
 
             OVERLAPPED overlapped;
             overlapped.hEvent = m_sync_event;
-            std::vector<std::unique_ptr<std::thread>> receive_threads;
+            std::vector<std::pair<std::unique_ptr<std::thread>, std::shared_ptr<HANDLE>>> receive_threads;
             while (m_brunning)
             {
                 DWORD error = 0;
-                if (ConnectNamedPipe(hpipe, &overlapped) ?
+                if (ConnectNamedPipe(*hpipe, &overlapped) ?
                     TRUE : ((error = GetLastError()) == ERROR_PIPE_CONNECTED))
                 {
                     std::unique_ptr<std::thread> receive_thread = std::make_unique<std::thread>(&CLpcPipeObject::ReceiveThread, this, hpipe, callback);
-                    receive_threads.push_back(std::move(receive_thread));
-                    hpipe = StartLPCServer(false);
+                    receive_threads.push_back(std::pair<std::unique_ptr<std::thread>, std::shared_ptr<HANDLE>>(std::move(receive_thread), hpipe));
+                    hpipe = std::make_shared<HANDLE>(StartLPCServer(false));
                 }
                 else if (error == ERROR_IO_PENDING)
                 {
@@ -377,11 +410,25 @@ namespace cchips {
                     }
                 }
             }
-            if (hpipe != INVALID_HANDLE_VALUE)
-                CloseHandle(hpipe);
+            if (*hpipe != INVALID_HANDLE_VALUE)
+                CloseHandle(*hpipe);
             for (auto& thread : receive_threads)
-                if (thread->joinable())
-                    thread->join();
+            {
+                if (thread.first->joinable())
+                {
+                    {
+                        std::lock_guard lock(m_hpipes_mutex);
+                        if (*thread.second != INVALID_HANDLE_VALUE)
+                        {
+                            FlushFileBuffers(*thread.second);
+                            DisconnectNamedPipe(*thread.second);
+                            CloseHandle(*thread.second);
+                            *thread.second = INVALID_HANDLE_VALUE;
+                        }
+                    }
+                    thread.first->join();
+                }
+            }
             return;
         }
         VOID WINAPI ConnectThread(CSocketObject::func_getdata& getdata) {
@@ -395,16 +442,22 @@ namespace cchips {
                     hpipe = CreateFileA(lpc_pipe_name, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
                     if (ValidHandle(hpipe))
                         break;
-                    if (DWORD error = GetLastError() != ERROR_PIPE_BUSY)
+                    if (DWORD error = GetLastError() != ERROR_PIPE_BUSY || !m_brunning)
                     {
                         warning("The log pipe handler connect failed, last error %d.", error);
                         break;
                     }
-                    if (WaitNamedPipeA(lpc_pipe_name, lpc_connect_wait_timeout))
+                    if (!WaitNamedPipeA(lpc_pipe_name, lpc_connect_wait_timeout))
                     {
+                        if (GetLastError() != ERROR_SEM_TIMEOUT)
+                        {
+                            warning("wait name pipe failed, last error %d.", error);
+                            break;
+                        }
                         warning("Could not open pipe: 0.1 second wait timed out.");
-                        break;
+                        continue;
                     }
+                    count++;
                 }
                 if (ValidHandle(hpipe))
                     return true;
@@ -437,9 +490,8 @@ namespace cchips {
                     return false;
                 return true;
             };
-
-            if (!func_open()) return;
             m_brunning = true;
+            if (!func_open()) return;
             // write log to the pipe server
             while (m_brunning) {
                 DWORD ret = WaitForSingleObject(m_sync_event, CSocketObject::lpc_client_wait_timeout);
@@ -471,6 +523,7 @@ namespace cchips {
         std::atomic_bool m_brunning;
         std::unique_ptr<std::thread> m_listen_thread;
         std::unique_ptr<std::thread> m_connect_thread;
+        std::mutex m_hpipes_mutex;
         //for test
         std::atomic_int m_logs_total_count = 0;
     };

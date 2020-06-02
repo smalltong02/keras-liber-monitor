@@ -12,12 +12,19 @@ DWORD WINAPI main_thread(LPVOID lpParameter)
 {
     BreakPoint;
     std::shared_ptr<CHipsCfgObject> hipsCfgObject = InitializeConfig();
+    std::string result_string;
     if (hipsCfgObject != nullptr && InitializeHook(hipsCfgObject))
-    {
-        debug_log("Hipshook initialize success!");
-    }
+        result_string = "Hipshook initialize success!";
     else
-        debug_log("Hipshook initialize failed!");
+        result_string = "Hipshook initialize failed!";
+    //static std::once_flag flag;
+    //std::call_once(flag, [](const std::string log_string) { 
+    //    while (1)
+    //    {
+    //        std::this_thread::sleep_for(std::chrono::seconds(10));
+    //        error_log(log_string.c_str());
+    //    }
+    //    }, result_string);
     return 0;
 }
 

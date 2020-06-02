@@ -15,6 +15,7 @@
 #include "gmock\gmock.h"
 #include "ServicesBase.h"
 
+#ifdef _FUNCTION_TEST
 class HookServicesTest : public testing::Test
 {
 protected:
@@ -37,10 +38,11 @@ protected:
 TEST_F(HookServicesTest, ServicesTest)
 {
     ServicesTestObject service;
+    ServiceInstaller::Uninstall(service);
     ServiceInstaller::Install(service);
     ServiceInstaller::Uninstall(service);
     Sleep(100); // waiting 100 milliseconds for receive log.
     ASSERT_TRUE(g_server_object->GetOpenSCManagerCount() == 2);
 }
-
+#endif
 

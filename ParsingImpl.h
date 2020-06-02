@@ -112,7 +112,7 @@ namespace cchips {
             if (!object) return false;
             if (!pdata) return false;
             char* p = pdata;
-            auto default_rr = [=]() ->std::variant<bool, std::stringstream> { if (f_type == function_getvalue) return ""; else return false; };
+            auto default_rr = [=]() ->std::variant<bool, std::stringstream> { if (f_type == function_getvalue) return std::stringstream(""); else return false; };
             auto call_func = [](std::shared_ptr<CObObject> object, function_type f_type, char* pdata, const std::stringstream* ss = nullptr) ->std::variant<bool, std::stringstream> {
                 switch (f_type)
                 {
@@ -156,7 +156,6 @@ namespace cchips {
                     char* nodig = nullptr;
                     std::stringstream p_str = object->GetValue(p);
                     p = (char*)std::strtoll(p_str.str().c_str(), &nodig, 16);
-                    ASSERT(p != nullptr);
                     if (!p) return default_rr();
                     object = std::static_pointer_cast<CReferenceObject>(object)->GetData();
                 }
@@ -214,7 +213,6 @@ namespace cchips {
                     char* nodig = nullptr;
                     std::stringstream ss = object->GetValue(p);
                     p = (char*)std::strtoll(ss.str().c_str(), &nodig, 16);
-                    ASSERT(p != nullptr);
                     if (!p) return false;
                     object = std::static_pointer_cast<CReferenceObject>(object)->GetData();
                 }

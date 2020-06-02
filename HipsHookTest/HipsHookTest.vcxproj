@@ -38,7 +38,7 @@
     <ProjectGuid>{356EA1DD-869B-4871-B8D5-612782A3C543}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>test_minihook</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
     <ProjectName>HipsHookTest</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -161,6 +161,9 @@
       <CompileAs>CompileAsCpp</CompileAs>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -345,6 +348,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\InjectImpl.h" />
     <ClInclude Include="packages\benchmark\src\arraysize.h" />
     <ClInclude Include="packages\benchmark\src\benchmark_api_internal.h" />
     <ClInclude Include="packages\benchmark\src\benchmark_register.h" />
@@ -372,7 +376,18 @@
     <ClInclude Include="HipsHookTest.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\InjectImpl.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='BenchmarkRelease|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='BenchmarkRelease|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='BenchmarkDebug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='BenchmarkDebug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="HookImplObjTest.cpp" />
+    <ClCompile Include="HookInjectDllTest.cpp" />
     <ClCompile Include="HookLogObjectTest.cpp" />
     <ClCompile Include="HookServicesTest.cpp" />
     <ClCompile Include="HookWmiMethodsTest.cpp" />

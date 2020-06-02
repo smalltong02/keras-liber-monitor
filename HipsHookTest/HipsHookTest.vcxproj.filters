@@ -78,6 +78,12 @@
     <ClCompile Include="ServicesBase.cpp">
       <Filter>Others</Filter>
     </ClCompile>
+    <ClCompile Include="HookInjectDllTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\InjectImpl.cpp">
+      <Filter>Others</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
@@ -145,6 +151,9 @@
       <Filter>benchmark</Filter>
     </ClInclude>
     <ClInclude Include="ServicesBase.h">
+      <Filter>Others</Filter>
+    </ClInclude>
+    <ClInclude Include="..\InjectImpl.h">
       <Filter>Others</Filter>
     </ClInclude>
   </ItemGroup>

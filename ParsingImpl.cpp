@@ -837,7 +837,6 @@ namespace cchips {
             std::stringstream ss = GetValue(plog.second, param_adress + arg_offset);
             if (!ss.str().length())
             {
-                //			ASSERT(0);
                 error_log("Function({}): get argument({}) value failed!", GetName(), plog.first);
                 return processing_skip;
             }

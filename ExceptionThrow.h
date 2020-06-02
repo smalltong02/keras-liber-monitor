@@ -4,6 +4,7 @@
 #include <sstream>
 #include <vector>
 #include <exception>
+#include <assert.h>
 #include "SpecialLog.h"
 
 namespace cchips {
