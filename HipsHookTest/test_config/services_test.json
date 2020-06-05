@@ -132,24 +132,6 @@
     ]
   },
 
-  "StartServiceA": {
-    "Signature": {
-      "Library": "advapi32.dll",
-      "Return": "SC_HANDLE",
-      "Feature": "S4"
-    },
-
-    "Parameters": {
-      "hService": "SC_HANDLE",
-      "dwNumServiceArgs": "DWORD",
-      "lpServiceArgVectors": "LPCSTR*"
-    },
-
-    "PreLog": [
-      "hService"
-    ]
-  },
-
   "DeleteService": {
     "Signature": {
       "Library": "advapi32.dll",
@@ -164,5 +146,76 @@
     "PreLog": [
       "hService"
     ]
+  },
+
+  "StartServiceA": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "BOOL",
+      "Feature": "S4"
+    },
+
+    "Parameters": {
+      "hService": "SC_HANDLE",
+      "dwNumServiceArgs": "DWORD",
+      "lpServiceArgVectors": "LPCSTR"
+    },
+
+    "PreLog": [
+      "hService"
+    ]
+  },
+
+  "StartServiceW": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "BOOL",
+      "Feature": "S4"
+    },
+
+    "Parameters": {
+      "hService": "SC_HANDLE",
+      "dwNumServiceArgs": "DWORD",
+      "lpServiceArgVectors": "LPCWSTR"
+    },
+
+    "PreLog": [
+      "hService"
+    ]
+  },
+
+  "QueryServiceStatus": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "BOOL",
+      "Feature": "S5"
+    },
+
+    "Parameters": {
+      "hService": "SC_HANDLE",
+      "lpServiceStatus": "LPSERVICE_STATUS"
+    },
+
+    "PostLog": [
+      "lpServiceStatus->dwCurrentState"
+    ]
+  },
+
+  "QueryServiceStatusEx": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "BOOL",
+      "Feature": "S5"
+    },
+
+    "Parameters": {
+      "hService": "SC_HANDLE",
+      "InfoLevel": "SC_STATUS_TYPE",
+      "lpBuffer": "LPBYTE",
+      "cbBufSize": "DWORD",
+      "pcbBytesNeeded": "SC_HANDLE"
+    },
+
+    "Logging":  true
   }
 }

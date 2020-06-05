@@ -741,7 +741,7 @@ namespace cchips {
     {
         ASSERT(pnode != nullptr);
         CHookImplementObject::detour_node* de_node = reinterpret_cast<CHookImplementObject::detour_node*>(pnode);
-        if (!de_node && !de_node->log_entry) return processing_continue;
+        if (!de_node || !de_node->log_entry) return processing_skip;
 
         ASSERT(de_node->return_va != nullptr);
         std::shared_ptr<CObObject> ob_ptr = GetVarIdentifier(SI_RETURN);
@@ -759,7 +759,7 @@ namespace cchips {
         ASSERT(pnode != nullptr);
         if (!m_pensure) return processing_continue;
         CHookImplementObject::detour_node* de_node = reinterpret_cast<CHookImplementObject::detour_node*>(pnode);
-        if (!de_node && !de_node->log_entry) return processing_continue;
+        if (!de_node || !de_node->log_entry) return processing_skip;
         BEGIN_LOG("ensure");
 
         for (const auto& ensure : *m_pensure)
@@ -793,7 +793,7 @@ namespace cchips {
     processing_status CFunction::ProcessingLog(PVOID pnode, bool pre) const
     {
         CHookImplementObject::detour_node* de_node = reinterpret_cast<CHookImplementObject::detour_node*>(pnode);
-        if (!de_node && !de_node->log_entry) return processing_continue;
+        if (!de_node || !de_node->log_entry) return processing_skip;
         std::string log_name;
         if (pre)
         {
@@ -851,7 +851,7 @@ namespace cchips {
     {
         BEGIN_LOG("checking");
         CHookImplementObject::detour_node* de_node = reinterpret_cast<CHookImplementObject::detour_node*>(pnode);
-        if (!de_node && !de_node->log_entry) return false;
+        if (!de_node || !de_node->log_entry) return false;
         bool bcheck = true;
         for (const auto& check : pcheck->GetChecks())
         {
@@ -903,12 +903,12 @@ namespace cchips {
         return bcheck;
     }
 
-    bool CFunction::modifying(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle)
+    processing_status CFunction::modifying(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle)
     {
         BEGIN_LOG("modifying");
         CHookImplementObject::detour_node* de_node = reinterpret_cast<CHookImplementObject::detour_node*>(pnode);
-        if (!de_node && !de_node->log_entry) return false;
-        bool bmodify = true;
+        if (!de_node || !de_node->log_entry) return processing_skip;
+        bool breturn = false;
         for (const auto& modify : pcheck->GetModifys())
         {
             ASSERT(modify != nullptr);
@@ -923,6 +923,7 @@ namespace cchips {
                 if (_stricmp(GetWordRoot(pcheck->GetRealName(iden.first)).c_str(), SI_RETURN) == 0)
                 {
                     param_adress = reinterpret_cast<char*>(de_node->return_va);
+                    breturn = true;
                 }
                 else
                 {
@@ -941,12 +942,12 @@ namespace cchips {
                 if (!ss.str().length())
                 {
                     error_log("Function({}): get argument({}) value failed!", GetName(), iden.first);
-                    return false;
+                    return processing_skip;
                 }
                 if (!modify->SetIdentifierValue(CExpParsing::ValuePair(iden.first, ss.str())))
                 {
                     error_log("Function({}): SetCheckIdenValue({}) value failed!", GetName(), iden.first);
-                    return false;
+                    return processing_skip;
                 }
                 // back propagation
                 std::unique_ptr<CExpParsing::ValuePair> value = std::get<std::unique_ptr<CExpParsing::ValuePair>>(modify->EvalExpression());
@@ -968,14 +969,16 @@ namespace cchips {
             }
         }
         END_LOG(log_handle->GetHandle());
-        return bmodify;
+        if (breturn)
+            return processing_exit;
+        return processing_continue;
     }
 
     bool CFunction::handling(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const
     {
         BEGIN_LOG("handling");
         CHookImplementObject::detour_node* de_node = reinterpret_cast<CHookImplementObject::detour_node*>(pnode);
-        if (!de_node && !de_node->log_entry) return false;
+        if (!de_node || !de_node->log_entry) return false;
         std::shared_ptr<CHookImplementObject> hook_implement_object = de_node->hook_implement_object;
         bool bhandle = true;
         for (const auto& handle : pcheck->GetHandles())
@@ -1033,7 +1036,7 @@ namespace cchips {
     {
         BEGIN_LOG("logging");
         CHookImplementObject::detour_node* de_node = reinterpret_cast<CHookImplementObject::detour_node*>(pnode);
-        if (!de_node && !de_node->log_entry) return false;
+        if (!de_node || !de_node->log_entry) return false;
         bool blog = true;
         for (const auto& log : pcheck->GetLogs())
         {
@@ -1073,7 +1076,7 @@ namespace cchips {
     processing_status CFunction::ProcessingChecks(PVOID pnode, bool pre)
     {
         CHookImplementObject::detour_node* de_node = reinterpret_cast<CHookImplementObject::detour_node*>(pnode);
-        if (!de_node && !de_node->log_entry) return processing_continue;
+        if (!de_node || !de_node->log_entry) return processing_skip;
         std::string log_name;
         if (pre)
         {
@@ -1089,6 +1092,7 @@ namespace cchips {
         }
 
         BEGIN_LOG(log_name);
+        processing_status status = processing_continue;
         for (const auto& pcheck : GetChecks(pre))
         {
             ASSERT(pcheck != nullptr);
@@ -1096,17 +1100,30 @@ namespace cchips {
                 continue;
             if (checking(pnode, pcheck, LOGGER))
             {
-                if (!modifying(pnode, pcheck, LOGGER))
+                status = modifying(pnode, pcheck, LOGGER);
+                if (status == processing_skip)
+                {
                     error_log("modifying error!");
+                    return status;
+                }
                 if (!handling(pnode, pcheck, LOGGER))
+                {
                     error_log("handling error!");
+                    if (status == processing_exit) return status;
+                    return processing_skip;
+                }
                 if (!logging(pnode, pcheck, LOGGER))
+                {
                     error_log("logging error!");
+                    if (status == processing_exit) return status;
+                    return processing_skip;
+                }
             }
+            if (status == processing_exit) break;
         }
 
         END_LOG(de_node->log_entry);
-        return processing_continue;
+        return status;
     }
 
     bool CWmiObject::AddChecks(const CFunction::_CheckPackage& package, bool bpre)

@@ -1,5 +1,7 @@
 #include "stdafx.h"
 #include "ServicesBase.h"
+#include <Windows.h>
+#include <atlbase.h>
 
 ServiceBase* ServiceBase::m_service = nullptr;
 
@@ -135,7 +137,9 @@ void ServiceBase::Shutdown() {
 }
 
 //static
-bool ServiceInstaller::Install(const ServiceBase& service) {
+bool ServiceInstaller::Install(const ServiceBase& service, bool bANSI) {
+    USES_CONVERSION;
+
     std::string servicePath;
     servicePath.resize(MAX_PATH);
 
@@ -143,74 +147,219 @@ bool ServiceInstaller::Install(const ServiceBase& service) {
     if (!servicePath.length()) return false;
 
     servicePath = std::string(&servicePath[0]) + std::string("\\ServicesTest.exe");
-
-    ServiceHandle svcControlManager = ::OpenSCManager(nullptr, nullptr,
-        SC_MANAGER_CONNECT |
-        SC_MANAGER_CREATE_SERVICE);
-    if (!svcControlManager) {
-        return false;
-    }
-
     const CString& depends = service.GetDependencies();
     const CString& acc = service.GetAccount();
     const CString& pass = service.GetPassword();
 
-    ServiceHandle servHandle = ::CreateService(svcControlManager,
-        service.GetName(),
-        service.GetDisplayName(),
-        SERVICE_ALL_ACCESS,
-        SERVICE_WIN32_OWN_PROCESS,
-        service.GetStartType(),
-        service.GetErrorControlType(),
-        servicePath.c_str(),
-        nullptr,
-        nullptr,
-        (depends.IsEmpty() ? nullptr : depends.GetString()),
-        (acc.IsEmpty() ? nullptr : acc.GetString()),
-        (pass.IsEmpty() ? nullptr : pass.GetString()));
-    if (!servHandle) {
-        return false;
-    }
+    if (bANSI) {
+        ServiceHandle svcControlManager = ::OpenSCManagerA(nullptr, nullptr,
+            SC_MANAGER_CONNECT |
+            SC_MANAGER_CREATE_SERVICE);
+        if (!svcControlManager) {
+            return false;
+        }
 
-    BOOL bSuccess = StartServiceA(servHandle, 0, NULL);
-    if (!bSuccess)
-    {
-        DWORD error = GetLastError();
-        error = 0;
+        ServiceHandle servHandle = ::CreateServiceA(svcControlManager,
+            service.GetName(),
+            service.GetDisplayName(),
+            SERVICE_ALL_ACCESS,
+            SERVICE_WIN32_OWN_PROCESS,
+            service.GetStartType(),
+            service.GetErrorControlType(),
+            servicePath.c_str(),
+            nullptr,
+            nullptr,
+            (depends.IsEmpty() ? nullptr : depends.GetString()),
+            (acc.IsEmpty() ? nullptr : acc.GetString()),
+            (pass.IsEmpty() ? nullptr : pass.GetString()));
+        if (!servHandle) {
+            return false;
+        }
+
+        CloseServiceHandle(svcControlManager);
+        CloseServiceHandle(servHandle);
+    } else {
+        ServiceHandle svcControlManager = ::OpenSCManagerW(nullptr, nullptr,
+            SC_MANAGER_CONNECT |
+            SC_MANAGER_CREATE_SERVICE);
+        if (!svcControlManager) {
+            return false;
+        }
+
+        ServiceHandle servHandle = ::CreateServiceW(svcControlManager,
+            A2W(service.GetName()),
+            A2W(service.GetDisplayName()),
+            SERVICE_ALL_ACCESS,
+            SERVICE_WIN32_OWN_PROCESS,
+            service.GetStartType(),
+            service.GetErrorControlType(),
+            A2W(servicePath.c_str()),
+            nullptr,
+            nullptr,
+            (depends.IsEmpty() ? nullptr : A2W(depends.GetString())),
+            (acc.IsEmpty() ? nullptr : A2W(acc.GetString())),
+            (pass.IsEmpty() ? nullptr : A2W(pass.GetString())));
+        if (!servHandle) {
+            return false;
+        }
+
+        CloseServiceHandle(svcControlManager);
+        CloseServiceHandle(servHandle);
+    }
+    return true;
+}
+
+//static
+bool ServiceInstaller::Start(const ServiceBase& service, bool bANSI) {
+    USES_CONVERSION;
+    SERVICE_STATUS_PROCESS ssStatus;
+    DWORD dwBytesNeeded;
+
+    if (bANSI) {
+        ServiceHandle svcControlManager = ::OpenSCManagerA(nullptr, nullptr,
+            SC_MANAGER_CONNECT);
+        if (!svcControlManager) {
+            return false;
+        }
+
+        ServiceHandle servHandle = ::OpenServiceA(svcControlManager, service.GetName(),
+            SERVICE_ALL_ACCESS);
+        if (!servHandle) {
+            CloseServiceHandle(svcControlManager);
+            return false;
+        }
+
+        if (!QueryServiceStatusEx(servHandle, SC_STATUS_PROCESS_INFO, (LPBYTE)&ssStatus, 
+            sizeof(SERVICE_STATUS_PROCESS), &dwBytesNeeded)) {
+            CloseServiceHandle(servHandle);
+            CloseServiceHandle(svcControlManager);
+            return false;
+        }
+
+        if (ssStatus.dwCurrentState != SERVICE_STOPPED && ssStatus.dwCurrentState != SERVICE_STOP_PENDING)
+        {
+            printf("Cannot start the service because it is already running\n");
+            CloseServiceHandle(servHandle);
+            CloseServiceHandle(svcControlManager);
+            return false;
+        }
+
+        if (!::StartServiceA(servHandle, 0, NULL)) {
+            CloseServiceHandle(servHandle);
+            CloseServiceHandle(svcControlManager);
+            return false;
+        }
+
+        CloseServiceHandle(servHandle);
+        CloseServiceHandle(svcControlManager);
+    }
+    else {
+        ServiceHandle svcControlManager = ::OpenSCManagerW(nullptr, nullptr,
+            SC_MANAGER_CONNECT);
+        if (!svcControlManager) {
+            return false;
+        }
+
+        ServiceHandle servHandle = ::OpenServiceW(svcControlManager, A2W(service.GetName()),
+            SERVICE_ALL_ACCESS);
+        if (!servHandle) {
+            CloseServiceHandle(svcControlManager);
+            return false;
+        }
+
+        if (!QueryServiceStatusEx(servHandle, SC_STATUS_PROCESS_INFO, (LPBYTE)&ssStatus,
+            sizeof(SERVICE_STATUS_PROCESS), &dwBytesNeeded)) {
+            CloseServiceHandle(servHandle);
+            CloseServiceHandle(svcControlManager);
+            return false;
+        }
+        if (ssStatus.dwCurrentState != SERVICE_STOPPED && ssStatus.dwCurrentState != SERVICE_STOP_PENDING)
+        {
+            printf("Cannot start the service because it is already running\n");
+            CloseServiceHandle(servHandle);
+            CloseServiceHandle(svcControlManager);
+            return false;
+        }
+
+        if (!::StartServiceW(servHandle, 0, NULL)) {
+            CloseServiceHandle(servHandle);
+            CloseServiceHandle(svcControlManager);
+            return false;
+        }
     }
 
     return true;
 }
 
 //static
-bool ServiceInstaller::Uninstall(const ServiceBase& service) {
-    ServiceHandle svcControlManager = ::OpenSCManager(nullptr, nullptr,
-        SC_MANAGER_CONNECT);
+bool ServiceInstaller::Uninstall(const ServiceBase& service, bool bANSI) {
+    USES_CONVERSION;
 
-    if (!svcControlManager) {
-        return false;
-    }
+    if (bANSI) {
+        ServiceHandle svcControlManager = ::OpenSCManagerA(nullptr, nullptr,
+            SC_MANAGER_CONNECT);
+        if (!svcControlManager) {
+            CloseServiceHandle(svcControlManager);
+            return false;
+        }
 
-    ServiceHandle servHandle = ::OpenService(svcControlManager, service.GetName(),
-        SERVICE_QUERY_STATUS |
-        SERVICE_STOP |
-        DELETE);
+        ServiceHandle servHandle = ::OpenServiceA(svcControlManager, service.GetName(),
+            SERVICE_QUERY_STATUS |
+            SERVICE_STOP |
+            DELETE);
+        if (!servHandle) {
+            CloseServiceHandle(servHandle);
+            CloseServiceHandle(svcControlManager);
+            return false;
+        }
 
-    if (!servHandle) {
-        return false;
-    }
-
-    SERVICE_STATUS servStatus = {};
-    if (::ControlService(servHandle, SERVICE_CONTROL_STOP, &servStatus)) {
-        while (::QueryServiceStatus(servHandle, &servStatus)) {
-            if (servStatus.dwCurrentState != SERVICE_STOP_PENDING) {
-                break;
+        SERVICE_STATUS servStatus = {};
+        if (::ControlService(servHandle, SERVICE_CONTROL_STOP, &servStatus)) {
+            while (::QueryServiceStatus(servHandle, &servStatus)) {
+                if (servStatus.dwCurrentState != SERVICE_STOP_PENDING) {
+                    break;
+                }
             }
         }
-    }
 
-    if (!::DeleteService(servHandle)) {
-        return false;
+        if (!::DeleteService(servHandle)) {
+            return false;
+        }
+        CloseServiceHandle(servHandle);
+        CloseServiceHandle(svcControlManager);
+    }
+    else {
+        ServiceHandle svcControlManager = ::OpenSCManagerW(nullptr, nullptr,
+        SC_MANAGER_CONNECT);
+        if (!svcControlManager) {
+            CloseServiceHandle(svcControlManager);
+            return false;
+        }
+
+        ServiceHandle servHandle = ::OpenServiceW(svcControlManager, A2W(service.GetName()),
+            SERVICE_QUERY_STATUS |
+            SERVICE_STOP |
+            DELETE);
+        if (!servHandle) {
+            CloseServiceHandle(servHandle);
+            CloseServiceHandle(svcControlManager);
+            return false;
+        }
+
+        SERVICE_STATUS servStatus = {};
+        if (::ControlService(servHandle, SERVICE_CONTROL_STOP, &servStatus)) {
+            while (::QueryServiceStatus(servHandle, &servStatus)) {
+                if (servStatus.dwCurrentState != SERVICE_STOP_PENDING) {
+                    break;
+                }
+            }
+        }
+
+        if (!::DeleteService(servHandle)) {
+            return false;
+        }
+        CloseServiceHandle(servHandle);
+        CloseServiceHandle(svcControlManager);
     }
 
     return true;

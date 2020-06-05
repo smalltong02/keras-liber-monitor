@@ -63,9 +63,6 @@ int main()
         else
             error("LoadLibraryA [user32.dll] success!\n");
         std::this_thread::sleep_for(std::chrono::seconds(5));
-        PVOID aaa = QueueUserAPC;
-        getchar();
-        getchar();
         return 0;
     }
     return -1;

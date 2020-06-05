@@ -29,11 +29,8 @@ public:
     }
     void ClearLogsCount() { return m_pipe_object->ClearLogsCount(); }
     int GetTotalLogs() const { return m_pipe_object->GetTotalLogs(); }
-    int GetOpenSCManagerCount() const { return m_nopenscmanager_count; }
-    int GetCreateServiceCount() const { return m_ncreateservice_count; }
-    int GetOpenServiceCount() const { return m_nopenservice_count; }
-    int GetDeleteServiceCount() const { return m_ndeleteservice_count; }
-    int GetStartServiceCount() const { return m_nstartservice_count; }
+    std::unordered_map<std::string, int> GetLogCountMap() const { return log_count_map; }
+    void ClearLogCountMap() { log_count_map.clear(); }
     void EnableServiceTest() { m_enable_service = true; }
     void DisableServiceTest() { m_enable_service = false; }
     void EnableDebugPid() { m_enable_debugpid = true; }
@@ -61,11 +58,6 @@ public:
         if (it == m_debugpid_list.end()) return 0;
         return it->second;
     }
-    void Stop() {
-        if (m_pipe_object)
-            m_pipe_object->StopListen();
-        //m_pipe_object.release();
-    }
 private:
     bool CheckVerifier(const std::unique_ptr<std::stringstream>& log) const
     {
@@ -74,24 +66,67 @@ private:
             return false;
         return true;
     }
+
+    rapidjson::Document logToJson(const std::unique_ptr<std::stringstream>& log) {
+        rapidjson::Document log_json;
+        std::string log_string = log->str();
+        std::vector<int> insert;
+
+        for (int i = 0; i < log_string.length(); ++i) {
+            if (log_string[i] == ';')
+                log_string[i] = ',';
+            if (i > 0 && i < log_string.length() - 1) {
+                if (log_string[i - 1] == '\"' && log_string[i] == '{') {
+                    log_string[i - 1] = ' ';
+                }
+                else if (log_string[i] == '}' && log_string[i + 1] == '\"') {
+                    log_string[i + 1] = ' ';
+                }
+                else if (log_string[i] == '\\' && log_string[i - 1] == ':') {
+                    insert.push_back(i);
+                }
+            }
+        }
+        log_json.Parse(log_string.c_str());
+        return log_json;
+    }
+
+    void addToLogCountMap(std::string key) {
+        if (log_count_map.find(key) != log_count_map.end()) {
+            log_count_map[key]++;
+        }
+        else {
+            log_count_map[key] = 1;
+        }
+    }
+
     void CheckServices(const std::unique_ptr<std::stringstream>& log)
     {
         if (!log) return;
         if (m_enable_service)
         {
-            if (log->str().find("\"Action\": \"S0\"") != std::string::npos)
-                m_nopenscmanager_count++;
-            else if (log->str().find("\"Action\": \"S1\"") != std::string::npos)
-                m_ncreateservice_count++;
-            else if (log->str().find("\"Action\": \"S2\"") != std::string::npos)
-                m_nopenservice_count++;
-            else if (log->str().find("\"Action\": \"S3\"") != std::string::npos)
-                m_ndeleteservice_count++;
-            else if (log->str().find("\"Action\": \"S4\"") != std::string::npos)
-                m_nstartservice_count++;
+            if (log->str().find("\"Action\": \"S0\"") != std::string::npos) {
+                addToLogCountMap("S0");
+            }
+            else if (log->str().find("\"Action\": \"S1\"") != std::string::npos) {
+                addToLogCountMap("S1");
+            }
+            else if (log->str().find("\"Action\": \"S2\"") != std::string::npos) {
+                addToLogCountMap("S2");
+            }
+            else if (log->str().find("\"Action\": \"S3\"") != std::string::npos) {
+                addToLogCountMap("S3");
+            }
+            else if (log->str().find("\"Action\": \"S4\"") != std::string::npos) {
+                addToLogCountMap("S4");
+            }
+            else if (log->str().find("\"Action\": \"S5\"") != std::string::npos) {
+                addToLogCountMap("S5");
+            }
         }
         return;
     }
+
     void CheckDebugPid(const std::unique_ptr<std::stringstream>& log)
     {
         if (!log) return;
@@ -108,7 +143,7 @@ private:
                 {
                     char* nodig = nullptr;
                     std::string result_string = match_result[0];
-                    result_string = result_string.substr(1, result_string.length()-2);
+                    result_string = result_string.substr(1, result_string.length() - 2);
                     DWORD_PTR pid = (DWORD_PTR)std::strtoll(result_string.c_str(), &nodig, 10);
                     {
                         std::lock_guard lock(m_debugpid_mutex);
@@ -123,6 +158,7 @@ private:
         }
         return;
     }
+
     void LogCallBack(const std::unique_ptr<std::stringstream> log) {
         ASSERT_TRUE(log);
         if (!log) return;
@@ -146,15 +182,11 @@ private:
     std::mutex m_log_mutex;
     FILE* m_tempfp = nullptr;
     std::unique_ptr<CLpcPipeObject> m_pipe_object;
+    std::unordered_map<std::string, int> log_count_map;
     std::atomic_bool m_enable_service = false;
     std::atomic_bool m_enable_debugpid = false;
     std::mutex m_debugpid_mutex;
     std::map<DWORD_PTR, int> m_debugpid_list;
-    std::atomic_int m_nopenscmanager_count = 0;
-    std::atomic_int m_ncreateservice_count = 0;
-    std::atomic_int m_nopenservice_count = 0;
-    std::atomic_int m_ndeleteservice_count = 0;
-    std::atomic_int m_nstartservice_count = 0;
 };
 
 class HipsHookTest

@@ -107,7 +107,18 @@
     "PreLog": [
       "uFlags",
       "dwReason"
-    ]
+    ],
+
+    "PreCheck": {
+      "0": {
+        "Check": {
+          "uFlags": "%var0 == 'EWX_SHUTDOWN' || %var0 == 'EWX_REBOOT' || %var0 == 'EWX_POWEROFF'"
+        },
+        "Modify": {
+          "Return": "%var1 = 1"
+        }
+      }
+    }
   },
 
   "GetDiskFreeSpaceExA": {

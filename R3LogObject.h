@@ -455,6 +455,7 @@ namespace cchips {
                             break;
                         }
                         warning("Could not open pipe: 0.1 second wait timed out.");
+                        std::this_thread::sleep_for(std::chrono::microseconds(100));
                         continue;
                     }
                     count++;

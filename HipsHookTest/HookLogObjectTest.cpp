@@ -27,7 +27,6 @@ public:
     }
     ~CClientObject() { m_pipe_object->StopConnect(); }
     std::unique_ptr<LOGPAIR> GetData() {
-        std::lock_guard lock(m_mutex);
         if (m_log)
             return std::move(m_log);
         else return nullptr;
@@ -39,7 +38,6 @@ public:
     void SendData() {
         std::stringstream send_ss;
         send_ss << "test-" << m_tag << ": " << m_count++;
-        std::lock_guard lock(m_mutex);
         m_log = std::make_unique<LOGPAIR>(LOGPAIR("Test", send_ss.str()));
         m_pipe_object->Activated();
     }
@@ -58,7 +56,6 @@ public:
 private:
     int m_count = 0;
     int m_tag;
-    std::mutex m_mutex;
     std::unique_ptr<LOGPAIR> m_log;
     std::unique_ptr<CLpcPipeObject> m_pipe_object;
 };
@@ -94,7 +91,7 @@ TEST_F(HookLogObjectTest, PipeLogsCountTest)
                 while (brunning)
                 {
                     client.SendData();
-                    //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
                 return client.GetTotalLogs();
             });
@@ -103,7 +100,6 @@ TEST_F(HookLogObjectTest, PipeLogsCountTest)
         thread.detach();
     }
     std::this_thread::sleep_for(std::chrono::seconds(10));
-    g_server_object->Stop();
     brunning = false;
     for (auto& r : results) {
         send_logs_count += r.get();

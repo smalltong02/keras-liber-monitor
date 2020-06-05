@@ -30,19 +30,45 @@ protected:
     }
 
     void TearDown() override {
+        ServicesTestObject service;
+        ServiceInstaller::Uninstall(service);
+        g_server_object->ClearLogCountMap();
         g_server_object->DisableServiceTest();
         ASSERT_TRUE(g_hook_test_object->DisableAllApis());
     }
 };
 
-TEST_F(HookServicesTest, ServicesTest)
+
+TEST_F(HookServicesTest, ServicesTestA)
 {
     ServicesTestObject service;
-    ServiceInstaller::Uninstall(service);
     ServiceInstaller::Install(service);
+    ServiceInstaller::Start(service);
     ServiceInstaller::Uninstall(service);
     Sleep(100); // waiting 100 milliseconds for receive log.
-    ASSERT_TRUE(g_server_object->GetOpenSCManagerCount() == 2);
+    std::unordered_map<std::string, int> log_count_map = g_server_object->GetLogCountMap();
+    ASSERT_TRUE(log_count_map["S0"] == 3); // OpenSCManager
+    ASSERT_TRUE(log_count_map["S1"] == 1); // CreateService
+    ASSERT_TRUE(log_count_map["S2"] == 2); // OpenService
+    ASSERT_TRUE(log_count_map["S3"] == 1); // DeleteService
+    ASSERT_TRUE(log_count_map["S4"] == 1); // StartService
+    ASSERT_TRUE(log_count_map["S5"] == 2); // QueryServiceStatus
+}
+
+TEST_F(HookServicesTest, ServicesTestW)
+{
+    ServicesTestObject service;
+    ServiceInstaller::Install(service, false);
+    ServiceInstaller::Start(service, false);
+    ServiceInstaller::Uninstall(service, false);
+    Sleep(100); // waiting 100 milliseconds for receive log.
+    std::unordered_map<std::string, int> log_count_map = g_server_object->GetLogCountMap();
+    ASSERT_TRUE(log_count_map["S0"] == 3);
+    ASSERT_TRUE(log_count_map["S1"] == 1);
+    ASSERT_TRUE(log_count_map["S2"] == 2);
+    ASSERT_TRUE(log_count_map["S3"] == 1);
+    ASSERT_TRUE(log_count_map["S4"] == 1);
+    ASSERT_TRUE(log_count_map["S5"] == 2);
 }
 #endif
 

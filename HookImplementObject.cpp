@@ -30,7 +30,7 @@ namespace cchips {
                 ULONG_PTR entry_count = __object->GetTlsValueForThreadIdx();
                 CLogHandle* __log = nullptr;
                 processing_status __status = __object->Preprocessing(__hook_node, __addr, __psize, __return, entry_count, &__log);
-                if (__status == processing_continue)
+                if (__status != processing_exit)
                 {
                     void* __func = __hook_node->orgin_api_implfunc;
                     char** __params = nullptr;
@@ -38,7 +38,8 @@ namespace cchips {
                     CFunction::_call_convention __call_conv = __hook_node->function->GetCallConv();
 
                     MACRO_CALL_ORGINAL_(__params, __psize, __call_conv, __func, __return)
-                        __status = __object->Postprocessing(__hook_node, __addr, __psize, __return, entry_count, &__log);
+                    if(__status == processing_continue)
+                        __object->Postprocessing(__hook_node, __addr, __psize, __return, entry_count, &__log);
                 }
                 __object->ReleaseTlsValueForThreadIdx();
                 InterlockedDecrement(&__hook_node->shared_count);
@@ -127,7 +128,7 @@ namespace cchips {
 
         std::shared_ptr<CFunction> func_object = node_elem->function;
         std::shared_ptr<CHookImplementObject> hook_implement_object = node_elem->hook_implement_object;
-        if (hook_implement_object->IsFilterThread(std::this_thread::get_id())) return processing_continue;
+        if (hook_implement_object->IsFilterThread(std::this_thread::get_id())) return processing_skip;
         if (params_size == 0) params_size = (int)func_object->GetArgumentAlignSize();
 #ifdef _X86_
         char* __params = reinterpret_cast<char*>(reinterpret_cast<ULONG_PTR>(param_addr) + CFunction::stack_aligned_bytes);
@@ -145,7 +146,7 @@ namespace cchips {
         {
             // API call has been processed or logged, so didn't need to more processed for avoid re-entry.
             if (entry_count)
-                return processing_continue;
+                return processing_skip;
         }
 
         std::unique_ptr<CLogHandle> log_handle = std::make_unique<CLogHandle>(func_object->GetFeature(), CLogObject::logtype::log_invalid);
@@ -158,24 +159,26 @@ namespace cchips {
 #ifdef _AMD64_
         char** __rev_params = (char**)(param_addr);
 #endif
+        processing_status status = processing_skip;
         for (const auto& pre_func : func_object->GetPreProcessing())
         {
-            processing_status status = processing_skip;
             MACRO_PUSH_PARAMS_(pnode, __rev_params, params_size, pre_func, status)
-            if (status == processing_skip)
-                return processing_skip;
+            if (status != processing_continue)
+                return status;
         }
 
-        if (node_elem->function->ProcessingEnsure(pnode) == processing_skip)
-            return processing_skip;
-        if (node_elem->function->PreprocessingLog(pnode) == processing_skip)
-            return processing_skip;
-        if (node_elem->function->PreprocessingChecks(pnode) == processing_skip)
-            return processing_skip;
+        do {
+            status = node_elem->function->ProcessingEnsure(pnode);
+            if (status != processing_continue) break;
+            status = node_elem->function->PreprocessingLog(pnode);
+            if (status != processing_continue) break;
+            status = node_elem->function->PreprocessingChecks(pnode);
+            if (status != processing_continue) break;
+        } while (0);
 
         *__log = log_handle.release();
 
-        return processing_continue;
+        return status;
     }
 
     processing_status CHookImplementObject::Postprocessing(CHookImplementObject::hook_node* node_elem, PVOID param_addr, int& params_size, ULONG_PTR& func_return, DWORD entry_count, CLogHandle** __log)
@@ -185,7 +188,6 @@ namespace cchips {
         std::unique_ptr<CLogHandle> log_handle(*__log);
         std::shared_ptr<CFunction> func_object = node_elem->function;
         std::shared_ptr<CHookImplementObject> hook_implement_object = node_elem->hook_implement_object;
-        if (hook_implement_object->IsFilterThread(std::this_thread::get_id())) return processing_continue;
         if (params_size == 0) params_size = (int)func_object->GetArgumentAlignSize();
 #ifdef _X86_
         char* __params = reinterpret_cast<char*>(reinterpret_cast<ULONG_PTR>(param_addr) + CFunction::stack_aligned_bytes);
@@ -193,18 +195,6 @@ namespace cchips {
 #ifdef _AMD64_
         char* __params = reinterpret_cast<char*>(param_addr);
 #endif
-
-        if (func_object->GetSpecial())
-        {
-            // If there are API hooks in the upper layer that have been processed, this hook will not be processed when Special is false
-        }
-        else
-        {
-            // API call has been processed or logged, so didn't need to more processed.
-            if (entry_count)
-                return processing_continue;
-        }
-
         ASSERT(log_handle != nullptr);
         detour_node node = { &func_return, __params, (size_t)params_size, node_elem->function, node_elem->hook_implement_object, log_handle->GetHandle() };
         detour_node* pnode = &node;
@@ -214,25 +204,27 @@ namespace cchips {
 #ifdef _AMD64_
         char** __rev_params = (char**)(param_addr);
 #endif
+        processing_status status = processing_skip;
         for (const auto& post_func : func_object->GetPostProcessing())
         {
-            processing_status status = processing_skip;
             MACRO_PUSH_PARAMS_(pnode, __rev_params, params_size, post_func, status)
-            if (status == processing_skip)
-                return processing_skip;
+                if (status != processing_continue)
+                    return status;
         }
-        if (node_elem->function->CheckReturn(pnode) == processing_skip)
-            return processing_skip;
-        if (node_elem->function->PostprocessingLog(pnode) == processing_skip)
-            return processing_skip;
-        if (node_elem->function->PostprocessingChecks(pnode) == processing_skip)
-            return processing_skip;
+        do {
+            status = node_elem->function->CheckReturn(pnode);
+            if (status != processing_continue) break;
+            status = node_elem->function->PostprocessingLog(pnode);
+            if (status != processing_continue) break;
+            status = node_elem->function->PostprocessingChecks(pnode);
+            if (status != processing_continue) break;
+        } while (0);
         if (log_handle->LogCounts())
         {
             log_handle->AddLog(LOGPAIR("API", func_object->GetName()));
             log_handle->FreeHandle(CLogObject::logtype::log_event);
         }
-        return processing_continue;
+        return status;
     }
 
     bool CHookImplementObject::HookProcessing()
@@ -298,7 +290,7 @@ namespace cchips {
 
             processing_status __status = processing_continue;
             if (__bforward) __status = __object->Preprocessing(__hook_node, __new_addr, __psize, __return, entry_count, &__log);
-            if (__status == processing_continue)
+            if (__status != processing_exit)
             {
                 if (__psize == 0) __psize = (int)__hook_node->function->GetArgumentAlignSize();
                 void* __func = __hook_node->orgin_api_implfunc;
@@ -306,7 +298,8 @@ namespace cchips {
                 CFunction::_call_convention __call_conv = __hook_node->function->GetCallConv();
                 ASSERT(__call_conv == CFunction::_call_convention::call_stdcall); // now only support stdcall, actually is fastcall on x64.
                 MACRO_CALL_ORGINAL_(__params, __psize, __call_conv, __func, &__return)
-                    if (__bforward) __status = __object->Postprocessing(__hook_node, __new_addr, __psize, __return, entry_count, &__log);
+                if(__status == processing_continue)
+                    if (__bforward) __object->Postprocessing(__hook_node, __new_addr, __psize, __return, entry_count, &__log);
             }
             __object->ReleaseTlsValueForThreadIdx();
             InterlockedDecrement(&__hook_node->shared_count);

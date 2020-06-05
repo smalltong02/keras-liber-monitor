@@ -131,8 +131,9 @@ private:
 
 class ServiceInstaller {
 public:
-    static bool Install(const ServiceBase& service);
-    static bool Uninstall(const ServiceBase& service);
+    static bool Install(const ServiceBase& service, bool bANSI = true);
+    static bool Start(const ServiceBase& service, bool bANSI = true);
+    static bool Uninstall(const ServiceBase& service, bool bANSI = true);
 private:
     ServiceInstaller() {}
 };

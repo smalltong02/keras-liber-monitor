@@ -917,7 +917,7 @@ namespace cchips {
         processing_status PostprocessingChecks(PVOID pnode) { return ProcessingChecks(pnode, false); }
 
         bool checking(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const;
-        bool modifying(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle);
+        processing_status modifying(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle);
         bool handling(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const;
         bool logging(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const;
     private:

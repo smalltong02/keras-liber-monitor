@@ -21,7 +21,7 @@ processing_status WINAPI detour_getModuleHandle(CHookImplementObject::detour_nod
 bool process_loadLibrary(CHookImplementObject::detour_node* node, std::string& lib_name, std::shared_ptr<CLogHandle>& log_handle)
 {
     if (!lib_name.length()) return false;
-    if (!node && !node->log_entry) return processing_continue;
+    if (!node || !node->log_entry) return processing_skip;
     BEGIN_LOG(lib_name);
     if (g_impl_object)
     {
@@ -79,9 +79,10 @@ processing_status WINAPI CHookImplementObject::detour_loadLibraryA(CHookImplemen
     ASSERT(node->return_va != nullptr);
     ASSERT(node->log_entry != nullptr);
     ASSERT(node->function != nullptr);
-    if (!node || !node->return_va || !node->log_entry) return processing_continue;
-    if (node->function->CheckReturn(node) == processing_skip)
-        return processing_skip;
+    if (!node || !node->return_va || !node->log_entry) return processing_skip;
+    processing_status status;
+    if ((status = node->function->CheckReturn(node)) != processing_continue)
+        return status;
     BEGIN_LOG("delay_hooking");
     HMODULE hmod = *reinterpret_cast<HMODULE*>(node->return_va);
     if (hmod != nullptr && lpLibFileName)
@@ -100,9 +101,10 @@ processing_status WINAPI CHookImplementObject::detour_loadLibraryExA(CHookImplem
     ASSERT(node->return_va != nullptr);
     ASSERT(node->log_entry != nullptr);
     ASSERT(node->function != nullptr);
-    if (!node || !node->return_va || !node->log_entry) return processing_continue;
-    if (node->function->CheckReturn(node) == processing_skip)
-        return processing_skip;
+    if (!node || !node->return_va || !node->log_entry) return processing_skip;
+    processing_status status;
+    if ((status = node->function->CheckReturn(node)) != processing_continue)
+        return status;
     BEGIN_LOG("delay_hooking");
     HMODULE hmod = *reinterpret_cast<HMODULE*>(node->return_va);
     if (hmod != nullptr && lpLibFileName)
@@ -121,9 +123,10 @@ processing_status WINAPI CHookImplementObject::detour_loadLibraryW(CHookImplemen
     ASSERT(node->return_va != nullptr);
     ASSERT(node->log_entry != nullptr);
     ASSERT(node->function != nullptr);
-    if (!node || !node->return_va || !node->log_entry) return processing_continue;
-    if (node->function->CheckReturn(node) == processing_skip)
-        return processing_skip;
+    if (!node || !node->return_va || !node->log_entry) return processing_skip;
+    processing_status status;
+    if ((status = node->function->CheckReturn(node)) != processing_continue)
+        return status;
     BEGIN_LOG("delay_hooking");
     HMODULE hmod = *reinterpret_cast<HMODULE*>(node->return_va);
     if (hmod != nullptr && lpLibFileName)
@@ -142,9 +145,10 @@ processing_status WINAPI CHookImplementObject::detour_loadLibraryExW(CHookImplem
     ASSERT(node->return_va != nullptr);
     ASSERT(node->log_entry != nullptr);
     ASSERT(node->function != nullptr);
-    if (!node || !node->return_va || !node->log_entry) return processing_continue;
-    if (node->function->CheckReturn(node) == processing_skip)
-        return processing_skip;
+    if (!node || !node->return_va || !node->log_entry) return processing_skip;
+    processing_status status;
+    if ((status = node->function->CheckReturn(node)) != processing_continue)
+        return status;
     BEGIN_LOG("delay_hooking");
     HMODULE hmod = *reinterpret_cast<HMODULE*>(node->return_va);
     if (hmod != nullptr && lpLibFileName)
@@ -162,7 +166,7 @@ processing_status WINAPI CHookImplementObject::detour_ntQueryInformationProcess(
     ASSERT(node != nullptr);
     ASSERT(node->return_va != nullptr);
     ASSERT(node->log_entry != nullptr);
-    if (!node || !node->return_va || !node->log_entry) return processing_continue;
+    if (!node || !node->return_va || !node->log_entry) return processing_skip;
     return processing_continue;
 }
 
@@ -244,8 +248,8 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IEnumWbemClassO
     ASSERT(node->log_entry != nullptr);
     ASSERT(node->function != nullptr);
     ASSERT(node->hook_implement_object != nullptr);
-    if (!node || !node->return_va || !node->log_entry) return processing_continue;
-    if (!node->hook_implement_object) return processing_continue;
+    if (!node || !node->return_va || !node->log_entry) return processing_skip;
+    if (!node->hook_implement_object) return processing_skip;
     if (!apObjects || !(*apObjects)) return processing_continue;
 
     HRESULT hr;
@@ -370,10 +374,11 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemClassObjec
     ASSERT(node->log_entry != nullptr);
     ASSERT(node->function != nullptr);
     ASSERT(node->hook_implement_object != nullptr);
-    if (!node || !node->return_va || !node->log_entry) return processing_continue;
-    if (node->function->CheckReturn(node) == processing_skip)
-        return processing_skip;
-    if (!node->hook_implement_object) return processing_continue;
+    if (!node || !node->return_va || !node->log_entry) return processing_skip;
+    processing_status status;
+    if ((status = node->function->CheckReturn(node)) != processing_continue)
+        return status;
+    if (!node->hook_implement_object) return processing_skip;
 
     HRESULT hr;
     VARIANT variant_value;
@@ -409,10 +414,11 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemClassObjec
     ASSERT(node->log_entry != nullptr);
     ASSERT(node->function != nullptr);
     ASSERT(node->hook_implement_object != nullptr);
-    if (!node || !node->return_va || !node->log_entry) return processing_continue;
-    if (node->function->CheckReturn(node) == processing_skip)
-        return processing_skip;
-    if (!node->hook_implement_object) return processing_continue;
+    if (!node || !node->return_va || !node->log_entry) return processing_skip;
+    processing_status status;
+    if ((status = node->function->CheckReturn(node)) != processing_continue)
+        return status;
+    if (!node->hook_implement_object) return processing_skip;
 
     HRESULT hr;
     VARIANT variant_value;
@@ -526,10 +532,11 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_E
     ASSERT(node->log_entry != nullptr);
     ASSERT(node->function != nullptr);
     ASSERT(node->hook_implement_object != nullptr);
-    if (!node || !node->return_va || !node->log_entry) return processing_continue;
-    if (node->function->CheckReturn(node) == processing_skip)
-        return processing_skip;
-    if (!node->hook_implement_object) return processing_continue;
+    if (!node || !node->return_va || !node->log_entry) return processing_skip;
+    processing_status status;
+    if ((status = node->function->CheckReturn(node)) != processing_continue)
+        return status;
+    if (!node->hook_implement_object) return processing_skip;
     std::shared_ptr<PVOID> log_handle = node->log_entry;
 
     if (strObjectPath == nullptr) return processing_continue;

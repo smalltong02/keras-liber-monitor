@@ -390,6 +390,7 @@
     <ClCompile Include="HookInjectDllTest.cpp" />
     <ClCompile Include="HookLogObjectTest.cpp" />
     <ClCompile Include="HookServicesTest.cpp" />
+    <ClCompile Include="HookSystemTest.cpp" />
     <ClCompile Include="HookWmiMethodsTest.cpp" />
     <ClCompile Include="packages\benchmark\src\benchmark.cc">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>

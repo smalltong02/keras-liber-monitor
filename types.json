@@ -47,7 +47,8 @@
     "CWSTR": "WCHAR",
     "REFCLSID": "GUID",
     "REFIID": "GUID",
-    "IID": "COSERVERINFO"
+    "IID": "COSERVERINFO",
+    "SC_STATUS_TYPE": "INT"
   },
   
   "HandleDefine": {
@@ -98,7 +99,29 @@
 	  "Reserved1": "BYTE[24]",
       "Reserved2": "LPVOID[4]",
       "NumberOfProcessors": "CHAR"
-	}
+	},
+
+	"SERVICE_STATUS": {
+	  "dwServiceType": "DWORD",
+	  "dwCurrentState": "DWORD",
+	  "dwControlsAccepted": "DWORD",
+	  "dwWin32ExitCode": "DWORD",
+	  "dwServiceSpecificExitCode": "DWORD",
+      "dwCheckPoint": "DWORD",
+	  "dwWaitHint": "DWORD"
+	},
+
+	"SERVICE_STATUS_PROCESS": {
+      "dwServiceType": "DWORD",
+      "dwCurrentState": "DWORD",
+      "dwControlsAccepted": "DWORD",
+      "dwWin32ExitCode": "DWORD",
+      "dwServiceSpecificExitCode": "DWORD",
+      "dwCheckPoint": "DWORD",
+      "dwWaitHint": "DWORD",
+      "dwProcessId": "DWORD",
+      "dwServiceFlags": "DWORD"
+    }
   },
   
   "Flags": {

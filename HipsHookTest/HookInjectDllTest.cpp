@@ -154,7 +154,7 @@ TEST_F(HookInjectDllTest, InjectDllTestX64toX64)
     PROCESS_INFORMATION pi = { };
     ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x64\\ServicesTest.exe --normal", pi));
     g_server_object->AddDebugPid(pi.dwProcessId);
-    ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId, pi.dwThreadId));
+    ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId));
     ResumeThread(pi.hThread);
     WaitForSingleObject(pi.hProcess, INFINITE);
     // please used debug version of hipshook.dll, There will be debugging log.
