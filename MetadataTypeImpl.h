@@ -657,7 +657,7 @@ namespace cchips {
             for (const auto& elem : *this) {
                 if (!elem.second.second.second)
                 {
-                    ss.str(""); return ss;
+                    ss.str(""); ss.clear(); return ss;
                 }
                 if (!ss.str().length())
                     ss << "{ ";
@@ -773,7 +773,7 @@ namespace cchips {
                 if (!ss.str().length()) return ss;
                 char* nodig = nullptr;
                 int flag_value = std::strtol(ss.str().c_str(), &nodig, 10);
-                ss.str("");
+                ss.str(""); ss.clear();
                 ss << GetFlagStr(flag_value).c_str();
             }
             return ss;

@@ -4,7 +4,6 @@
 #include <windows.h>
 #include <string>
 #include <vector>
-#include <mutex>
 #include "ExceptionThrow.h"
 #include "SpecialLog.h"
 #include "deffeature.h"
@@ -66,10 +65,9 @@ namespace cchips {
                 std::string unpack_buffer(buffer, len);
                 if (unpack_buffer.length() == len)
                 {
-                    std::unique_ptr<std::stringstream> ss_ptr(Unpack(unpack_buffer));
-                    if (!ss_ptr) return false;
-                    *ss_ptr << std::endl;
-                    fputs(ss_ptr->str().c_str(), m_tempfp);
+                    std::unique_ptr<CRapidJsonWrapper> wrapper_ptr(Unpack(unpack_buffer));
+                    if (!wrapper_ptr || !wrapper_ptr->IsValid()) return false;
+                    fputs(wrapper_ptr->Serialize().c_str(), m_tempfp);
                     fflush(m_tempfp);
                     return true;
                 }
@@ -144,7 +142,7 @@ namespace cchips {
             m_socket_object->Activated();
             return true;
         }
-        std::unique_ptr<LOGPAIR> GetData();
+        RAPID_DOC_PAIR GetData();
         int GetTotalLogs() const { return m_socket_object->GetTotalLogs(); }
         void EnableLog() { m_valid = true; }
         void DisableLog() { m_valid = false; }
@@ -167,7 +165,6 @@ namespace cchips {
         }
         bool m_valid = true;
         static int m_reference_count;
-        static std::mutex m_mutex_log;
         std::unique_ptr<CSocketObject> m_socket_object = nullptr;
         sf::contfree_safe_ptr<std::list<std::shared_ptr<CLogEntry>>> m_cache_logs;
     };
@@ -175,73 +172,66 @@ namespace cchips {
     class CLogEntry
     {
     public:
-        using iterator = std::map<std::string, std::string>::iterator;
-        using const_iterator = std::map<std::string, std::string>::const_iterator;
-
-        CLogEntry(const std::string& name, CLogObject::logtype type = CLogObject::logtype::log_invalid) : log_name(name), m_log_type(type) {}
+        CLogEntry(const std::string& name, CLogObject::logtype type = CLogObject::logtype::log_invalid) : log_name(name), m_log_type(type) {  
+            m_log_value = std::make_unique<RapidValue>();
+            m_log_document = std::make_unique<RapidDocument>();
+            m_checker = std::make_unique<CChecker>();
+            if(m_log_value)
+                m_log_value->SetObject();
+            if(m_checker)
+                m_checker->Update(name); 
+        }
         ~CLogEntry() = default;
         const std::string& GetName() const { return log_name; }
         const CLogObject::logtype GetLogType() const { return m_log_type; }
         void SetLogType(CLogObject::logtype type) { m_log_type = type; }
-        const int GetLogSize() const { return (int)log_elements.size(); }
+        const int GetLogSize() const { if (m_log_value) return (int)m_log_value->MemberCount(); else return 0; }
+        std::unique_ptr<RapidValue>& GetElements() { return m_log_value; }
+        std::unique_ptr<CChecker>& GetChecker() { return m_checker; }
         bool AddLog(const LOGPAIR& log_pair) {
             ASSERT(log_pair.first.length());
             ASSERT(log_pair.second.length());
+            if (!m_log_value) return false;
             if (!log_pair.first.length()) return false;
             if (!log_pair.second.length()) return false;
-            const auto& it = log_elements.find(log_pair.first);
-            ASSERT(it == log_elements.end());
-            if (it != log_elements.end()) return false;
-            log_elements[log_pair.first] = log_pair.second;
+            if (GetLogSize())
+            {
+                const auto& it = m_log_value->FindMember(log_pair.first.c_str());
+                if (it != m_log_value->MemberEnd()) return false;
+            }
+            ADD_JSON_LOG(*m_log_document, *m_log_value, log_pair.first.c_str(), log_pair.second.c_str());
+            if (m_checker) m_checker->Update(log_pair.first);
+            if (m_checker) m_checker->Update(log_pair.second);
             return true;
         }
         bool AddLog(const std::shared_ptr<CLogEntry>& log_entry) {
             ASSERT(log_entry);
             if (!log_entry) return false;
-            std::stringstream ss;
-            for (const auto& entry : *log_entry)
-            {
-                if (!ss.str().length())
-                    ss << "{ ";
-                else
-                    ss << "; ";
-                ss << "\"" << entry.first << "\"" << ": " << "\"" << entry.second << "\"";
-            }
-            if (ss.str().length())
-            {
-                ss << " }";
-                return AddLog(LOGPAIR((*log_entry).GetName(), ss.str()));
-            }
-            return false;
+            if (!log_entry->GetName().length()) return false;
+            if (!log_entry->GetLogSize()) return false;
+            RapidValue key(log_entry->GetName().c_str(), m_log_document->GetAllocator());
+            RapidValue value(*log_entry->GetElements(), m_log_document->GetAllocator());
+            ADD_JSON_LOG(*m_log_document, *m_log_value, std::move(key), std::move(value));
+            if (m_checker) m_checker->Update(log_entry->GetChecker());
+            return true;
         }
-        std::unique_ptr<LOGPAIR> Serialize() const {
-            if (!log_name.length()) return nullptr;
-            if (!log_elements.size()) return nullptr;
-            std::stringstream ss;
-            for (const auto& elem : log_elements)
-            {
-                if (!ss.str().length())
-                    ss << "{ ";
-                else
-                    ss << "; ";
-                ss << "\"" << elem.first << "\"" << ": " << "\"" << elem.second << "\"";
-            }
-            if (ss.str().length())
-            {
-                ss << " }";
-                return std::make_unique<LOGPAIR>(log_name, ss.str());
-            }
-            return nullptr;
-        }
+        RAPID_DOC_PAIR Serialize() {
+            m_log_document->SetObject();
+            m_log_document->Swap(*GetElements());
+            RapidValue value(log_name.c_str(), m_log_document->GetAllocator());
+            ADD_JSON_DOC(*m_log_document, "Action", std::move(value));
+            std::unique_ptr<RapidDocument> ppp = std::make_unique<RapidDocument>();
+            std::unique_ptr<CChecker> qqq = std::make_unique<CChecker>();
+            ppp->CopyFrom(*m_log_document, ppp->GetAllocator());
 
-        iterator        begin() { return log_elements.begin(); }
-        const_iterator  begin() const { return log_elements.begin(); }
-        iterator        end() { return log_elements.end(); }
-        const_iterator  end() const { return log_elements.end(); }
+            return RAPID_DOC_PAIR(std::move(ppp), std::move(qqq));
+        }
     private:
         std::string log_name;
         CLogObject::logtype m_log_type;
-        std::map<std::string, std::string> log_elements;
+        std::unique_ptr<RapidValue> m_log_value = nullptr;
+        std::unique_ptr<RapidDocument> m_log_document = nullptr;
+        std::unique_ptr<CChecker> m_checker = nullptr;
     };
 
     class CLogHandle

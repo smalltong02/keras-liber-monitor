@@ -130,7 +130,7 @@ namespace cchips {
 #endif	// #ifdef _X86_
 
 #ifdef _AMD64_
-#define MACRO_PUSH_PARAMS_(__pnode, __params, __psize, __post_func) _callPreProcessing_x64((void*)__pnode, (ULONG_PTR*)__params, __psize, (void*)__post_func);
+#define MACRO_PUSH_PARAMS_(__pnode, __params, __psize, __post_func, __status) _callPreProcessing_x64((void*)__pnode, (ULONG_PTR*)__params, __psize, (void*)__post_func, __status);
 #define MACRO_CALL_ORGINAL_(__params, __psize, __call_conv, __func, __return) _callOrginApiFunction_x64((ULONG_PTR*)__params, __psize, (int)__call_conv, __func, __return);
 #endif // #ifdef _AMD64
 

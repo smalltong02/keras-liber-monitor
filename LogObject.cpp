@@ -111,7 +111,7 @@ namespace cchips {
 
     bool CLogObject::Initialize()
     {
-        std::function<std::unique_ptr<LOGPAIR>()> getdata(std::bind(&CLogObject::GetData, this));
+        std::function<RAPID_DOC_PAIR()> getdata(std::bind(&CLogObject::GetData, this));
         std::unique_ptr<CLpcPipeObject> pipe_ptr = std::make_unique<CLpcPipeObject>();
         if (pipe_ptr->Connect(getdata))
             m_socket_object = std::move(pipe_ptr);
@@ -126,7 +126,7 @@ namespace cchips {
         return false;
     }
 
-    std::unique_ptr<LOGPAIR> CLogObject::GetData() {
+    RAPID_DOC_PAIR CLogObject::GetData() {
         static std::once_flag flag;
         std::call_once(flag, &CHookImplementObject::AddFilterThread, g_impl_object, std::this_thread::get_id());
         std::shared_ptr<CLogEntry> log = nullptr;
@@ -138,7 +138,7 @@ namespace cchips {
         } while (0);
         if (log)
             return log->Serialize();
-        return nullptr;
+        return RAPID_DOC_PAIR(nullptr,nullptr);
     }
 
 } // namespace cchips

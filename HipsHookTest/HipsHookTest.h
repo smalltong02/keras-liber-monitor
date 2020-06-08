@@ -10,13 +10,14 @@
 #include "HookImplementObject.h"
 #include "utils.h"
 #include "commutils.h"
+#include "R3LogObject.h"
 
 class CServerObject
 {
 public:
     CServerObject() {
         m_tempfp = tmpfile();
-        std::function<void(const std::unique_ptr<std::stringstream>)> callback(std::bind(&CServerObject::LogCallBack, this, std::placeholders::_1));
+        std::function<void(const std::unique_ptr<CRapidJsonWrapper>)> callback(std::bind(&CServerObject::LogCallBack, this, std::placeholders::_1));
         m_pipe_object = std::make_unique<CLpcPipeObject>();
         if (m_pipe_object)
             m_pipe_object->Listen(std::move(callback));
@@ -59,36 +60,16 @@ public:
         return it->second;
     }
 private:
-    bool CheckVerifier(const std::unique_ptr<std::stringstream>& log) const
+    bool CheckVerifier(const CRapidJsonWrapper& rapid_log) const
     {
-        if (!log) return true;
-        if (log->str().find("\"verifier_result\": \"failed\"") != std::string::npos)
-            return false;
-        return true;
-    }
-
-    rapidjson::Document logToJson(const std::unique_ptr<std::stringstream>& log) {
-        rapidjson::Document log_json;
-        std::string log_string = log->str();
-        std::vector<int> insert;
-
-        for (int i = 0; i < log_string.length(); ++i) {
-            if (log_string[i] == ';')
-                log_string[i] = ',';
-            if (i > 0 && i < log_string.length() - 1) {
-                if (log_string[i - 1] == '\"' && log_string[i] == '{') {
-                    log_string[i - 1] = ' ';
-                }
-                else if (log_string[i] == '}' && log_string[i + 1] == '\"') {
-                    log_string[i + 1] = ' ';
-                }
-                else if (log_string[i] == '\\' && log_string[i - 1] == ':') {
-                    insert.push_back(i);
-                }
+        std::string verifier_result;
+        if (rapid_log.FindTopMember("verifier_result", verifier_result))
+        {
+            if (!verifier_result.compare("false")) {
+                return false;
             }
         }
-        log_json.Parse(log_string.c_str());
-        return log_json;
+        return true;
     }
 
     void addToLogCountMap(std::string key) {
@@ -100,58 +81,51 @@ private:
         }
     }
 
-    void CheckServices(const std::unique_ptr<std::stringstream>& log)
+    void CheckServices(const CRapidJsonWrapper& rapid_log)
     {
-        if (!log) return;
         if (m_enable_service)
         {
-            if (log->str().find("\"Action\": \"S0\"") != std::string::npos) {
-                addToLogCountMap("S0");
-            }
-            else if (log->str().find("\"Action\": \"S1\"") != std::string::npos) {
-                addToLogCountMap("S1");
-            }
-            else if (log->str().find("\"Action\": \"S2\"") != std::string::npos) {
-                addToLogCountMap("S2");
-            }
-            else if (log->str().find("\"Action\": \"S3\"") != std::string::npos) {
-                addToLogCountMap("S3");
-            }
-            else if (log->str().find("\"Action\": \"S4\"") != std::string::npos) {
-                addToLogCountMap("S4");
-            }
-            else if (log->str().find("\"Action\": \"S5\"") != std::string::npos) {
-                addToLogCountMap("S5");
+            std::string value;
+            if (rapid_log.FindTopMember("Action", value))
+            {
+                if (!value.compare("S0")) {
+                    addToLogCountMap("S0");
+                }
+                else if (!value.compare("S1")) {
+                    addToLogCountMap("S1");
+                }
+                else if (!value.compare("S2")) {
+                    addToLogCountMap("S2");
+                }
+                else if (!value.compare("S3")) {
+                    addToLogCountMap("S3");
+                }
+                else if (!value.compare("S4")) {
+                    addToLogCountMap("S4");
+                }
+                else if (!value.compare("S5")) {
+                    addToLogCountMap("S5");
+                }
             }
         }
         return;
     }
 
-    void CheckDebugPid(const std::unique_ptr<std::stringstream>& log)
+    void CheckDebugPid(const CRapidJsonWrapper& rapid_log)
     {
-        if (!log) return;
         if (m_enable_debugpid)
         {
-            size_t pos;
-            if ((pos = log->str().find("\"Pid\": ")) != std::string::npos)
+            std::string pid_string;
+            if (rapid_log.FindTopMember("Pid", pid_string))
             {
-                std::string regular_ex = "^\"[0-9]*\"";
-                std::regex reg_ex(regular_ex);
-                std::smatch match_result;
-                std::string search_string = log->str().substr(pos + 7);
-                if (std::regex_search(search_string, match_result, reg_ex))
+                char* nodig = nullptr;
+                DWORD_PTR pid = (DWORD_PTR)std::strtoll(pid_string.c_str(), &nodig, 10);
                 {
-                    char* nodig = nullptr;
-                    std::string result_string = match_result[0];
-                    result_string = result_string.substr(1, result_string.length() - 2);
-                    DWORD_PTR pid = (DWORD_PTR)std::strtoll(result_string.c_str(), &nodig, 10);
+                    std::lock_guard lock(m_debugpid_mutex);
+                    auto& it = m_debugpid_list.find(pid);
+                    if (it != m_debugpid_list.end())
                     {
-                        std::lock_guard lock(m_debugpid_mutex);
-                        auto& it = m_debugpid_list.find(pid);
-                        if (it != m_debugpid_list.end())
-                        {
-                            it->second++;
-                        }
+                        it->second++;
                     }
                 }
             }
@@ -159,22 +133,22 @@ private:
         return;
     }
 
-    void LogCallBack(const std::unique_ptr<std::stringstream> log) {
-        ASSERT_TRUE(log);
-        if (!log) return;
-        ASSERT_TRUE(CheckVerifier(log));
-        CheckServices(log);
-        CheckDebugPid(log);
+    void LogCallBack(const std::unique_ptr<CRapidJsonWrapper> rapid_log) {
+        ASSERT_TRUE(rapid_log);
+        if (!rapid_log) return;
+        if (!rapid_log->IsValid()) return;
+        ASSERT_TRUE(CheckVerifier(*rapid_log));
+        CheckServices(*rapid_log);
+        CheckDebugPid(*rapid_log);
         m_logs_total_count++;
         {
             std::lock_guard lock(m_log_mutex);
             if (m_tempfp)
             {
-                *log << std::endl;
-                fputs(log->str().c_str(), m_tempfp);
+                fputs(rapid_log->Serialize().c_str(), m_tempfp);
             }
             else
-                std::cout << log->str() << std::endl;
+                std::cout << rapid_log->Serialize() << std::endl;
         }
         return;
     }

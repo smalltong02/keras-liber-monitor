@@ -26,7 +26,7 @@ namespace cchips {
             {
                 // safe remove hook when shared_count = 0
                 InterlockedIncrement(&__hook_node->shared_count);
-                __psize = 0; __return = 0;
+                __psize = 0; __return = 10;
                 ULONG_PTR entry_count = __object->GetTlsValueForThreadIdx();
                 CLogHandle* __log = nullptr;
                 processing_status __status = __object->Preprocessing(__hook_node, __addr, __psize, __return, entry_count, &__log);
@@ -162,7 +162,12 @@ namespace cchips {
         processing_status status = processing_skip;
         for (const auto& pre_func : func_object->GetPreProcessing())
         {
+#ifdef _X86_
             MACRO_PUSH_PARAMS_(pnode, __rev_params, params_size, pre_func, status)
+#endif
+#ifdef _AMD64_
+            MACRO_PUSH_PARAMS_(pnode, __rev_params, params_size, pre_func, (ULONG*)&status)
+#endif
             if (status != processing_continue)
                 return status;
         }
@@ -207,9 +212,14 @@ namespace cchips {
         processing_status status = processing_skip;
         for (const auto& post_func : func_object->GetPostProcessing())
         {
+#ifdef _X86_
             MACRO_PUSH_PARAMS_(pnode, __rev_params, params_size, post_func, status)
-                if (status != processing_continue)
-                    return status;
+#endif
+#ifdef _AMD64_
+            MACRO_PUSH_PARAMS_(pnode, __rev_params, params_size, post_func, (ULONG*)&status)
+#endif
+            if (status != processing_continue)
+                return status;
         }
         do {
             status = node_elem->function->CheckReturn(pnode);

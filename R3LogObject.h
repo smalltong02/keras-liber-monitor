@@ -12,15 +12,149 @@
 #include <functional>
 #include <thread>
 #include <mutex>
+#include <bitset>
+#include <queue>
+#include "rapidjson\document.h"
+#include "rapidjson\writer.h"
+#include "crc.h"
+
+#ifdef CCHIPS_EXTERNAL_USE
+extern "C" {
+#include "bson.h"
+}
+extern void r3_debug_log(const std::string& log_string);
+#else
 extern "C" {
 #include "bson\bson.h"
 }
+#endif
 
 namespace cchips {
 
     using LOGPAIR = std::pair<std::string, std::string>;
-
+    using RapidValue = rapidjson::GenericValue<rapidjson::UTF8<>>;
+    using RapidDocument = rapidjson::GenericDocument<rapidjson::UTF8<>>;
+    
+#define RapidAllocator g_document.GetAllocator()
+#define ADD_JSON_LOG(document, rapidvalue, key, value) \
+    RapidDocument::AllocatorType& allocator = (document).GetAllocator(); \
+    (rapidvalue).AddMember(RapidValue(key, allocator), RapidValue(value, allocator), allocator);
+#define ADD_JSON_DOC(document, key, value) \
+    RapidDocument::AllocatorType& allocator = (document).GetAllocator(); \
+    (document).AddMember(RapidValue(key, allocator), RapidValue(value, allocator), allocator);
+#define ADD_JSON_DOC_N(document, key, value) \
+    RapidDocument::AllocatorType& allocator = (document).GetAllocator(); \
+    (document).AddMember(key, value, allocator);
 #define warning()
+
+    class CChecker;
+    using RAPID_DOC_PAIR = std::pair<std::unique_ptr<RapidDocument>, std::unique_ptr<CChecker>>;
+    using RAPID_VAL_PAIR = std::pair<std::unique_ptr<RapidValue>, std::unique_ptr<CChecker>>;
+
+    class CChecker
+    {
+    public:
+#define MAX_SUPPORT_BITS 32
+        enum _checker_type {
+            checker_invalid = -1,
+            checker_crc16 = 0,      // 16bit
+            checker_crc32,          // 32bit
+            checker_md5,            // 128bit
+            checker_sha1,           // 160bit
+            checker_sha256,         // 256bit
+        };
+
+        CChecker(_checker_type type = checker_crc32) : m_checker_type(type) {
+            Initialize(type);
+        }
+        ~CChecker() = default;
+
+        void Reset(_checker_type type) {
+            m_checker_ss.str("");
+            m_checker_ss.clear();
+            m_checker_data.reset();
+            m_crc16_calculator = nullptr;
+            m_crc32_calculator = nullptr;
+            Initialize(type);
+        }
+        bool Update(const std::string& data);
+        bool Update(std::unique_ptr<CChecker>& checker);
+        _checker_type GetType() const { return m_checker_type; }
+        const std::bitset<MAX_SUPPORT_BITS>& GetData() const { return m_checker_data; }
+        const std::stringstream& Serialize() const { return m_checker_ss; }
+        bool Same(const std::unique_ptr<CChecker>& checker) const {
+            if (!checker) return false;
+            if (m_checker_type != checker->GetType())
+                return false;
+            if (m_checker_data != checker->GetData())
+                return false;
+            return true;
+        }
+        ULONG GetKey() const;
+
+    private:
+        void Initialize(_checker_type type);
+
+        _checker_type m_checker_type;
+        std::stringstream m_checker_ss;
+        std::bitset<MAX_SUPPORT_BITS> m_checker_data;
+        std::unique_ptr<CRC16> m_crc16_calculator = nullptr;
+        std::unique_ptr<CRC32> m_crc32_calculator = nullptr;
+    };
+
+    class CRapidJsonWrapper
+    {
+    public:
+        CRapidJsonWrapper(const std::string& json_str) : m_bValid(false) {
+            m_document = std::make_unique<RapidDocument>();
+            Initialize(json_str);
+        }
+        ~CRapidJsonWrapper() = default;
+        bool IsValid() const { return m_bValid; }
+        bool Initialize(const std::string& json_str) {
+            if (!m_document) return false;
+            if (json_str.length() == 0) return false;
+            m_document->Parse(json_str.c_str());
+            if (!m_document->IsObject() || m_document->IsNull())
+            {
+                //config data is incorrect.
+                return false;
+            }
+            m_bValid = true;
+            return true;
+        }
+        const std::unique_ptr<RapidDocument>& GetDocument() const { return m_document; }
+        bool FindTopMember(const std::string& name, std::string& value) const {
+            if (!IsValid()) return false;
+            const auto& it = m_document->FindMember(name.c_str());
+            if (it == m_document->MemberEnd()) return false;
+            value = it->value.GetString();
+            return true;
+        }
+        bool AddTopMember(const std::string& name, RapidValue value) {
+            if (!IsValid()) return false;
+            std::string value_string;
+            if (!FindTopMember(name, value_string))
+            {
+                RapidDocument::AllocatorType& allocator = (*m_document).GetAllocator();
+                (*m_document).AddMember(RapidValue(name.c_str(), allocator), value, allocator);
+            }
+            return false;
+        }
+        std::string Serialize() const {
+            if (!IsValid()) return std::string();
+            rapidjson::StringBuffer string_buffer;
+            string_buffer.Clear();
+            rapidjson::Writer<rapidjson::StringBuffer> writer(string_buffer);
+            if (m_document->Accept(writer))
+                return string_buffer.GetString();
+            return std::string();
+        }
+    private:
+        bool m_bValid;
+        std::unique_ptr<RapidDocument> m_document = nullptr;
+    };
+
     class CBsonWrapper
     {
     public:
@@ -34,8 +168,35 @@ namespace cchips {
         CBsonWrapper() : m_bverifier(false), m_verifier_type(verifier_crc32), m_log_serialnum(0) { ; }
         ~CBsonWrapper() = default;
 
-        std::unique_ptr<bson> Pack(const std::unique_ptr<LOGPAIR>& data, bool braw = true) {
-            if (!data) return nullptr;
+        bool is_duplicated_log(std::unique_ptr<CChecker>& checker) {
+#define MAX_QUEUE_SIZE 100
+            if (!checker || checker->GetKey() == 0) return false;
+            if (m_duplicate_map.find(checker->GetKey()) != m_duplicate_map.end()) {
+                if (m_duplicate_map[checker->GetKey()])
+                {
+                    if (m_duplicate_map[checker->GetKey()]->Same(checker))
+                        return true;
+                }
+            }
+            else {
+                m_duplicate_queue.push(checker->GetKey());
+                m_duplicate_map[checker->GetKey()] = std::move(checker);
+                if (m_duplicate_queue.size() > MAX_QUEUE_SIZE) {
+                    unsigned long front = m_duplicate_queue.front();
+                    m_duplicate_map.erase(front);
+                    m_duplicate_queue.pop();
+                }
+            }
+            return false;
+        }
+
+        std::unique_ptr<bson> Pack(RAPID_DOC_PAIR data, bool braw = false) {
+            if (!data.first) return nullptr;
+            if (!data.second) return nullptr;
+            
+            // keep a size 50 cache to avoid duplicated logs
+            if (is_duplicated_log(data.second)) return nullptr;
+
             std::string time_string;
             auto func_get_timestamp = [](std::string& time_buffer) {
 #define time_buffer_size 100
@@ -47,38 +208,45 @@ namespace cchips {
                     /*std::*/localtime(&now));
                 return;
             };
+            
             std::unique_ptr<bson> bson_ptr = std::make_unique<bson>();
             assert(bson_ptr != nullptr);
             if (!bson_ptr) return nullptr;
             bson_init(&(*bson_ptr));
             if (!braw) func_get_timestamp(time_string);
-            if (IsVerifier())
+            if (!braw && time_string.length())
             {
-                bson_append_int(&(*bson_ptr), "VerifierType", (int)m_verifier_type);
-                bson_append_int(&(*bson_ptr), "Verifier", GetVerifier(data, m_verifier_type));
+                ADD_JSON_DOC(*data.first, "Time", time_string.c_str());
             }
-            if (!braw && time_string.length()) bson_append_string(&(*bson_ptr), "TraceTime", time_string.c_str());
-            bson_append_string(&(*bson_ptr), "Action", data->first.c_str());
-            bson_append_string(&(*bson_ptr), "R3Log", data->second.c_str());
-            bson_append_long(&(*bson_ptr), "SerialN", m_log_serialnum++);
+            int serialnum = m_log_serialnum++;
+            ADD_JSON_DOC_N(*data.first, "SerialN", serialnum);
+            rapidjson::StringBuffer string_buffer;
+            string_buffer.Clear();
+            rapidjson::Writer<rapidjson::StringBuffer> writer(string_buffer);
+            data.first->Accept(writer);
+            
+            //if (IsVerifier())
+            //{
+            //    bson_append_int(&(*bson_ptr), "VerifierType", (int)m_verifier_type);
+            //    bson_append_int(&(*bson_ptr), "Verifier", GetVerifier(string_buffer.GetString(), m_verifier_type));
+            //}
+            bson_append_string(&(*bson_ptr), "R3Log", string_buffer.GetString());
             bson_append_finish_array(&(*bson_ptr));
             bson_finish(&(*bson_ptr));
             return bson_ptr;
         }
-        std::unique_ptr<std::stringstream> Unpack(const std::string& decode_buffer) {
+        std::unique_ptr<CRapidJsonWrapper> Unpack(const std::string& decode_buffer) {
             assert(decode_buffer.length());
             if (!decode_buffer.length()) return nullptr;
+            std::unique_ptr<CRapidJsonWrapper> json_wrapper = nullptr;
             bson bson_unpack;
             if (bson_init_finished_data(&bson_unpack, (char*)&decode_buffer[0], false) == BSON_OK)
             {
                 bson_iterator i;
                 bson_iterator_from_buffer(&i, bson_data(&bson_unpack));
-                std::unique_ptr<std::stringstream> ss_ptr = std::make_unique<std::stringstream>();
-                if (!ss_ptr) return nullptr;
+                std::stringstream ss;
                 _verifier_type verifier_type = verifier_invalid;
                 ULONG verifier = 0;
-                std::string action;
-                std::string r3log;
                 while (bson_iterator_next(&i)) {
                     bson_type t = bson_iterator_type(&i);
                     if (t == 0)
@@ -96,54 +264,33 @@ namespace cchips {
                         {
                             verifier = (_verifier_type)bson_iterator_int(&i);
                         }
-                        if (!(*ss_ptr).str().length())
-                            (*ss_ptr) << "{ ";
-                        else
-                            (*ss_ptr) << "; ";
-                        (*ss_ptr) << "\"" << key << "\"" << ": " << "\"" << bson_iterator_int(&i) << "\"";
-                    }
-                    break;
-                    case BSON_LONG:
-                    {
-                        if (!(*ss_ptr).str().length())
-                            (*ss_ptr) << "{ ";
-                        else
-                            (*ss_ptr) << "; ";
-                        (*ss_ptr) << "\"" << key << "\"" << ": " << "\"" << bson_iterator_long(&i) << "\"";
+                        // verifier here
                     }
                     break;
                     case BSON_STRING:
                     {
-                        if (_stricmp(key, "Action") == 0)
+                        if (_stricmp(key, "R3Log") == 0)
                         {
-                            action = bson_iterator_string(&i);
+                            ss << bson_iterator_string(&i);
+                            json_wrapper = std::make_unique<CRapidJsonWrapper>(ss.str());
                         }
-                        else if (_stricmp(key, "R3Log") == 0)
-                        {
-                            r3log = bson_iterator_string(&i);
-                        }
-                        if (!(*ss_ptr).str().length())
-                            (*ss_ptr) << "{ ";
-                        else
-                            (*ss_ptr) << "; ";
-                        (*ss_ptr) << "\"" << key << "\"" << ": " << "\"" << bson_iterator_string(&i) << "\"";
                     }
                     break;
                     default:
                         warning("can't get bson type : %d\n", t);
                     }
                 }
-                if (verifier_type != verifier_invalid && verifier != 0 && action.length() != 0 && r3log.length() != 0)
+                if (!json_wrapper) return nullptr;
+                if (verifier_type != verifier_invalid && verifier != 0)
                 {
-                    if (GetVerifier(std::make_unique<LOGPAIR>(action, r3log), verifier_type) == verifier)
-                        (*ss_ptr) << ",\"" << "verifier_result" << "\"" << ": " << "\"" << "success" << "\"";
+                    if (GetVerifier(ss.str().c_str(), verifier_type) == verifier)
+                        json_wrapper->AddTopMember("verifier_result", RapidValue("true"));
                     else
-                        (*ss_ptr) << ",\"" << "verifier_result" << "\"" << ": " << "\"" << "failed" << "\"";
+                        json_wrapper->AddTopMember("verifier_result", RapidValue("false"));
                 }
-                if ((*ss_ptr).str().length())
+                if (json_wrapper->IsValid())
                 {
-                    (*ss_ptr) << " }";
-                    return std::move(ss_ptr);
+                    return std::move(json_wrapper);
                 }
             }
             return nullptr;
@@ -152,11 +299,13 @@ namespace cchips {
         void EnableVerifier() { m_bverifier = true; }
         void DisableVerifier() { m_bverifier = false; }
     private:
-        ULONG GetVerifier(const std::unique_ptr<LOGPAIR>& data, _verifier_type type);
+        ULONG GetVerifier(const char* data, _verifier_type type);
 
         bool m_bverifier;
         _verifier_type m_verifier_type;
         std::atomic_ulong m_log_serialnum;
+        std::queue<unsigned long> m_duplicate_queue;
+        std::unordered_map<unsigned long, std::unique_ptr<CChecker>> m_duplicate_map;
     };
 
     class CSocketObject : public CBsonWrapper
@@ -167,8 +316,8 @@ namespace cchips {
             output_pipe = 0,
             output_local,
         };
-        using func_callback = std::function<void(const std::unique_ptr<std::stringstream>)>;
-        using func_getdata = std::function<std::unique_ptr<LOGPAIR>()>;
+        using func_callback = std::function<void(const std::unique_ptr<CRapidJsonWrapper>)>;
+        using func_getdata = std::function<RAPID_DOC_PAIR()>;
         CSocketObject() : m_output_type(output_invalid) { ; }
         ~CSocketObject() = default;
 
@@ -316,6 +465,9 @@ namespace cchips {
                 bsuccess = ReadFile(*hpipe, &recv_buffer[0], (DWORD)recv_buffer.size(), &bytes_read, nullptr);
                 if (bsuccess || (error = GetLastError()) == ERROR_MORE_DATA)
                 {
+#ifdef CCHIPS_EXTERNAL_USE
+                    r3_debug_log("ReceiveThread: receive a r3 log.");
+#endif
                     decode_buffer += std::string(&recv_buffer[0], bytes_read);
                     assert(decode_buffer.length());
                     if (decode_buffer.length() < sizeof(ULONG))
@@ -388,6 +540,9 @@ namespace cchips {
                 if (ConnectNamedPipe(*hpipe, &overlapped) ?
                     TRUE : ((error = GetLastError()) == ERROR_PIPE_CONNECTED))
                 {
+#ifdef CCHIPS_EXTERNAL_USE
+                    r3_debug_log("ConnectNamedPipe success!");
+#endif
                     std::unique_ptr<std::thread> receive_thread = std::make_unique<std::thread>(&CLpcPipeObject::ReceiveThread, this, hpipe, callback);
                     receive_threads.push_back(std::pair<std::unique_ptr<std::thread>, std::shared_ptr<HANDLE>>(std::move(receive_thread), hpipe));
                     hpipe = std::make_shared<HANDLE>(StartLPCServer(false));

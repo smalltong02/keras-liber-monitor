@@ -236,6 +236,9 @@
       <TreatSpecificWarningsAsErrors>4013;4020;4022;4047;4098;4113;4129;4163;4229;4700;4603;4716;4189</TreatSpecificWarningsAsErrors>
       <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <SupportJustMyCode>false</SupportJustMyCode>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
