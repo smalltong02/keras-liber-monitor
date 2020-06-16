@@ -111,8 +111,11 @@
 
     "PreCheck": {
       "0": {
+        "Define": {
+          "uFlags": "DWORD"
+        },
         "Check": {
-          "uFlags": "%var0 == 'EWX_SHUTDOWN' || %var0 == 'EWX_REBOOT' || %var0 == 'EWX_POWEROFF'"
+          "uFlags": "(%var0 & 1) || (%var0 & 2) || (%var0 & 8)"
         },
         "Modify": {
           "Return": "%var1 = 1"

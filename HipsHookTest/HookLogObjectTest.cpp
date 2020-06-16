@@ -106,72 +106,72 @@ private:
     std::mutex m_mutex_log;
 };
 
-//class HookLogObjectTest : public testing::Test
-//{
-//protected:
-//    HookLogObjectTest() {
-//        ;
-//    }
-//    ~HookLogObjectTest() override {}
-//
-//    virtual void SetUp() override {
-//        ASSERT_TRUE(g_hook_test_object->EnableAllApis());
-//    }
-//
-//    void TearDown() override {
-//        ASSERT_TRUE(g_hook_test_object->DisableAllApis());
-//    }
-//};
-//
-//TEST_F(HookLogObjectTest, PipeLogsCountTest)
-//{
-//    std::atomic_bool brunning = true;
-//    std::vector<std::future<int>> results;
-//    int send_logs_count = g_server_object->GetTotalLogs();
-//    unsigned task_count = std::thread::hardware_concurrency();
-//    for (unsigned int i = 1; i <= task_count; i++)
-//    {
-//        std::packaged_task<int(int)> task(
-//            [&](int tag) ->int {
-//                CClientObject client(tag);
-//                while (brunning)
-//                {
-//                    client.SendData();
-//                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-//                }
-//                return client.GetTotalLogs();
-//            });
-//        results.push_back(task.get_future());
-//        std::thread thread(std::move(task), i);
-//        thread.detach();
-//    }
-//    std::this_thread::sleep_for(std::chrono::seconds(10));
-//    brunning = false;
-//    for (auto& r : results) {
-//        send_logs_count += r.get();
-//    }
-//    int receive_logs_count = g_server_object->GetTotalLogs();
-//    ASSERT_TRUE(receive_logs_count >= send_logs_count);
-//}
-//
-//TEST_F(HookLogObjectTest, PipeLongLogTest)
-//{
-//    std::atomic_bool brunning = true;
-//    unsigned task_count = 1;
-//    std::thread thread( 
-//        [&]() {
-//            CClientObject client(1);
-//            client.EnableVerifier();
-//            while (brunning)
-//            {
-//                client.SendLongData();
-//                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//            }
-//            client.DisableVerifier();
-//        });
-//    std::this_thread::sleep_for(std::chrono::seconds(1));
-//    brunning = false;
-//    thread.join();
-//}
+class HookLogObjectTest : public testing::Test
+{
+protected:
+    HookLogObjectTest() {
+        ;
+    }
+    ~HookLogObjectTest() override {}
+
+    virtual void SetUp() override {
+        ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    }
+
+    void TearDown() override {
+        ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    }
+};
+
+TEST_F(HookLogObjectTest, PipeLogsCountTest)
+{
+    std::atomic_bool brunning = true;
+    std::vector<std::future<int>> results;
+    int send_logs_count = g_server_object->GetTotalLogs();
+    unsigned task_count = std::thread::hardware_concurrency();
+    for (unsigned int i = 1; i <= task_count; i++)
+    {
+        std::packaged_task<int(int)> task(
+            [&](int tag) ->int {
+                CClientObject client(tag);
+                while (brunning)
+                {
+                    client.SendData();
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
+                return client.GetTotalLogs();
+            });
+        results.push_back(task.get_future());
+        std::thread thread(std::move(task), i);
+        thread.detach();
+    }
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    brunning = false;
+    for (auto& r : results) {
+        send_logs_count += r.get();
+    }
+    int receive_logs_count = g_server_object->GetTotalLogs();
+    ASSERT_TRUE(receive_logs_count >= send_logs_count);
+}
+
+TEST_F(HookLogObjectTest, PipeLongLogTest)
+{
+    std::atomic_bool brunning = true;
+    unsigned task_count = 1;
+    std::thread thread( 
+        [&]() {
+            CClientObject client(1);
+            client.EnableVerifier();
+            while (brunning)
+            {
+                client.SendLongData();
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+            client.DisableVerifier();
+        });
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    brunning = false;
+    thread.join();
+}
 
 #endif

@@ -18,6 +18,31 @@ processing_status WINAPI detour_getModuleHandle(CHookImplementObject::detour_nod
     return processing_continue;
 }
 
+processing_status WINAPI CHookImplementObject::detour_coInitializeEx(CHookImplementObject::detour_node* node, LPVOID pvReserved, DWORD dwCoInit)
+{
+    BreakPoint;
+    ASSERT(node != nullptr);
+    ASSERT(node->return_va != nullptr);
+    ASSERT(node->log_entry != nullptr);
+    ASSERT(node->function != nullptr);
+    ASSERT(node->hook_implement_object != nullptr);
+    if (!node || !node->return_va || !node->log_entry || !node->hook_implement_object) return processing_skip;
+    processing_status status;
+    if ((status = node->function->CheckReturn(node)) != processing_continue)
+        return status;
+
+    static std::once_flag wmi_flag;
+    std::call_once(wmi_flag, [](const std::shared_ptr<CHookImplementObject> implement_object) {
+            if (implement_object->GetWmiObjectCounts())
+            {
+                //error_log("delay_wmi_hook_processing!");
+                implement_object->HookWmiObjectMethods(implement_object->GetFunctionCounts());
+            }
+        }, node->hook_implement_object);
+
+    return processing_continue;
+}
+
 bool process_loadLibrary(CHookImplementObject::detour_node* node, std::string& lib_name, std::shared_ptr<CLogHandle>& log_handle)
 {
     if (!lib_name.length()) return false;
@@ -267,8 +292,8 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IEnumWbemClassO
         {
             if (node->function->CheckReturn(node) == processing_skip)
             {
-                if (!process_duplicate_for_wmiobject(node, wmi_object.second, apObjects, puReturned, LOGGER))
-                    return processing_skip;
+                //if (!process_duplicate_for_wmiobject(node, wmi_object.second, apObjects, puReturned, LOGGER))
+                //    return processing_skip;
             }
             if (!process_log_for_wmiobject(node, wmi_object.second, pWbemClassObject, LOGGER))
                 return processing_skip;

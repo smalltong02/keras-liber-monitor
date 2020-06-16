@@ -67,6 +67,11 @@ namespace cchips {
         CChecker(_checker_type type = checker_crc32) : m_checker_type(type) {
             Initialize(type);
         }
+        CChecker(const CChecker& checker) : m_checker_type(checker.GetType()) {
+            Initialize(m_checker_type);
+            m_checker_data = checker.GetData();
+            m_checker_ss << std::hex << m_checker_data.to_ulong();
+        }
         ~CChecker() = default;
 
         void Reset(_checker_type type) {
@@ -78,7 +83,7 @@ namespace cchips {
             Initialize(type);
         }
         bool Update(const std::string& data);
-        bool Update(std::unique_ptr<CChecker>& checker);
+        bool Update(const CChecker& checker);
         _checker_type GetType() const { return m_checker_type; }
         const std::bitset<MAX_SUPPORT_BITS>& GetData() const { return m_checker_data; }
         const std::stringstream& Serialize() const { return m_checker_ss; }
@@ -224,7 +229,7 @@ namespace cchips {
             string_buffer.Clear();
             rapidjson::Writer<rapidjson::StringBuffer> writer(string_buffer);
             data.first->Accept(writer);
-            
+            if (!string_buffer.GetSize()) return nullptr;
             //if (IsVerifier())
             //{
             //    bson_append_int(&(*bson_ptr), "VerifierType", (int)m_verifier_type);

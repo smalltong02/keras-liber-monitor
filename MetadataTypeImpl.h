@@ -752,10 +752,27 @@ namespace cchips {
         const std::string GetFlagStr(int flag_value) const {
             if (!m_pflagvalues) return std::string({});
             if (flag_value == InvalidFlagVa) return std::string({});
-            for (const auto& flag : *m_pflagvalues)
-            {
-                if (flag.second == flag_value)
-                    return flag.first;
+            if (m_operation == flag_or) {
+                std::stringstream flag_list;
+                bool is_first = true;
+                for (const auto& flag : *m_pflagvalues)
+                {
+                    if ((flag.second & flag_value) == flag.second) {
+                        if (!is_first)
+                            flag_list << " | ";
+                        flag_list << flag.first;
+                        is_first = false;
+                    }
+                }
+                if (!is_first)
+                    return flag_list.str();
+            }
+            else {
+                for (const auto& flag : *m_pflagvalues)
+                {
+                    if (flag.second == flag_value)
+                        return flag.first;
+                }
             }
             std::string ret_string = std::string("unknown-flags:") + std::to_string(flag_value);
             return ret_string;
@@ -772,7 +789,7 @@ namespace cchips {
                 ss = m_pdata->GetValue(pdata);
                 if (!ss.str().length()) return ss;
                 char* nodig = nullptr;
-                int flag_value = std::strtol(ss.str().c_str(), &nodig, 10);
+                int flag_value = std::strtoul(ss.str().c_str(), &nodig, 10);
                 ss.str(""); ss.clear();
                 ss << GetFlagStr(flag_value).c_str();
             }

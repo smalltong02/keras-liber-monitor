@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <regex>
+#include <unordered_set>
 #include "gtest\gtest.h"
 #include "resource.h"
 #include "HipsCfgObject.h"
@@ -30,8 +31,9 @@ public:
     }
     void ClearLogsCount() { return m_pipe_object->ClearLogsCount(); }
     int GetTotalLogs() const { return m_pipe_object->GetTotalLogs(); }
-    std::unordered_map<std::string, int> GetLogCountMap() const { return log_count_map; }
-    void ClearLogCountMap() { log_count_map.clear(); }
+    std::unordered_map<std::string, int> GetLogCountMap() const { return m_log_count_map; }
+    std::unordered_set<std::string> GetLogSet() const { return m_log_set; }
+    void ClearLogMap() { m_log_set.clear(); m_log_count_map.clear(); }
     void EnableServiceTest() { m_enable_service = true; }
     void DisableServiceTest() { m_enable_service = false; }
     void EnableDebugPid() { m_enable_debugpid = true; }
@@ -73,11 +75,11 @@ private:
     }
 
     void addToLogCountMap(std::string key) {
-        if (log_count_map.find(key) != log_count_map.end()) {
-            log_count_map[key]++;
+        if (m_log_count_map.find(key) != m_log_count_map.end()) {
+            m_log_count_map[key]++;
         }
         else {
-            log_count_map[key] = 1;
+            m_log_count_map[key] = 1;
         }
     }
 
@@ -86,6 +88,7 @@ private:
         if (m_enable_service)
         {
             std::string value;
+            std::string str = rapid_log.Serialize();
             if (rapid_log.FindTopMember("Action", value))
             {
                 if (!value.compare("S0")) {
@@ -138,6 +141,7 @@ private:
         if (!rapid_log) return;
         if (!rapid_log->IsValid()) return;
         ASSERT_TRUE(CheckVerifier(*rapid_log));
+        //m_log_set.insert((*rapid_log).Serialize());
         CheckServices(*rapid_log);
         CheckDebugPid(*rapid_log);
         m_logs_total_count++;
@@ -156,7 +160,8 @@ private:
     std::mutex m_log_mutex;
     FILE* m_tempfp = nullptr;
     std::unique_ptr<CLpcPipeObject> m_pipe_object;
-    std::unordered_map<std::string, int> log_count_map;
+    std::unordered_map<std::string, int> m_log_count_map;
+    std::unordered_set<std::string> m_log_set;
     std::atomic_bool m_enable_service = false;
     std::atomic_bool m_enable_debugpid = false;
     std::mutex m_debugpid_mutex;

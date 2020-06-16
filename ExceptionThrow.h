@@ -51,11 +51,11 @@ namespace cchips {
 #ifdef _DEBUG
 #define ASSERT(condition) assert(condition)
 #else
-#define ASSERT(condition) if(!(condition)) {\
+#define ASSERT(condition) /*if(!(condition)) {\
     std::stringstream os; \
     cchips::special_log::sm_log(os, __FILE__, __LINE__, "{}", #condition); \
     cchips::exception_throw exception_msg(os.str().c_str()); \
-    throw exception_msg;}
+    throw exception_msg;}*/
 #endif
 } // namespace cchips
 

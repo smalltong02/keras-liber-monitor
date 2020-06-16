@@ -45,6 +45,8 @@
     "CSTR": "CHAR",
     "WSTR": "WCHAR",
     "CWSTR": "WCHAR",
+    "OLECHAR": "WCHAR",
+    "BSTR": "OLECHAR*",
     "REFCLSID": "GUID",
     "REFIID": "GUID",
     "IID": "COSERVERINFO",
@@ -159,7 +161,7 @@
 	},
 	
 	"EXITREASON": {
-	  "Data": "UINT",
+	  "Data": "DWORD",
 	  "OPERATION": "OR",
 	  "Value": {
 	    "SHTDN_REASON_MAJOR_APPLICATION": 262144,

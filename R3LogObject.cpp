@@ -126,12 +126,11 @@ namespace cchips {
         return bret;
     }
 
-    bool CChecker::Update(std::unique_ptr<CChecker>& checker)
+    bool CChecker::Update(const CChecker& checker)
     {
-        if (!checker) return false;
-        if (checker->GetType() != m_checker_type) return false;
+        if (checker.GetType() != m_checker_type) return false;
         if (m_checker_type != checker_crc16 && m_checker_type != checker_crc32) return false;
-        m_checker_data = m_checker_data.to_ulong() + checker->GetData().to_ulong();
+        m_checker_data = m_checker_data.to_ulong() + checker.GetData().to_ulong();
         m_checker_ss.str(""); m_checker_ss.clear(); m_checker_ss << std::hex << m_checker_data.to_ulong();
         return true;
     }

@@ -32,7 +32,7 @@ protected:
     void TearDown() override {
         ServicesTestObject service;
         ServiceInstaller::Uninstall(service);
-        g_server_object->ClearLogCountMap();
+        g_server_object->ClearLogMap();
         g_server_object->DisableServiceTest();
         ASSERT_TRUE(g_hook_test_object->DisableAllApis());
     }

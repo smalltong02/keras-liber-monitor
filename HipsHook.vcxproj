@@ -293,7 +293,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="comobject.json" />
     <None Include="hipshook.json" />
+    <None Include="ole32.json" />
+    <None Include="services.json" />
+    <None Include="system.json" />
+    <None Include="types.json" />
+    <None Include="wmiobject.json" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="HipsHook.rc" />

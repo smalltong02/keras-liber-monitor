@@ -178,17 +178,23 @@ namespace cchips {
             filter_threadid = 0,
         };
         CHookImplementObject() :
-            m_bValid(false), m_benable(false), m_configObject(nullptr), m_drivermgr(nullptr) {
+            m_bValid(false), m_benable(false), m_configObject(nullptr), m_drivermgr(nullptr), m_bwmi_processing(false) {
         }//for hook wmi methods
         ~CHookImplementObject() {
-            if (m_threadTlsIdx != TLS_OUT_OF_INDEXES)
-                TlsFree(m_threadTlsIdx);
-            DisableAllApis();
-            UnhookProcessing();
-            MH_Uninitialize();
-            CoUninitialize();
+            //if (m_threadTlsIdx != TLS_OUT_OF_INDEXES)
+            //    TlsFree(m_threadTlsIdx);
+            //if (m_bValid)
+            //{
+            //    DisableAllApis();
+            //    UnhookProcessing();
+            //    MH_Uninitialize();
+            //    CoUninitialize();
+            //}
             //waiting all __hook_node->shared_count == 0
         }
+        using CoInitializeEx_Define = HRESULT(__stdcall*)(LPVOID pvReserved, DWORD dwCoInit);
+        using CoCreateInstance_Define = HRESULT (__stdcall*)(REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext, REFIID riid, LPVOID *ppv);
+        using CoSetProxyBlanket_Define = HRESULT(__stdcall*) (IUnknown *pProxy, DWORD dwAuthnSvc, DWORD dwAuthzSvc, OLECHAR *pServerPrincName, DWORD dwAuthnLevel, DWORD dwImpLevel, RPC_AUTH_IDENTITY_HANDLE pAuthInfo, DWORD dwCapabilities);
         using IEnumWbemClassObject_Next_Define = HRESULT(*)(IEnumWbemClassObject* This, long lTimeout, ULONG uCount, IWbemClassObject **apObjects, ULONG *puReturned);
         using IWbemClassObject_Get_Define = HRESULT(*)(IWbemClassObject* This, LPCWSTR wszName, long lFlags, VARIANT *pVal, long *pType, long *plFlavor);
         using IWbemClassObject_Put_Define = HRESULT(*)(IWbemClassObject* This, LPCWSTR wszName, long lFlags, VARIANT *pVal, long Type);
@@ -211,6 +217,12 @@ namespace cchips {
             std::shared_ptr<CFunction> function;
             std::shared_ptr<CHookImplementObject> hook_implement_object;
             void* orgin_api_implfunc;
+        };
+
+        using ole32_api_define = struct {
+            CoInitializeEx_Define coinitializeex_func;
+            CoCreateInstance_Define cocreateinstance_func;
+            CoSetProxyBlanket_Define cosetproxyblanket_func;
         };
 
         using wmi_methods_define = struct {
@@ -290,6 +302,7 @@ namespace cchips {
         }
         bool HookProcessing();
         bool UnhookProcessing();
+        bool GetbWmiProcessing() { return m_bwmi_processing; }
 
         // define static detour function on here.
         static processing_status WINAPI detour_loadLibraryA(detour_node* node, LPCSTR lpLibFileName);
@@ -297,9 +310,10 @@ namespace cchips {
         static processing_status WINAPI detour_loadLibraryExA(detour_node* node, LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
         static processing_status WINAPI detour_loadLibraryExW(detour_node* node, LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
         static processing_status WINAPI detour_ntQueryInformationProcess(detour_node* node, HANDLE ProcessHandle, DWORD ProcessInformationClass, LPVOID ProcessInformation, ULONG ProcessInformationLength, ULONG* ReturnLength);
+        static processing_status WINAPI detour_coInitializeEx(detour_node* node, LPVOID pvReserved, DWORD dwCoInit);
 
         // define static detour for wmi object
-        bool HookWmiObjectMethods(int& count);
+        bool HookWmiObjectMethods(int count);
         static processing_status STDMETHODCALLTYPE detour_IEnumWbemClassObject_Next(detour_node* node, IEnumWbemClassObject* This, long lTimeout, ULONG uCount, IWbemClassObject **apObjects, ULONG *puReturned);
         static processing_status STDMETHODCALLTYPE detour_IWbemClassObject_Get(detour_node* node, IWbemClassObject* This, LPCWSTR wszName, long lFlags, VARIANT *pVal, long *pType, long *plFlavor);
         static processing_status STDMETHODCALLTYPE detour_IWbemClassObject_Put(detour_node* node, IWbemClassObject* This, LPCWSTR wszName, long lFlags, VARIANT *pVal, long Type);
@@ -314,16 +328,18 @@ namespace cchips {
         const static int IWbemClassObject_Put_Vtbl_Index = 5;
         const static int IWbemClassObject_Next_Vtbl_Index = 9;
         int GetWmiMethodsDefineSize() { return (sizeof(wmi_methods_define) / sizeof(PVOID)); }
-        bool InitializeWmiMethodsDefine();
+        bool InitializeWmiMethodsDefine(bool bInit = true);
 
-        bool m_bValid;
-        bool m_benable;
+        std::atomic_bool m_bValid;
+        std::atomic_bool m_benable;
+        std::atomic_bool m_bwmi_processing;
         static const LPVOID m_hookImplementFunction;
         // the tls index for implement the function of re-entry calling check in the same thread
         static const DWORD m_threadTlsIdx;
         std::shared_ptr<CHipsCfgObject> m_configObject;
         std::vector<hook_node> m_hookNodeList;
         wmi_methods_define m_wmi_methods_define = {};
+        ole32_api_define m_ole32_api_define = {};
         sf::contfree_safe_ptr<std::map<std::string, std::vector<int>>> m_delayNodeList;
         sf::contfree_safe_ptr<std::map<std::thread::id, _filter_type>> m_filterids;
         static const std::unique_ptr<CExceptionObject> m_exceptionObject;

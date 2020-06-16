@@ -63,7 +63,7 @@ namespace cchips {
         //	m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_lpvoid)] = make_metadata_j_ptr<LPVOID>(CBaseDef::type_lpvoid, CTraits<LPVOID>(nullptr, CTraits<LPVOID>::op_n_equal));
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_handle)] = make_metadata_j_ptr<HANDLE>(CBaseDef::type_handle, CTraits<HANDLE>(nullptr, CTraits<HANDLE>::op_n_equal));
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_hmodule)] = make_metadata_j_ptr<HMODULE>(CBaseDef::type_hmodule, CTraits<HMODULE>(nullptr, CTraits<HMODULE>::op_n_equal));
-        m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_hresult)] = make_metadata_j_ptr<HRESULT>(CBaseDef::type_hresult, CTraits<HRESULT>(0, CTraits<HRESULT>::op_equal));
+        m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_hresult)] = make_metadata_j_ptr<HRESULT>(CBaseDef::type_hresult, CTraits<HRESULT>(0, CTraits<HRESULT>::op_greater));
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_schandle)] = make_metadata_j_ptr<SC_HANDLE>(CBaseDef::type_schandle, CTraits<SC_HANDLE>(nullptr, CTraits<SC_HANDLE>::op_n_equal));
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_ntstatus)] = make_metadata_j_ptr<NTSTATUS>(CBaseDef::type_ntstatus, CTraits<NTSTATUS>(0, CTraits<NTSTATUS>::op_greater));
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_string)] = make_metadata_j_ptr<std::string>(CBaseDef::type_string, CTraits<std::string>("\0", CTraits<std::string>::op_n_equal));

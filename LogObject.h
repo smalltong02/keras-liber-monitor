@@ -172,36 +172,30 @@ namespace cchips {
     class CLogEntry
     {
     public:
-        CLogEntry(const std::string& name, CLogObject::logtype type = CLogObject::logtype::log_invalid) : log_name(name), m_log_type(type) {  
-            m_log_value = std::make_unique<RapidValue>();
-            m_log_document = std::make_unique<RapidDocument>();
-            m_checker = std::make_unique<CChecker>();
-            if(m_log_value)
-                m_log_value->SetObject();
-            if(m_checker)
-                m_checker->Update(name); 
+        CLogEntry(const std::string& name, CLogObject::logtype type = CLogObject::logtype::log_invalid) : log_name(name), m_log_type(type) {
+            m_log_value.SetObject();
+            m_checker.Update(name);
         }
         ~CLogEntry() = default;
         const std::string& GetName() const { return log_name; }
         const CLogObject::logtype GetLogType() const { return m_log_type; }
         void SetLogType(CLogObject::logtype type) { m_log_type = type; }
-        const int GetLogSize() const { if (m_log_value) return (int)m_log_value->MemberCount(); else return 0; }
-        std::unique_ptr<RapidValue>& GetElements() { return m_log_value; }
-        std::unique_ptr<CChecker>& GetChecker() { return m_checker; }
+        const int GetLogSize() const { return (int)m_log_value.MemberCount(); }
+        RapidValue& GetElements() { return m_log_value; }
+        CChecker& GetChecker() { return m_checker; }
         bool AddLog(const LOGPAIR& log_pair) {
             ASSERT(log_pair.first.length());
             ASSERT(log_pair.second.length());
-            if (!m_log_value) return false;
             if (!log_pair.first.length()) return false;
             if (!log_pair.second.length()) return false;
             if (GetLogSize())
             {
-                const auto& it = m_log_value->FindMember(log_pair.first.c_str());
-                if (it != m_log_value->MemberEnd()) return false;
+                const auto& it = m_log_value.FindMember(log_pair.first.c_str());
+                if (it != m_log_value.MemberEnd()) return false;
             }
-            ADD_JSON_LOG(*m_log_document, *m_log_value, log_pair.first.c_str(), log_pair.second.c_str());
-            if (m_checker) m_checker->Update(log_pair.first);
-            if (m_checker) m_checker->Update(log_pair.second);
+            ADD_JSON_LOG(m_log_document, m_log_value, log_pair.first.c_str(), log_pair.second.c_str());
+            m_checker.Update(log_pair.first);
+            m_checker.Update(log_pair.second);
             return true;
         }
         bool AddLog(const std::shared_ptr<CLogEntry>& log_entry) {
@@ -209,29 +203,29 @@ namespace cchips {
             if (!log_entry) return false;
             if (!log_entry->GetName().length()) return false;
             if (!log_entry->GetLogSize()) return false;
-            RapidValue key(log_entry->GetName().c_str(), m_log_document->GetAllocator());
-            RapidValue value(*log_entry->GetElements(), m_log_document->GetAllocator());
-            ADD_JSON_LOG(*m_log_document, *m_log_value, std::move(key), std::move(value));
-            if (m_checker) m_checker->Update(log_entry->GetChecker());
+            RapidValue key(log_entry->GetName().c_str(), m_log_document.GetAllocator());
+            RapidValue value(log_entry->GetElements(), m_log_document.GetAllocator());
+            ADD_JSON_LOG(m_log_document, m_log_value, std::move(key), std::move(value));
+            m_checker.Update(log_entry->GetChecker());
             return true;
         }
         RAPID_DOC_PAIR Serialize() {
-            m_log_document->SetObject();
-            m_log_document->Swap(*GetElements());
-            RapidValue value(log_name.c_str(), m_log_document->GetAllocator());
-            ADD_JSON_DOC(*m_log_document, "Action", std::move(value));
-            std::unique_ptr<RapidDocument> ppp = std::make_unique<RapidDocument>();
-            std::unique_ptr<CChecker> qqq = std::make_unique<CChecker>();
-            ppp->CopyFrom(*m_log_document, ppp->GetAllocator());
-
-            return RAPID_DOC_PAIR(std::move(ppp), std::move(qqq));
+            std::unique_ptr<RapidDocument> log_document = std::make_unique<RapidDocument>();
+            std::unique_ptr<CChecker> checker = std::make_unique<CChecker>(m_checker);
+            if (!log_document || !checker) return RAPID_DOC_PAIR(nullptr, nullptr);
+            log_document->SetObject();
+            log_document->CopyFrom(GetElements(), log_document->GetAllocator());
+            //log_document->Swap(GetElements());
+            RapidValue value(log_name.c_str(), log_document->GetAllocator());
+            ADD_JSON_DOC(*log_document, "Action", std::move(value));
+            return RAPID_DOC_PAIR(std::move(log_document), std::move(checker));
         }
     private:
         std::string log_name;
         CLogObject::logtype m_log_type;
-        std::unique_ptr<RapidValue> m_log_value = nullptr;
-        std::unique_ptr<RapidDocument> m_log_document = nullptr;
-        std::unique_ptr<CChecker> m_checker = nullptr;
+        RapidValue m_log_value;
+        RapidDocument m_log_document;
+        CChecker m_checker;
     };
 
     class CLogHandle

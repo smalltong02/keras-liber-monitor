@@ -396,6 +396,8 @@ namespace cchips {
             _Value operator >= (_Value& rhs) { return (GetNumber() >= rhs.GetNumber()); }
             _Value operator < (_Value& rhs) { return (GetNumber() < rhs.GetNumber()); }
             _Value operator <= (_Value& rhs) { return (GetNumber() <= rhs.GetNumber()); }
+            _Value operator & (_Value& rhs) { return (GetNumber() & rhs.GetNumber()); }
+            _Value operator | (_Value& rhs) { return (GetNumber() | rhs.GetNumber()); }
             _Value operator && (_Value& rhs) { return (GetNumber() && rhs.GetNumber()); }
             _Value operator || (_Value& rhs) { return (GetNumber() || rhs.GetNumber()); }
             _Value operator == (_Value& rhs) { if (isNumber()) return (GetNumber() == rhs.GetNumber()); else return (GetString() == rhs.GetString()); }

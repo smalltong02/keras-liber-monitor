@@ -56,7 +56,7 @@ wrtext SEGMENT READ WRITE EXECUTE
         mov  qword ptr [rsp + 10h],rdx		;__params
         mov  qword ptr [rsp + 18h],r8		;__psize
         mov  qword ptr [rsp + 20h],r9		;__post_func
-                                            ;qword ptr [rsp + 28h] __return
+                                            ;dword ptr [rsp + 28h] __status
         push rbx
         push rcx
         push rdx
@@ -105,7 +105,7 @@ for_exit:
         mov  rax, qword ptr [rsp + 168h]
         call rax
         mov  rbx, qword ptr [rsp + 170h]
-        mov  qword ptr [rbx], rax
+        mov  dword ptr [rbx], eax
         add  rsp, 100h
         pop  r13
         pop  r12

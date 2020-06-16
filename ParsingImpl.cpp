@@ -14,8 +14,8 @@ namespace cchips {
         {token_invalid, "invalid"}, {token_def, "def"}, {token_extern, "extern"}, {token_string, "string"}, {token_number, "number"},
     };
     const std::map<std::string, int> CExpParsing::_op_precedence = {
-        {"(", -10}, {"&&", -2}, {"||", -3}, {">", -1}, {">=", -1}, {"<", -1}, {"<=", -1}, {"==", -1}, {"!=", -1}, {"=~", -1}, {"!~", -1}, {"<<", 1}, {">>", 1}, {"+", 2}, {"-", 2},
-        {"*", 3}, {"/", 3}, {"^", 4}, {"!", 5}, {"=", -5},
+        {"(", -10},  {"=", -7}, {"||", -5}, {"&&", -4}, {"|", -3}, {"&", -2}, {">", -1}, {">=", -1}, {"<", -1}, {"<=", -1}, {"==", -1}, {"!=", -1}, {"=~", -1}, {"!~", -1},
+        {"<<", 1}, {">>", 1}, {"+", 2}, {"-", 2}, {"*", 3}, {"/", 3}, {"^", 4}, {"!", 5},
     };
     const std::string CExpParsing::_token_var_def = "%var";
 
@@ -632,6 +632,10 @@ namespace cchips {
                     evaluation.push(lhs < rhs);
                 else if (!str.compare("<="))
                     evaluation.push(lhs <= rhs);
+                else if (!str.compare("&"))
+                    evaluation.push(lhs & rhs);
+                else if (!str.compare("|"))
+                    evaluation.push(lhs | rhs);
                 else if (!str.compare("&&"))
                     evaluation.push(lhs && rhs);
                 else if (!str.compare("||"))
