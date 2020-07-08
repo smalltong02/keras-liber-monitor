@@ -1,0 +1,221 @@
+{
+  "Category": "Services",
+  "Calling convention": "WINAPI",
+
+  "OpenSCManagerA": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "SC_HANDLE",
+      "Feature": "S0"
+    },
+
+    "Parameters": {
+      "lpMachineName": "LPCSTR",
+      "lpDatabaseName": "LPCSTR",
+      "dwDesiredAccess": "DWORD"
+    },
+
+    "Logging": true
+  },
+
+  "OpenSCManagerW": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "SC_HANDLE",
+      "Feature": "S0"
+    },
+
+    "Parameters": {
+      "lpMachineName": "LPCWSTR",
+      "lpDatabaseName": "LPCWSTR",
+      "dwDesiredAccess": "DWORD"
+    },
+
+    "Logging": true
+  },
+
+  "CreateServiceA": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "SC_HANDLE",
+      "Feature": "S1"
+    },
+
+    "Parameters": {
+      "hSCManager": "SC_HANDLE",
+      "lpServiceName": "LPCSTR",
+      "lpDisplayName": "LPCSTR",
+      "dwDesiredAccess": "DWORD",
+      "dwServiceType": "DWORD",
+      "dwStartType": "DWORD",
+      "dwErrorControl": "DWORD",
+      "lpBinaryPathName": "LPCSTR",
+      "lpLoadOrderGroup": "LPCSTR",
+      "lpdwTagId": "LPDWORD",
+      "lpDependencies": "LPCSTR",
+      "lpServiceStartName": "LPCSTR",
+      "lpPassword": "LPCSTR"
+    },
+
+    "PreLog": [
+      "lpServiceName",
+      "lpDisplayName",
+      "lpBinaryPathName",
+      "lpLoadOrderGroup"
+    ]
+  },
+
+  "CreateServiceW": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "SC_HANDLE",
+      "Feature": "S1"
+    },
+
+    "Parameters": {
+      "hSCManager": "SC_HANDLE",
+      "lpServiceName": "LPCWSTR",
+      "lpDisplayName": "LPCWSTR",
+      "dwDesiredAccess": "DWORD",
+      "dwServiceType": "DWORD",
+      "dwStartType": "DWORD",
+      "dwErrorControl": "DWORD",
+      "lpBinaryPathName": "LPCWSTR",
+      "lpLoadOrderGroup": "LPCWSTR",
+      "lpdwTagId": "LPDWORD",
+      "lpDependencies": "LPCWSTR",
+      "lpServiceStartName": "LPCWSTR",
+      "lpPassword": "LPCWSTR"
+    },
+
+    "PreLog": [
+      "lpServiceName",
+      "lpDisplayName",
+      "lpBinaryPathName",
+      "lpLoadOrderGroup"
+    ]
+  },
+
+  "OpenServiceA": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "SC_HANDLE",
+      "Feature": "S2"
+    },
+
+    "Parameters": {
+      "hSCManager": "SC_HANDLE",
+      "lpServiceName": "LPCSTR",
+      "dwDesiredAccess": "DWORD"
+    },
+
+    "PreLog": [
+      "lpServiceName"
+    ]
+  },
+
+  "OpenServiceW": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "SC_HANDLE",
+      "Feature": "S2"
+    },
+
+    "Parameters": {
+      "hSCManager": "SC_HANDLE",
+      "lpServiceName": "LPCWSTR",
+      "dwDesiredAccess": "DWORD"
+    },
+
+    "PreLog": [
+      "lpServiceName"
+    ]
+  },
+
+  "DeleteService": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "BOOL",
+      "Feature": "S3"
+    },
+
+    "Parameters": {
+      "hService": "SC_HANDLE"
+    },
+
+    "PreLog": [
+      "hService"
+    ]
+  },
+
+  "StartServiceA": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "BOOL",
+      "Feature": "S4"
+    },
+
+    "Parameters": {
+      "hService": "SC_HANDLE",
+      "dwNumServiceArgs": "DWORD",
+      "lpServiceArgVectors": "LPCSTR"
+    },
+
+    "PreLog": [
+      "hService"
+    ]
+  },
+
+  "StartServiceW": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "BOOL",
+      "Feature": "S4"
+    },
+
+    "Parameters": {
+      "hService": "SC_HANDLE",
+      "dwNumServiceArgs": "DWORD",
+      "lpServiceArgVectors": "LPCWSTR"
+    },
+
+    "PreLog": [
+      "hService"
+    ]
+  },
+
+  "QueryServiceStatus": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "BOOL",
+      "Feature": "S5"
+    },
+
+    "Parameters": {
+      "hService": "SC_HANDLE",
+      "lpServiceStatus": "LPSERVICE_STATUS"
+    },
+
+    "PostLog": [
+      "lpServiceStatus->dwCurrentState"
+    ]
+  },
+
+  "QueryServiceStatusEx": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "BOOL",
+      "Feature": "S5"
+    },
+
+    "Parameters": {
+      "hService": "SC_HANDLE",
+      "InfoLevel": "SC_STATUS_TYPE",
+      "lpBuffer": "LPBYTE",
+      "cbBufSize": "DWORD",
+      "pcbBytesNeeded": "SC_HANDLE"
+    },
+
+    "Logging":  true
+  }
+}

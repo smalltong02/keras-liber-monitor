@@ -1,0 +1,40 @@
+{
+	"root" : "./",
+	"author": "Yin Ma <yinma@fortinet.com>",
+    "description": "包含HipsHook项目的开发，测试以及Json格式说明的文档",
+    "extension": null,
+    "generator": "site",
+	"language" : "zh-hans",
+    "links": {
+        "sharing": {
+            "all": null,
+            "facebook": null,
+            "google": null,
+            "twitter": null,
+            "weibo": null
+        },
+        "sidebar": {}
+    },
+    "output": null,
+    "pdf": {
+        "fontSize": 12,
+        "footerTemplate": null,
+        "headerTemplate": null,
+        "margin": {
+            "bottom": 36,
+            "left": 62,
+            "right": 62,
+            "top": 36
+        },
+        "pageNumbers": false,
+        "paperSize": "a4"
+    },
+    "plugins": ["disqus"],
+    "pluginsConfig": {
+        "disqus": {
+            "shortName": "github-hipshook"
+        }
+    },  
+    "title": "HipsHook文档",
+    "variables": {}
+}

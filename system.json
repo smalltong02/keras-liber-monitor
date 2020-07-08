@@ -1,0 +1,94 @@
+{
+  "Category": "System",
+  "Calling convention": "WINAPI",
+
+  "LoadLibraryA": {
+    "Signature": {
+      "Library": "kernel32.dll",
+      "Return": "HMODULE",
+      "Special": false,
+      "Feature": "L1"
+    },
+
+    "Parameters": {
+      "lpLibFileName": "LPCSTR"
+    },
+
+    "Ensure": [
+      "lpLibFileName"
+    ],
+
+    "PreLog": [
+      "lpLibFileName"
+    ]
+  },
+
+  "LoadLibraryW": {
+    "Signature": {
+      "Library": "kernel32.dll",
+      "Return": "HMODULE",
+      "Special": false,
+      "Feature": "L1"
+    },
+
+    "Parameters": {
+      "lpLibFileName": "LPCWSTR"
+    },
+
+    "Ensure": [
+      "lpLibFileName"
+    ],
+
+    "PreLog": [
+      "lpLibFileName"
+    ]
+  },
+
+  "LoadLibraryExA": {
+    "Signature": {
+      "Library": "kernel32.dll",
+      "Return": "HMODULE",
+      "Special": false,
+      "Feature": "L1"
+    },
+
+    "Parameters": {
+      "lpLibFileName": "LPCSTR",
+      "hFile": "HANDLE",
+      "dwFlags": "LOADFLAGS"
+    },
+
+    "Ensure": [
+      "lpLibFileName"
+    ],
+
+    "PreLog": [
+      "lpLibFileName",
+      "dwFlags"
+    ]
+  },
+
+  "LoadLibraryExW": {
+    "Signature": {
+      "Library": "kernel32.dll",
+      "Return": "HMODULE",
+      "Special": false,
+      "Feature": "L1"
+    },
+
+    "Parameters": {
+      "lpLibFileName": "LPCWSTR",
+      "hFile": "HANDLE",
+      "dwFlags": "LOADFLAGS"
+    },
+
+    "Ensure": [
+      "lpLibFileName"
+    ],
+
+    "PreLog": [
+      "lpLibFileName",
+      "dwFlags"
+    ]
+  }
+}

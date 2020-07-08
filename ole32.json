@@ -1,0 +1,22 @@
+{
+  "Category": "Ole32",
+  "Calling convention": "WINAPI",
+
+  "CoInitializeEx": {
+    "Signature": {
+      "Library": "ole32.dll",
+      "Return": "HRESULT",
+      "Feature": "O1"
+    },
+
+    "Parameters": {
+      "pvReserved": "LPVOID",
+      "dwCoInit": "DWORD"
+    },
+
+    "PostLog": [
+      "dwCoInit",
+      "Return"
+    ]
+  }
+}
