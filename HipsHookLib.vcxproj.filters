@@ -25,6 +25,9 @@
     <Filter Include="bson">
       <UniqueIdentifier>{adcefcc0-7e66-4dc7-ac5d-497f9c0a6f69}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Capstone">
+      <UniqueIdentifier>{5a8f6239-9c62-49fd-985b-60aee0f2e667}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HipsHookLib.cpp">
@@ -169,6 +172,51 @@
     </ClInclude>
     <ClInclude Include="crc.h">
       <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\arm.h">
+      <Filter>Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\arm64.h">
+      <Filter>Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\capstone.h">
+      <Filter>Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\evm.h">
+      <Filter>Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\m68k.h">
+      <Filter>Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\m680x.h">
+      <Filter>Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\mips.h">
+      <Filter>Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\mos65xx.h">
+      <Filter>Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\platform.h">
+      <Filter>Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\ppc.h">
+      <Filter>Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\sparc.h">
+      <Filter>Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\systemz.h">
+      <Filter>Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\tms320c64x.h">
+      <Filter>Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\x86.h">
+      <Filter>Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\xcore.h">
+      <Filter>Capstone</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

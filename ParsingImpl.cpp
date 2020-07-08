@@ -580,7 +580,6 @@ namespace cchips {
     std::variant<bool, std::unique_ptr<CExpParsing::ValuePair>> CExpParsing::EvalExpression()
     {
         ASSERT(m_expression_ast.size());
-        ASSERT(m_value_map.size());
         if (!m_expression_ast.size())
             return false;
         if (!m_value_map.size())

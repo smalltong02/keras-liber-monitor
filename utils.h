@@ -15,6 +15,39 @@ bool GetValueString(const VARIANT& Value, std::string& ValueString);
 bool SetValueString(const std::string& ValueString, VARIANT& Value);
 VARTYPE ConvertObTypeToVarintType(const std::string& type_name);
 
+#ifdef _X86_
+#define TLS_TEB 0x18
+#define TLS_PEB 0x30
+#endif
+#ifdef _AMD64_
+#define TLS_TEB 0x30
+#define TLS_PEB 0x60
+#endif
+
+static inline DWORD_PTR readtls(DWORD index)
+{
+#ifdef _X86_
+    return (DWORD)__readfsdword(index);
+#endif
+#ifdef _AMD64_
+    return (DWORD_PTR)__readgsqword(index);
+#endif
+    return 0;
+}
+
+static inline void writetls(DWORD index, DWORD_PTR value)
+{
+#ifdef _X86_
+    __writefsdword(index, value);
+#endif
+#ifdef _AMD64_
+    __writegsqword(index, value);
+#endif
+    return;
+}
+
+DWORD NativeFetchMovEaxImmOffset(const char* func);
+
 #ifdef _DEBUGGER 
 #ifdef _AMD64_
 #define BreakPoint BreakInt3();

@@ -1,6 +1,16 @@
 #include "stdafx.h"
 #include "utils.h"
 #include "MetadataTypeImpl.h"
+#include "capstone\include\capstone.h"
+
+static csh g_capstone_handle = 0;
+
+#ifdef _X86_
+static const cs_err g_cap_error = cs_open(CS_ARCH_X86, CS_MODE_32, &g_capstone_handle);
+#endif
+#ifdef _AMD64_
+static const cs_err g_cap_error = cs_open(CS_ARCH_X86, CS_MODE_64, &g_capstone_handle);
+#endif
 
 std::wstring A2WString(const std::string& str)
 {
@@ -238,4 +248,40 @@ bool SetValueString(const std::string& ValueString, VARIANT& Value)
     }
 
     return false;
+}
+
+int lde(const void *addr)
+{
+    if (!addr) return 0;
+    if (g_cap_error != CS_ERR_OK ||
+        g_capstone_handle == 0) return 0;
+
+    cs_insn *insn = nullptr;
+    size_t count =
+        cs_disasm_ex(g_capstone_handle, reinterpret_cast<const uint8_t*>(addr), 16, reinterpret_cast<uintptr_t>(addr), 1, &insn);
+    if (count == 0) return 0;
+    if (!insn) return 0;
+
+    int size = insn->size;
+
+    cs_free(insn, count);
+    return size;
+}
+
+DWORD NativeFetchMovEaxImmOffset(const char* func)
+{
+    if (!func) return 0;
+    if (g_cap_error != CS_ERR_OK ||
+        g_capstone_handle == 0) return 0;
+
+    for (uint32_t idx = 0; idx < 32; idx++) {
+        if (memcmp(func, "\x8b\x80", 2) == 0) {
+            return *(uint32_t *)(func + 2);
+        }
+        if (memcmp(func, "\x8b\x40", 2) == 0) {
+            return func[2];
+        }
+        func += lde(func);
+    }
+    return 0;
 }

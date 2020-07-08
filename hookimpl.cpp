@@ -36,7 +36,7 @@ processing_status WINAPI CHookImplementObject::detour_coInitializeEx(CHookImplem
             if (implement_object->GetWmiObjectCounts())
             {
                 //error_log("delay_wmi_hook_processing!");
-                implement_object->HookWmiObjectMethods(implement_object->GetFunctionCounts());
+                implement_object->HookWmiObjectMethods(implement_object->GetFunctionCounts(), false);
             }
         }, node->hook_implement_object);
 
@@ -309,6 +309,7 @@ bool process_check_for_wmiobject(CHookImplementObject::detour_node* node, const 
     BEGIN_LOG("wmi_modify");
     auto func_checking = [&](CHookImplementObject::detour_node* pnode, const std::unique_ptr<CCheck>& pcheck) ->bool {
         bool bcheck = true;
+        bool bSetValue = false;
         for (const auto& check : pcheck->GetChecks())
         {
             ASSERT(pcheck != nullptr);
@@ -328,10 +329,12 @@ bool process_check_for_wmiobject(CHookImplementObject::detour_node* node, const 
                     {
                         return false;
                     }
+                    else
+                        bSetValue = true;
                     break;
                 }
             }
-            if (!std::get<bool>(check->EvalExpression()))
+            if (bSetValue && !std::get<bool>(check->EvalExpression()))
             {
                 bcheck = false;
                 break;

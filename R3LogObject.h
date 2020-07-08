@@ -363,9 +363,13 @@ namespace cchips {
         bool Listen(CSocketObject::func_callback& callback) override {
             assert(m_listen_thread == nullptr);
             if (m_listen_thread) return false;
-            m_listen_thread = std::make_unique<std::thread>(std::bind(&CLpcPipeObject::ListenThread, this, callback));
+            HANDLE fin_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+            if (!fin_event) return false;
+            m_listen_thread = std::make_unique<std::thread>(std::bind(&CLpcPipeObject::ListenThread, this, callback, fin_event));
             assert(m_listen_thread != nullptr);
             if (!m_listen_thread) return false;
+            WaitForSingleObject(fin_event, INFINITE);
+            CloseHandle(fin_event);
             return true;
         }
         void StopListen() override {
@@ -379,10 +383,14 @@ namespace cchips {
         bool Connect(CSocketObject::func_getdata& getdata) override {
             assert(m_connect_thread == nullptr);
             if (m_connect_thread) return false;
-            m_connect_thread = std::make_unique<std::thread>(std::bind(&CLpcPipeObject::ConnectThread, this, getdata));
+            HANDLE fin_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+            if (!fin_event) return false;
+            m_connect_thread = std::make_unique<std::thread>(std::bind(&CLpcPipeObject::ConnectThread, this, getdata, fin_event));
             assert(m_connect_thread != nullptr);
             if (!m_connect_thread) return false;
-            return true;
+            WaitForSingleObject(fin_event, INFINITE);
+            CloseHandle(fin_event);
+            return m_brunning;
         }
         void StopConnect() override {
             m_brunning = false;
@@ -529,8 +537,11 @@ namespace cchips {
             }
             return 0;
         }
-        VOID WINAPI ListenThread(func_callback callback) {
+        VOID WINAPI ListenThread(func_callback callback, HANDLE fin_event) {
+            assert(fin_event);
+            if (!fin_event) return;
             std::shared_ptr<HANDLE> hpipe =std::make_shared<HANDLE>(StartLPCServer());
+            SetEvent(fin_event);
             assert(m_sync_event);
             if (hpipe == nullptr) return;
             if (*hpipe == INVALID_HANDLE_VALUE) return;
@@ -591,9 +602,11 @@ namespace cchips {
             }
             return;
         }
-        VOID WINAPI ConnectThread(CSocketObject::func_getdata& getdata) {
+        VOID WINAPI ConnectThread(CSocketObject::func_getdata& getdata, HANDLE fin_event) {
+            assert(fin_event);
+            if (!fin_event) return;
             assert(m_sync_event);
-            if (!m_sync_event) return;
+            if (!m_sync_event) { SetEvent(fin_event); return; }
             HANDLE hpipe = INVALID_HANDLE_VALUE;
             auto func_open = [&]() {
                 int count = 0;
@@ -652,7 +665,13 @@ namespace cchips {
                 return true;
             };
             m_brunning = true;
-            if (!func_open()) return;
+            if (!func_open())
+            {
+                m_brunning = false;
+                SetEvent(fin_event);
+                return;
+            }
+            SetEvent(fin_event);
             // write log to the pipe server
             while (m_brunning) {
                 DWORD ret = WaitForSingleObject(m_sync_event, CSocketObject::lpc_client_wait_timeout);

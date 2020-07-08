@@ -178,7 +178,7 @@ namespace cchips {
             filter_threadid = 0,
         };
         CHookImplementObject() :
-            m_bValid(false), m_benable(false), m_configObject(nullptr), m_drivermgr(nullptr), m_bwmi_processing(false) {
+            m_bValid(false), m_benable(false), m_configObject(nullptr), m_drivermgr(nullptr), m_bwmi_success(false) {
         }//for hook wmi methods
         ~CHookImplementObject() {
             //if (m_threadTlsIdx != TLS_OUT_OF_INDEXES)
@@ -234,6 +234,17 @@ namespace cchips {
             IWbemServices_ExecQuery_Define wbem_execquery_func;
         };
 
+        using error_offset_define = struct {
+            DWORD m_win32_error_offset;
+            DWORD m_nt_status_offset;
+        };
+
+        using last_error_define = struct {
+            DWORD nt_status;
+            DWORD last_error;
+        };
+
+        bool InitializeErrorOffset();
         bool Initialize(std::shared_ptr<CHipsCfgObject>& configObject);
         static processing_status Preprocessing(CHookImplementObject::hook_node* node_elem, PVOID param_addr, int& params_size, ULONG_PTR& func_return, DWORD entry_count, CLogHandle** __log);
         static processing_status Postprocessing(CHookImplementObject::hook_node* node_elem, PVOID param_addr, int& params_size, ULONG_PTR& func_return, DWORD entry_count, CLogHandle** __log);
@@ -300,9 +311,23 @@ namespace cchips {
             if (Index > 0) TlsSetValue(m_threadTlsIdx, reinterpret_cast<LPVOID>(Index - 1));
             return Index;
         }
+        void GetLastError(last_error_define& error) { 
+            error.last_error = 0;
+            error.nt_status = 0;
+            if (!m_error_offset.m_win32_error_offset || !m_error_offset.m_nt_status_offset) return;
+            error.last_error = *(DWORD *)(readtls(TLS_TEB) + m_error_offset.m_win32_error_offset);
+            error.nt_status = *(DWORD *)(readtls(TLS_TEB) + m_error_offset.m_nt_status_offset);
+            return;
+        }
+        void SetLastError(const last_error_define& error) { 
+            if (!m_error_offset.m_win32_error_offset || !m_error_offset.m_nt_status_offset) return;
+            *(DWORD *)(readtls(TLS_TEB) + m_error_offset.m_win32_error_offset) = error.last_error;
+            *(DWORD *)(readtls(TLS_TEB) + m_error_offset.m_nt_status_offset) = error.nt_status;
+            return;
+        }
         bool HookProcessing();
         bool UnhookProcessing();
-        bool GetbWmiProcessing() { return m_bwmi_processing; }
+        bool GetbWmiProcessing() { return m_bwmi_success; }
 
         // define static detour function on here.
         static processing_status WINAPI detour_loadLibraryA(detour_node* node, LPCSTR lpLibFileName);
@@ -313,7 +338,7 @@ namespace cchips {
         static processing_status WINAPI detour_coInitializeEx(detour_node* node, LPVOID pvReserved, DWORD dwCoInit);
 
         // define static detour for wmi object
-        bool HookWmiObjectMethods(int count);
+        bool HookWmiObjectMethods(int count, bool bInit = true);
         static processing_status STDMETHODCALLTYPE detour_IEnumWbemClassObject_Next(detour_node* node, IEnumWbemClassObject* This, long lTimeout, ULONG uCount, IWbemClassObject **apObjects, ULONG *puReturned);
         static processing_status STDMETHODCALLTYPE detour_IWbemClassObject_Get(detour_node* node, IWbemClassObject* This, LPCWSTR wszName, long lFlags, VARIANT *pVal, long *pType, long *plFlavor);
         static processing_status STDMETHODCALLTYPE detour_IWbemClassObject_Put(detour_node* node, IWbemClassObject* This, LPCWSTR wszName, long lFlags, VARIANT *pVal, long Type);
@@ -332,7 +357,7 @@ namespace cchips {
 
         std::atomic_bool m_bValid;
         std::atomic_bool m_benable;
-        std::atomic_bool m_bwmi_processing;
+        std::atomic_bool m_bwmi_success;
         static const LPVOID m_hookImplementFunction;
         // the tls index for implement the function of re-entry calling check in the same thread
         static const DWORD m_threadTlsIdx;
@@ -344,6 +369,8 @@ namespace cchips {
         sf::contfree_safe_ptr<std::map<std::thread::id, _filter_type>> m_filterids;
         static const std::unique_ptr<CExceptionObject> m_exceptionObject;
         std::unique_ptr< CDriverMgr> m_drivermgr;
+        std::mutex m_init_wmi_mutex;
+        error_offset_define m_error_offset = {};
     };
 
     extern std::shared_ptr<CHookImplementObject> g_impl_object;
