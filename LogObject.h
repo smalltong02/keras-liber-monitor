@@ -20,7 +20,7 @@ namespace cchips {
     {
     public:
 #define filename_template "log_file.XXXXXX"
-        CLpcLocalObject() : m_brunning(false), m_connect_thread(nullptr) {
+        CLpcLocalObject() : m_brunning(false) {
             m_sync_event = CreateEvent(NULL, FALSE, FALSE, NULL);
             SetOutputType(CSocketObject::output_local);
         }
@@ -37,82 +37,66 @@ namespace cchips {
                 m_tempfp = mkstemp(filename_template);
             if (!m_tempfp)
                 return false;
-            assert(m_connect_thread == nullptr);
-            if (m_connect_thread) return false;
-            m_connect_thread = std::make_unique<std::thread>(std::bind(&CLpcLocalObject::ConnectThread, this, getdata));
-            assert(m_connect_thread != nullptr);
-            if (!m_connect_thread) return false;
+            m_getdata = getdata;
+            m_brunning = true;
             return true;
         }
         void StopListen() override { return; }
         void StopConnect() override {
-            if (m_tempfp)
+            if (ValidHandle())
                 fclose(m_tempfp);
         }
-        void Activated() override { if (m_sync_event) SetEvent(m_sync_event); }
-        void ClearLogsCount() override { m_logs_total_count = 0; }
-        int GetTotalLogs() const override { return m_logs_total_count; }
-    private:
-        VOID WINAPI ConnectThread(CSocketObject::func_getdata& getdata) {
-            assert(m_tempfp);
-            assert(m_sync_event);
-            if (!m_tempfp) return;
-            if (!m_sync_event) return;
-
+        void Activated() override {
             auto func_write = [&](const char* buffer, int len) {
-                assert(buffer);
-                if (!buffer) return false;
+                if (!buffer || !len) return false;
                 std::string unpack_buffer(buffer, len);
                 if (unpack_buffer.length() == len)
                 {
                     std::unique_ptr<CRapidJsonWrapper> wrapper_ptr(Unpack(unpack_buffer));
                     if (!wrapper_ptr || !wrapper_ptr->IsValid()) return false;
-                    fputs(wrapper_ptr->Serialize().c_str(), m_tempfp);
-                    fflush(m_tempfp);
-                    return true;
+                    if (CRapidJsonWrapper::optstring opt_string = wrapper_ptr->Serialize(); opt_string)
+                    {
+                        if ((*opt_string).length())
+                        {
+                            std::lock_guard lock(m_mutex);
+                            fputs(std::string(*opt_string).c_str(), m_tempfp);
+                            fflush(m_tempfp);
+                            return true;
+                        }
+                    }
                 }
                 return false;
             };
-
-            m_brunning = true;
-            // write log to the pipe server
-            while (m_brunning) {
-                DWORD ret = WaitForSingleObject(m_sync_event, CSocketObject::lpc_client_wait_timeout);
-                if (ret == WAIT_OBJECT_0) {
-                    do {
-                        std::unique_ptr<bson> data = Pack(getdata());
-                        if (data)
-                        {
-                            m_logs_total_count++;
-                            func_write(bson_data(&(*data)), bson_size(&(*data)));
-                        }
-                        else
-                            break;
-                    } while (1);
+            do {
+                std::unique_ptr<bson> data = Pack(m_getdata());
+                if (data)
+                {
+                    m_logs_total_count++;
+                    func_write(bson_data(&(*data)), bson_size(&(*data)));
                 }
-                else if (ret == WAIT_TIMEOUT) {
-                    continue;
-                }
-                else {
-                    // other error
+                else
                     break;
-                }
-            }
+            } while (1);
         }
+        void ClearLogsCount() override { m_logs_total_count = 0; }
+        int GetTotalLogs() const override { return m_logs_total_count; }
+    private:
         bool ValidHandle() const { if (m_tempfp == nullptr) return false; else return true; }
 
         // mkstemp extracted from libc/sysdeps/posix/tempname.c.
         FILE* mkstemp(char *tmpl);
         HANDLE m_sync_event;
         std::atomic_bool m_brunning;
-        std::unique_ptr<std::thread> m_connect_thread;
+        CSocketObject::func_getdata m_getdata;
         FILE* m_tempfp = nullptr;
+        std::mutex m_mutex;
         int m_logs_total_count = 0;
     };
     
     class CLogObject
     {
     public:
+#define MAX_CACHE_LOGS 100
         using logtype = enum _logtype {
             log_invalid = -1,
             log_event = 0,
@@ -132,21 +116,29 @@ namespace cchips {
         }
 
         bool Initialize();
-
         bool AddLog(std::shared_ptr<CLogEntry>& log, bool bhead = false) {
-            if (!m_socket_object) return false;
             if (!m_valid) return false;
             if (!log) return false;
-            if (!bhead) m_cache_logs->push_back(log);
-            else m_cache_logs->push_front(log);
-            m_socket_object->Activated();
+            {
+                std::lock_guard<std::recursive_mutex> lock_guard(m_recursive_mutex);
+                if (m_cache_logs.size() >= MAX_CACHE_LOGS) return false;
+                if (!bhead) m_cache_logs.push_back(log);
+                else m_cache_logs.push_front(log);
+            }
+            if (m_socket_object)
+                m_socket_object->Activated();
             return true;
         }
         RAPID_DOC_PAIR GetData();
         int GetTotalLogs() const { return m_socket_object->GetTotalLogs(); }
         void EnableLog() { m_valid = true; }
         void DisableLog() { m_valid = false; }
-        bool IsLogsNull() { return m_cache_logs->empty(); }
+        void EnableDupFlt() { m_socket_object->EnableDuplicateFlt(); }
+        void DisableDupFlt() { m_socket_object->DisableDuplicateFlt(); }
+        bool IsLogsNull() { 
+            std::lock_guard<std::recursive_mutex> lock_guard(m_recursive_mutex);
+            return m_cache_logs.empty(); 
+        }
         static std::unique_ptr<CLogObject> GetInstance()
         {
             if (m_reference_count == 0)
@@ -166,7 +158,8 @@ namespace cchips {
         bool m_valid = true;
         static int m_reference_count;
         std::unique_ptr<CSocketObject> m_socket_object = nullptr;
-        sf::contfree_safe_ptr<std::list<std::shared_ptr<CLogEntry>>> m_cache_logs;
+        std::recursive_mutex m_recursive_mutex;
+        std::list<std::shared_ptr<CLogEntry>> m_cache_logs;
     };
 
     class CLogEntry

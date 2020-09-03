@@ -79,21 +79,21 @@ HRESULT STDMETHODCALLTYPE WbemClassObjectGet(
                         type = ConvertObTypeToVarintType(iden.second->GetName());
                     }
                     std::stringstream ss; ss << "0";
-                    if (!modify->SetIdentifierValue(cchips::CExpParsing::ValuePair(iden.first, ss.str())))
-                    {
-                        return false;
-                    }
+                    //if (!modify->SetIdentifierValue(cchips::CExpParsing::ValuePair(iden.first, ss.str())))
+                    //{
+                    //    return false;
+                    //}
                     // back propagation
-                    std::unique_ptr<cchips::CExpParsing::ValuePair> value = std::get<std::unique_ptr<cchips::CExpParsing::ValuePair>>(modify->EvalExpression());
-                    if (value == nullptr)
-                        break;
-                    if (_stricmp(iden.first.c_str(), value->first.c_str()) != 0)
-                    {
-                        ASSERT(0); continue;
-                    }
+                    //std::unique_ptr<cchips::CExpParsing::ValuePair> value = std::get<std::unique_ptr<cchips::CExpParsing::ValuePair>>(modify->EvalExpression());
+                    //if (value == nullptr)
+                    //    break;
+                    //if (_stricmp(iden.first.c_str(), value->first.c_str()) != 0)
+                    //{
+                    //    ASSERT(0); continue;
+                    //}
                     if (pVal->vt == VT_EMPTY) pVal->vt = type;
-                    if (!SetValueString(value->second.str().c_str(), *pVal))
-                        return false;
+                    //if (!SetValueString(value->second.str().c_str(), *pVal))
+                    //    return false;
                     break;
                 }
             }

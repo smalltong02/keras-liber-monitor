@@ -23,6 +23,7 @@ int _tmain(int argc, _TCHAR* argv[])
 {
     if (g_log_object->Initialize() && g_hook_test_object->Initialize())
     {
+        //Sleep(1000*100);
         testing::InitGoogleMock(&argc, argv);
         return RUN_ALL_TESTS();
     }

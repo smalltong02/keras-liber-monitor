@@ -29,7 +29,7 @@ std::shared_ptr<CHipsCfgObject> InitializeConfig()
         ResBuffer);
     if (result && ResBuffer.size() > 0)
     {
-        if (hipsCfgObject && hipsCfgObject->Initialize(std::string((char*)&ResBuffer[0], ResBuffer.size())))
+        if (hipsCfgObject && hipsCfgObject->Initialize(std::string_view((char*)&ResBuffer[0], ResBuffer.size())))
         {
             return hipsCfgObject;
         }
@@ -37,14 +37,14 @@ std::shared_ptr<CHipsCfgObject> InitializeConfig()
     return nullptr;
 }
 
-bool InitializeHook(std::shared_ptr<CHipsCfgObject>& hipsCfgObject)
+bool InitializeHook(std::shared_ptr<CHipsCfgObject> hipsCfgObject)
 {
     bool bSuccess = false;
 
     if (hipsCfgObject == nullptr || g_impl_object == nullptr || g_log_object == nullptr)
         return false;
 
-    if (g_impl_object->Initialize(hipsCfgObject) && g_log_object->Initialize() && g_impl_object->HookAllApis())
+    if (g_impl_object->Initialize(std::move(hipsCfgObject)) && g_log_object->Initialize() && g_impl_object->HookAllApis())
     {
         bSuccess = true;
     }

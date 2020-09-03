@@ -28,6 +28,15 @@
     <Filter Include="Capstone">
       <UniqueIdentifier>{5a8f6239-9c62-49fd-985b-60aee0f2e667}</UniqueIdentifier>
     </Filter>
+    <Filter Include="g-re2">
+      <UniqueIdentifier>{62225d23-4d57-4c2d-a919-07e895503bd7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="g-re2\re2">
+      <UniqueIdentifier>{0a6c208d-025d-4f61-a737-57976eab53e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="g-re2\util">
+      <UniqueIdentifier>{f2edef9f-7978-4f87-9660-3d0ee4e3fce9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HipsHookLib.cpp">
@@ -89,6 +98,75 @@
     </ClCompile>
     <ClCompile Include="drivermgr.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\bitstate.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\compile.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\dfa.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\filtered_re2.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\mimics_pcre.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\nfa.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\onepass.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\parse.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\perl_groups.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\prefilter.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\prefilter_tree.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\prog.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\re2.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\regexp.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\set.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\simplify.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\stringpiece.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\tostring.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\unicode_casefold.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\re2\unicode_groups.cc">
+      <Filter>g-re2\re2</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\util\pcre.cc">
+      <Filter>g-re2\util</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\util\rune.cc">
+      <Filter>g-re2\util</Filter>
+    </ClCompile>
+    <ClCompile Include="g-re2\util\strutil.cc">
+      <Filter>g-re2\util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -218,6 +296,84 @@
     <ClInclude Include="capstone\include\xcore.h">
       <Filter>Capstone</Filter>
     </ClInclude>
+    <ClInclude Include="PackageWrapper.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\bitmap256.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\filtered_re2.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\pod_array.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\prefilter.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\prefilter_tree.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\prog.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\re2.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\regexp.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\set.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\sparse_array.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\sparse_set.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\stringpiece.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\unicode_casefold.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\unicode_groups.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\re2\walker-inl.h">
+      <Filter>g-re2\re2</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\util\flags.h">
+      <Filter>g-re2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\util\logging.h">
+      <Filter>g-re2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\util\malloc_counter.h">
+      <Filter>g-re2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\util\mix.h">
+      <Filter>g-re2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\util\mutex.h">
+      <Filter>g-re2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\util\pcre.h">
+      <Filter>g-re2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\util\strutil.h">
+      <Filter>g-re2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\util\utf.h">
+      <Filter>g-re2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="g-re2\util\util.h">
+      <Filter>g-re2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="ntapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="asmfunction.asm">
@@ -227,6 +383,18 @@
   <ItemGroup>
     <None Include="bson\LICENSE">
       <Filter>bson</Filter>
+    </None>
+    <None Include="g-re2\re2\make_perl_groups.pl">
+      <Filter>g-re2\re2</Filter>
+    </None>
+    <None Include="g-re2\re2\make_unicode_casefold.py">
+      <Filter>g-re2\re2</Filter>
+    </None>
+    <None Include="g-re2\re2\make_unicode_groups.py">
+      <Filter>g-re2\re2</Filter>
+    </None>
+    <None Include="g-re2\re2\unicode.py">
+      <Filter>g-re2\re2</Filter>
     </None>
   </ItemGroup>
 </Project>

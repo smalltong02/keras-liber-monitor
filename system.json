@@ -2,93 +2,84 @@
   "Category": "System",
   "Calling convention": "WINAPI",
 
-  "LoadLibraryA": {
+  "GetModuleHandleA": {
     "Signature": {
       "Library": "kernel32.dll",
       "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
+      "Feature": "P60"
     },
 
     "Parameters": {
-      "lpLibFileName": "LPCSTR"
+      "lpModuleName": "LPCSTR"
     },
 
-    "Ensure": [
-      "lpLibFileName"
-    ],
-
     "PreLog": [
-      "lpLibFileName"
+      "lpModuleName"
     ]
   },
 
-  "LoadLibraryW": {
+  "GetModuleHandleW": {
     "Signature": {
       "Library": "kernel32.dll",
       "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
+      "Feature": "P60"
     },
 
     "Parameters": {
-      "lpLibFileName": "LPCWSTR"
+      "lpModuleName": "LPCWSTR"
     },
 
-    "Ensure": [
-      "lpLibFileName"
-    ],
-
     "PreLog": [
-      "lpLibFileName"
+      "lpModuleName"
     ]
   },
 
-  "LoadLibraryExA": {
+  "GetProcAddress": {
     "Signature": {
       "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
+      "Return": "FARPROC",
+      "Feature": "P61"
     },
 
     "Parameters": {
-      "lpLibFileName": "LPCSTR",
-      "hFile": "HANDLE",
-      "dwFlags": "LOADFLAGS"
-    },
-
-    "Ensure": [
-      "lpLibFileName"
-    ],
-
-    "PreLog": [
-      "lpLibFileName",
-      "dwFlags"
-    ]
+      "hModule": "HMODULE",
+      "lpProcName": "LPCSTR"
+    }
   },
 
-  "LoadLibraryExW": {
+  "NtQuerySystemInformation": {
     "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
+      "Library": "ntdll.dll",
+      "Return": "NTSTATUS",
+      "Feature": "P63"
     },
 
     "Parameters": {
-      "lpLibFileName": "LPCWSTR",
-      "hFile": "HANDLE",
-      "dwFlags": "LOADFLAGS"
+      "SystemInformationClass": "SYSTEM_INFORMATION_CLASS",
+      "SystemInformation": "LPVOID",
+      "SystemInformationLength": "ULONG",
+      "ReturnLength": "LPULONG"
     },
 
-    "Ensure": [
-      "lpLibFileName"
+    "PreLog": [
+      "SystemInformationClass"
     ],
 
-    "PreLog": [
-      "lpLibFileName",
-      "dwFlags"
-    ]
+    "PostCheck": {
+      "0": {
+        "Define": {
+          "SystemInformation": "SYSTEM_BASIC_INFORMATION*"
+        },
+
+        "Check": {
+          "SystemInformationClass": "%var0 == 'SystemBasicInformation'",
+          "SystemInformation->NumberOfProcessors": "%var1 < 2"
+        },
+
+        "Modify": {
+          "SystemInformation->NumberOfProcessors": "%var2 = 2"
+        }
+      }
+    }
   }
 }

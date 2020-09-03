@@ -6,8 +6,9 @@ namespace cchips {
 
     const LPVOID CHookImplementObject::m_hookImplementFunction = (LPVOID)_hookImplementFunction;
     std::shared_ptr<CHookImplementObject> g_impl_object = std::make_shared<CHookImplementObject>();
-    const DWORD CHookImplementObject::m_threadTlsIdx = TlsAlloc();
-    const std::unique_ptr<CExceptionObject> CHookImplementObject::m_exceptionObject(CExceptionObject::GetInstance());
+    thread_local ULONG_PTR CHookImplementObject::m_threadTlsCount = 0;
+    std::atomic_bool CHookImplementObject::m_disable_hook = true;
+    const std::unique_ptr<CExceptionObject> CHookImplementObject::m_exceptionObject = (CExceptionObject::GetInstance());
 
 #ifdef _X86_
 #pragma code_seg(".wrtext")
@@ -28,10 +29,16 @@ namespace cchips {
             __hook_node->hook_implement_object->GetLastError(error);
             // safe remove hook when shared_count = 0
             InterlockedIncrement(&__hook_node->shared_count);
+            processing_status __status = processing_continue;
+            if (__hook_node->hook_implement_object->IsDisableHook())
+                __status = processing_skip;
             __psize = 0; __return = 0;
-            ULONG_PTR entry_count = __object->GetTlsValueForThreadIdx();
+            ULONG_PTR entry_count = -1;
+            if(__status == processing_continue)
+                entry_count = __object->GetTlsValueForThreadIdx();
             CLogHandle* __log = nullptr;
-            processing_status __status = __object->Preprocessing(__hook_node, __addr, __psize, __return, entry_count, &__log);
+            if (__status == processing_continue)
+                __status = __object->Preprocessing(__hook_node, __addr, __psize, __return, entry_count, &__log);
             if (__status != processing_exit)
             {
                 void* __func = __hook_node->orgin_api_implfunc;
@@ -44,7 +51,8 @@ namespace cchips {
                 if(__status == processing_continue)
                     __object->Postprocessing(__hook_node, __addr, __psize, __return, entry_count, &__log);
             }
-            __object->ReleaseTlsValueForThreadIdx();
+            if(entry_count != -1)
+                __object->ReleaseTlsValueForThreadIdx();
             InterlockedDecrement(&__hook_node->shared_count);
             __hook_node->hook_implement_object->SetLastError(error);
         }
@@ -79,15 +87,15 @@ namespace cchips {
         return true;
     }
 
-    bool CHookImplementObject::Initialize(std::shared_ptr<CHipsCfgObject>& configObject)
+    bool CHookImplementObject::Initialize(std::shared_ptr<CHipsCfgObject> configObject)
     {
-        m_configObject = configObject;
+        m_configObject = std::move(configObject);
         m_drivermgr = std::make_unique<CDriverMgr>();
 
-        if (m_threadTlsIdx == TLS_OUT_OF_INDEXES)
-            return m_bValid;
-
         if (!InitializeErrorOffset())
+            return m_bValid;
+        m_notification_api_define.ldrregisterdllnotification_func = reinterpret_cast<LdrRegisterDllNotification_Define>(GetProcAddress(GetModuleHandleA("ntdll"), "LdrRegisterDllNotification"));
+        if (!m_notification_api_define.ldrregisterdllnotification_func)
             return m_bValid;
 
         if (m_hookImplementFunction != nullptr &&
@@ -102,47 +110,187 @@ namespace cchips {
         return m_bValid;
     }
 
+    MH_STATUS CHookImplementObject::HookApi(hook_node& node)
+    {
+        ASSERT(node.hook_implement_object);
+        ASSERT(node.function);
+
+        if (node.function->GetClassType() != CPrototype::class_normal)
+            return HookSpecialApi(node);
+        return HookNormalApi(node);
+    }
+
+    MH_STATUS CHookImplementObject::HookNormalApi(hook_node& node)
+    {
+        MH_STATUS status = MH_CreateHookApiEx(A2WString((*node.function).GetLibrary()).c_str(), (LPCSTR)(*node.function).GetName().c_str(), m_hookImplementFunction, &(node.orgin_api_implfunc), (LPVOID*)&node, &node.ppTarget);
+        if (status == MH_OK)
+        {
+            if (node.bdelayed && node.ppTarget)
+            {
+                status = MH_EnableHook(node.ppTarget);
+                if (status == MH_OK)
+                {
+                    error_log("api hook delay create: {} success!", node.function->GetName());
+                }
+                else
+                {
+                    error_log("api hook delay create: {} failed({})!", node.function->GetName(), status);
+                }
+                node.bdelayed = false;
+            }
+            else
+            {
+                debug_log("api hook create: '{}' success!", (*node.function).GetName());
+            }
+            return status;
+        }
+        else
+        {
+            debug_log("api hook create: '{}' failed!", (*node.function).GetName());
+        }
+        return status;
+    }
+
+    MH_STATUS CHookImplementObject::HookSpecialApi(hook_node& node)
+    {
+        MH_STATUS status = MH_UNKNOWN;
+        CPrototype::_class_type type = node.function->GetClassType();
+        switch (type)
+        {
+        case CPrototype::class_wmi:
+        {
+            if (m_wmi_interface_define.size() == 0)
+                InitializeWmiMethodsDefine(node.bdelayed);
+            if (!node.function->GetClassProto())
+                break;
+            auto it = m_wmi_interface_define.find(node.function->GetClassProto()->GetClassNam());
+            if (it == m_wmi_interface_define.end())
+            {
+                if (!node.bdelayed)
+                    status = MH_ERROR_MODULE_NOT_FOUND;
+                break;
+            }
+            unsigned int index = node.function->GetClassProto()->GetVtblIdx();
+            PVOID target_addr = reinterpret_cast<PVOID>(*(it->second + index));
+            ASSERT(target_addr);
+            if (!target_addr)
+                break;
+            status = MH_CreateHook(target_addr, node.hook_implement_object->GetHookImplementFunction(), &(node.orgin_api_implfunc), (LPVOID*)&node);
+            if (status == MH_OK)
+            {
+                if (node.bdelayed)
+                {
+                    node.ppTarget = target_addr;
+                    status = MH_EnableHook(target_addr);
+                    if (status == MH_OK)
+                    {
+                        error_log("wmi method hook create: '{}' success!", node.function->GetName());
+                    }
+                    else
+                    {
+                        error_log("wmi method hook create: '{}' failed({})!", node.function->GetName(), status);
+                    }
+                    node.bdelayed = false;
+                }
+                else
+                {
+                    error_log("wmi method hook create: '{}' success!", node.function->GetName());
+                }
+                return status;
+            }
+            else
+            {
+                error_log("wmi method hook create: '{}' failed({})!", node.function->GetName(), status);
+                return status;
+            }
+        }
+        break;
+
+        case CPrototype::class_vbs:
+        case CPrototype::class_ps:
+        case CPrototype::class_kvm:
+        case CPrototype::class_cshape:
+        default:
+            break;
+        }
+        return status;
+    }
+
+    void CHookImplementObject::RemoveNormalApi(hook_node& node)
+    {
+        if (!node.bdelayed && node.ppTarget)
+        {
+            MH_STATUS status = MH_RemoveHook(node.ppTarget);
+            if(status == MH_OK)
+                node.bdelayed = true;
+        }
+        return;
+    }
+
+    void CHookImplementObject::RemoveSpecialApi(hook_node& node)
+    {
+        CPrototype::_class_type type = node.function->GetClassType();
+        switch (type)
+        {
+        case CPrototype::class_wmi:
+        {
+            if (!node.bdelayed && node.ppTarget)
+            {
+                MH_STATUS status = MH_RemoveHook(node.ppTarget);
+                if (status == MH_OK)
+                    node.bdelayed = true;
+            }
+        }
+        break;
+
+        case CPrototype::class_vbs:
+        case CPrototype::class_ps:
+        case CPrototype::class_kvm:
+        case CPrototype::class_cshape:
+        default:
+            break;
+        }
+        return;
+    }
+
+    void CHookImplementObject::RemoveApi(hook_node& node)
+    {
+        ASSERT(node.hook_implement_object);
+        ASSERT(node.function);
+
+        if (node.function->GetClassType() != CPrototype::class_normal)
+            return RemoveSpecialApi(node);
+        return RemoveNormalApi(node);
+    }
+
     bool CHookImplementObject::HookAllApis()
     {
+        ASSERT(m_bValid);
         if (!m_bValid)
             return false;
-        ASSERT(m_bValid);
+        if (!InitializeNotificationDefine())
+            return false;
         int count = 0;
-        m_hookNodeList.resize(GetFunctionCounts() + GetWmiMethodsDefineSize() + 5, hook_node({}));
+        m_hookNodeList.resize(GetFunctionCounts(), hook_node({}));
 
-        for (const auto& func : GetFunctions())
-        {
+        std::for_each(GetFunctions().begin(), GetFunctions().end(), [&](const auto& func) {
             m_hookNodeList[count].bdelayed = false;
             m_hookNodeList[count].orgin_api_implfunc = nullptr;
             m_hookNodeList[count].hook_implement_object = shared_from_this();
             m_hookNodeList[count].function = func.second;
 
-            MH_STATUS status;
-            status = MH_CreateHookApiEx(A2WString((*func.second).GetLibrary()).c_str(), (LPCSTR)(*func.second).GetName().c_str(), m_hookImplementFunction, &(m_hookNodeList[count].orgin_api_implfunc), (LPVOID*)&m_hookNodeList[count], NULL);
-            if (status == MH_OK)
+            if (MH_STATUS status = HookApi(m_hookNodeList[count]); status == MH_ERROR_MODULE_NOT_FOUND)
             {
-                debug_log("api hook create: '{}' success!", (*func.second).GetName());
-            }
-            else
-            {
-                if (status == MH_ERROR_MODULE_NOT_FOUND)
-                {
-                    // delayed hook;
-                    m_hookNodeList[count].bdelayed = true;
-                    (*m_delayNodeList)[(*m_hookNodeList[count].function).GetLibrary()].push_back(count);
-                }
+                // delayed hook;
+                m_hookNodeList[count].bdelayed = true;
+                if(!(*m_hookNodeList[count].function).GetClassProto() || (*m_hookNodeList[count].function).GetClassProto()->GetClassType() == CPrototype::class_normal)
+                    m_delayNodeList[(*m_hookNodeList[count].function).GetLibrary()].push_back(count);
                 else
-                {
-                    error_log("api hook create: '{}' failed({})!", (*func.second).GetName(), status);
-                }
+                    m_delayNodeList[(*m_hookNodeList[count].function).GetClassProto()->GetTypeName()].push_back(count);
+                debug_log("api hook: '{}' be add to delay_list!", (*func.second).GetName());
             }
             count++;
-        }
-
-        if (GetWmiObjectCounts())
-        {
-            HookWmiObjectMethods(GetFunctionCounts());
-        }
+        });
 
         if (HookProcessing())
             EnableAllApis();
@@ -155,18 +303,11 @@ namespace cchips {
         if (node_elem->function == nullptr || node_elem->hook_implement_object == nullptr || node_elem->orgin_api_implfunc == nullptr)
             return processing_skip;
         if ((*__log) != nullptr) (*__log) = nullptr;
-
         std::shared_ptr<CFunction> func_object = node_elem->function;
         std::shared_ptr<CHookImplementObject> hook_implement_object = node_elem->hook_implement_object;
-        if (hook_implement_object->IsFilterThread(std::this_thread::get_id())) return processing_skip;
         if (params_size == 0) params_size = (int)func_object->GetArgumentAlignSize();
-#ifdef _X86_
-        char* __params = reinterpret_cast<char*>(reinterpret_cast<ULONG_PTR>(param_addr) + CFunction::stack_aligned_bytes);
-#endif
-#ifdef _AMD64_
-        char* __params = reinterpret_cast<char*>(param_addr);
-#endif
-
+        if (hook_implement_object->IsFilterThread(std::this_thread::get_id())) 
+            return processing_skip;
         if (func_object->GetSpecial())
         {
             // If there are API hooks in the upper layer that have been processed, this hook will be processed again when Special is true
@@ -178,7 +319,12 @@ namespace cchips {
             if (entry_count)
                 return processing_skip;
         }
-
+#ifdef _X86_
+        char* __params = reinterpret_cast<char*>(reinterpret_cast<ULONG_PTR>(param_addr) + CFunction::stack_aligned_bytes);
+#endif
+#ifdef _AMD64_
+        char* __params = reinterpret_cast<char*>(param_addr);
+#endif
         std::unique_ptr<CLogHandle> log_handle = std::make_unique<CLogHandle>(func_object->GetFeature(), CLogObject::logtype::log_invalid);
         ASSERT(log_handle != nullptr);
         detour_node node = { &func_return, __params, (size_t)params_size, node_elem->function, node_elem->hook_implement_object, log_handle->GetHandle() };
@@ -280,12 +426,11 @@ namespace cchips {
     {
         //processing pre hook
         ADD_PRE_PROCESSING(NtQueryInformationProcess, detour_ntQueryInformationProcess);
+        ADD_PRE_PROCESSING(CoUninitialize, detour_coUninitialize);
         // processing post hook
-        ADD_POST_PROCESSING(LoadLibraryA, detour_loadLibraryA);
-        ADD_POST_PROCESSING(LoadLibraryW, detour_loadLibraryW);
-        ADD_POST_PROCESSING(LoadLibraryExA, detour_loadLibraryExA);
-        ADD_POST_PROCESSING(LoadLibraryExW, detour_loadLibraryExW);
         ADD_POST_PROCESSING(CoInitializeEx, detour_coInitializeEx);
+        ADD_POST_PROCESSING(GetProcAddress, detour_getProcAddress);
+        ADD_POST_PROCESSING(CoInitializeSecurity, detour_coInitializeSecurity);
         // processing wmi hook
         ADD_POST_PROCESSING(IEnumWbemClassObject_Next, detour_IEnumWbemClassObject_Next);
         ADD_POST_PROCESSING(IWbemClassObject_Get, detour_IWbemClassObject_Get);
@@ -300,12 +445,10 @@ namespace cchips {
     {
         //processing pre hook
         DEL_PRE_PROCESSING(NtQueryInformationProcess, detour_ntQueryInformationProcess);
+        DEL_PRE_PROCESSING(CoUninitialize, detour_coUninitialize);
         // processing post hook
-        DEL_POST_PROCESSING(LoadLibraryA, detour_loadLibraryA);
-        DEL_POST_PROCESSING(LoadLibraryW, detour_loadLibraryW);
-        DEL_POST_PROCESSING(LoadLibraryExA, detour_loadLibraryExA);
-        DEL_POST_PROCESSING(LoadLibraryExW, detour_loadLibraryExW);
         DEL_POST_PROCESSING(CoInitializeEx, detour_coInitializeEx);
+        DEL_POST_PROCESSING(CoInitializeSecurity, detour_coInitializeSecurity);
         // processing wmi hook
         DEL_POST_PROCESSING(IEnumWbemClassObject_Next, detour_IEnumWbemClassObject_Next);
         DEL_POST_PROCESSING(IWbemClassObject_Get, detour_IWbemClassObject_Get);
@@ -336,13 +479,17 @@ namespace cchips {
             // safe remove hook when shared_count = 0
             InterlockedIncrement(&__hook_node->shared_count);
             __psize = 0; __return = 0;
-            ULONG_PTR entry_count = __object->GetTlsValueForThreadIdx();
+            ULONG_PTR entry_count = -1;
+            processing_status __status = processing_continue;
+            if (__hook_node->hook_implement_object->IsDisableHook())
+                __status = processing_skip;
+            if (__status == processing_continue)
+                entry_count = __object->GetTlsValueForThreadIdx();
             CLogHandle* __log = nullptr;
             void* __new_addr = reinterpret_cast<void*>(reinterpret_cast<ULONG_PTR>(__addr) - 0x270);
             bool __bforward = __object->ForwardPropagationArgs(reinterpret_cast<ULONG_PTR*>(__new_addr), __backup_regs, __hook_node->function, __addr);
-
-            processing_status __status = processing_continue;
-            if (__bforward) __status = __object->Preprocessing(__hook_node, __new_addr, __psize, __return, entry_count, &__log);
+            if (__status == processing_continue)
+                if (__bforward) __status = __object->Preprocessing(__hook_node, __new_addr, __psize, __return, entry_count, &__log);
             if (__status != processing_exit)
             {
                 if (__psize == 0) __psize = (int)__hook_node->function->GetArgumentAlignSize();
@@ -354,7 +501,8 @@ namespace cchips {
                 __hook_node->hook_implement_object->GetLastError(error);
                 if(__status == processing_continue)
                     if (__bforward) __object->Postprocessing(__hook_node, __new_addr, __psize, __return, entry_count, &__log);
-                __object->ReleaseTlsValueForThreadIdx();
+                if(entry_count != -1)
+                    __object->ReleaseTlsValueForThreadIdx();
                 __hook_node->hook_implement_object->SetLastError(error);
             }
             InterlockedDecrement(&__hook_node->shared_count);
@@ -394,33 +542,25 @@ namespace cchips {
     }
 #endif // #define _AMD64_
 
-    bool CHookImplementObject::InitializeWmiMethodsDefine(bool bInit)
+    bool CHookImplementObject::InitializeWmiMethodsDefine(bool bdelayed)
     {
-        if (!m_ole32_api_define.coinitializeex_func ||
-            !m_ole32_api_define.cocreateinstance_func ||
+        if (!m_ole32_api_define.cocreateinstance_func ||
             !m_ole32_api_define.cosetproxyblanket_func)
         {
             HMODULE hOle32 = GetModuleHandle("ole32");
             if (hOle32 == nullptr) return false;
-            if (!m_ole32_api_define.coinitializeex_func)
-                m_ole32_api_define.coinitializeex_func = reinterpret_cast<CoInitializeEx_Define>(GetProcAddress(hOle32, "CoInitializeEx"));
+            if (!m_ole32_api_define.coinitializesecurity_func)
+                m_ole32_api_define.coinitializesecurity_func = reinterpret_cast<CoInitializeSecurity_Define>(GetProcAddress(hOle32, "CoInitializeSecurity"));
             if (!m_ole32_api_define.cocreateinstance_func)
                 m_ole32_api_define.cocreateinstance_func = reinterpret_cast<CoCreateInstance_Define>(GetProcAddress(hOle32, "CoCreateInstance"));
             if (!m_ole32_api_define.cosetproxyblanket_func)
                 m_ole32_api_define.cosetproxyblanket_func = reinterpret_cast<CoSetProxyBlanket_Define>(GetProcAddress(hOle32, "CoSetProxyBlanket"));
         }
-
-        if (!m_ole32_api_define.coinitializeex_func ||
+        if (!m_ole32_api_define.coinitializesecurity_func ||
             !m_ole32_api_define.cocreateinstance_func ||
             !m_ole32_api_define.cosetproxyblanket_func)
             return false;
-
-        if (m_wmi_methods_define.enumwbem_next_func &&
-            m_wmi_methods_define.wbem_next_func &&
-            m_wmi_methods_define.wbem_get_func &&
-            m_wmi_methods_define.wbem_put_func &&
-            m_wmi_methods_define.wbem_execmethod_func &&
-            m_wmi_methods_define.wbem_execquery_func)
+        if (m_wmi_interface_define.size())
             return true;
 
         bool bret = false;
@@ -428,171 +568,39 @@ namespace cchips {
         IEnumWbemClassObject* pEnumClsObj = nullptr;
         IWbemClassObject* pWbemClsObj = nullptr;
         IWbemServices* pWbemSvc = nullptr;
-        if(bInit) m_ole32_api_define.coinitializeex_func(0, COINIT_MULTITHREADED);
-        HRESULT hr = m_ole32_api_define.cocreateinstance_func(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&pWbemLoc);
-        if (SUCCEEDED(hr) && pWbemLoc != nullptr)
+        HRESULT hr = m_ole32_api_define.coinitializesecurity_func(NULL, -1, NULL, NULL, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE, NULL);
+        if (SUCCEEDED(hr))
         {
-            hr = pWbemLoc->ConnectServer(CComBSTR("ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &pWbemSvc);
-            if (SUCCEEDED(hr) && pWbemSvc != nullptr)
-            {
-                if (!m_wmi_methods_define.wbem_execmethod_func)
-                    m_wmi_methods_define.wbem_execmethod_func = reinterpret_cast<IWbemServices_ExecMethod_Define>(*(reinterpret_cast<ULONG_PTR*>(*reinterpret_cast<ULONG_PTR*>(pWbemSvc)) + IWbemServices_ExecMethod_Vtbl_Index));
-                if (!m_wmi_methods_define.wbem_execquery_func)
-                    m_wmi_methods_define.wbem_execquery_func = reinterpret_cast<IWbemServices_ExecQuery_Define>(*(reinterpret_cast<ULONG_PTR*>(*reinterpret_cast<ULONG_PTR*>(pWbemSvc)) + IWbemServices_ExecQuery_Vtbl_Index));
-                m_ole32_api_define.cosetproxyblanket_func(pWbemSvc, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, NULL, RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE);
-
-                CComBSTR query("SELECT * FROM ");
-                ULONG uReturn;
-                query += CComBSTR("Win32_DiskDrive");
-                hr = pWbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
-                    0, &pEnumClsObj);
-                if (SUCCEEDED(hr) && pEnumClsObj != nullptr)
+            hr = m_ole32_api_define.cocreateinstance_func(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&pWbemLoc);
+                if (SUCCEEDED(hr) && pWbemLoc != nullptr)
                 {
-                    if (!m_wmi_methods_define.enumwbem_next_func)
-                        m_wmi_methods_define.enumwbem_next_func = reinterpret_cast<IEnumWbemClassObject_Next_Define>(*(reinterpret_cast<ULONG_PTR*>(*reinterpret_cast<ULONG_PTR*>(pEnumClsObj)) + IEnumWbemClassObject_Next_Vtbl_Index));
-                    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
-                    if (SUCCEEDED(hr) && pWbemClsObj != nullptr)
-                    {
-                        if (!m_wmi_methods_define.wbem_get_func)
-                            m_wmi_methods_define.wbem_get_func = reinterpret_cast<IWbemClassObject_Get_Define>(*(reinterpret_cast<ULONG_PTR*>(*reinterpret_cast<ULONG_PTR*>(pWbemClsObj)) + IWbemClassObject_Get_Vtbl_Index));
-                        if (!m_wmi_methods_define.wbem_put_func)
-                            m_wmi_methods_define.wbem_put_func = reinterpret_cast<IWbemClassObject_Put_Define>(*(reinterpret_cast<ULONG_PTR*>(*reinterpret_cast<ULONG_PTR*>(pWbemClsObj)) + IWbemClassObject_Put_Vtbl_Index));
-                        if (!m_wmi_methods_define.wbem_next_func)
-                            m_wmi_methods_define.wbem_next_func = reinterpret_cast<IWbemClassObject_Next_Define>(*(reinterpret_cast<ULONG_PTR*>(*reinterpret_cast<ULONG_PTR*>(pWbemClsObj)) + IWbemClassObject_Next_Vtbl_Index));
-                        pWbemClsObj->Release();
-                        bret = true;
-                    }
-                    pEnumClsObj->Release();
-                }
-                pWbemSvc->Release();
-            }
-            pWbemLoc->Release();
-        }
-        return bret;
-    }
-
-    bool CHookImplementObject::HookWmiObjectMethods(int count, bool bInit)
-    {
-        bool bret = false;
-        do {
-            std::lock_guard lock(m_init_wmi_mutex);
-            //error_log("wmi_hook begin!");
-            if (m_bwmi_success) { bret = true; break; }
-            if (!InitializeWmiMethodsDefine(bInit)) break;
-
-            ASSERT(m_wmi_methods_define.enumwbem_next_func != nullptr);
-            ASSERT(m_wmi_methods_define.wbem_next_func != nullptr);
-            ASSERT(m_wmi_methods_define.wbem_get_func != nullptr);
-            ASSERT(m_wmi_methods_define.wbem_put_func != nullptr);
-            ASSERT(m_wmi_methods_define.wbem_execmethod_func != nullptr);
-            ASSERT(m_wmi_methods_define.wbem_execquery_func != nullptr);
-
-            if (!m_wmi_methods_define.enumwbem_next_func ||
-                !m_wmi_methods_define.wbem_next_func ||
-                !m_wmi_methods_define.wbem_get_func ||
-                !m_wmi_methods_define.wbem_put_func ||
-                !m_wmi_methods_define.wbem_execmethod_func ||
-                !m_wmi_methods_define.wbem_execquery_func)
-                break;
-
-            auto create_function_object = [](CFunction::_call_convention call_conv, const std::string& func_name, const std::string& library, const std::string& feature, const std::vector<std::pair<std::string, std::string>>& args_list, const std::string& ret_iden) ->std::shared_ptr<CFunction> {
-                std::unique_ptr<CFunction> func_object = std::make_unique<CFunction>(call_conv, func_name);
-                ASSERT(func_object);
-                if (!func_object) return nullptr;
-                func_object->SetLibrary(library);
-                func_object->SetFeature(feature);
-                std::shared_ptr<CObObject> return_ptr = func_object->GetTyIdentifier(ret_iden);
-                if (!return_ptr) return nullptr;
-                if (!func_object->AddReturn(IDENPAIR(SI_RETURN, return_ptr))) return nullptr;
-                for (auto& arg : args_list)
-                {
-                    std::shared_ptr<CObObject> param_ptr = func_object->GetTyIdentifier(arg.second);
-                    if (!param_ptr) return nullptr;
-                    if (!func_object->AddArgument(IDENPAIR(arg.first, param_ptr))) return nullptr;
-                }
-                return std::shared_ptr<CFunction>(func_object.release());
-            };
-            auto create_mhhook_wmi_method = [](std::shared_ptr<CFunction>& method_func, std::shared_ptr<CHookImplementObject>& impl_object, std::vector<hook_node>& hook_node_list, int& count, const LPVOID target_addr, const LPVOID hookImplementFunction, bool bInit) ->bool {
-                if (!impl_object->AddFunction(method_func)) return false;
-                hook_node_list[count].bdelayed = false;
-                hook_node_list[count].orgin_api_implfunc = nullptr;
-                hook_node_list[count].hook_implement_object = impl_object;
-                hook_node_list[count].function = method_func;
-                MH_STATUS status;
-                status = MH_CreateHook(target_addr, hookImplementFunction, &(hook_node_list[count].orgin_api_implfunc), (LPVOID*)&hook_node_list[count]);
-                if (status == MH_OK)
-                {
-                    if (!bInit)
-                    {
-                        status = MH_EnableHook(target_addr);
-                        if (status == MH_OK)
+                    m_wmi_interface_define[std::string("IWbemLocator")] = reinterpret_cast<ULONG_PTR*>(*reinterpret_cast<ULONG_PTR*>(pWbemLoc));
+                        hr = pWbemLoc->ConnectServer(CComBSTR("ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &pWbemSvc);
+                        if (SUCCEEDED(hr) && pWbemSvc != nullptr)
                         {
-                            error_log("wmi method hook create: '{}' success!", method_func->GetName());
+                            m_wmi_interface_define[std::string("IWbemServices")] = reinterpret_cast<ULONG_PTR*>(*reinterpret_cast<ULONG_PTR*>(pWbemSvc));
+                                m_ole32_api_define.cosetproxyblanket_func(pWbemSvc, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, NULL, RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE);
+                                CComBSTR query("SELECT * FROM ");
+                            ULONG uReturn;
+                            query += CComBSTR("Win32_DiskDrive");
+                            hr = pWbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+                                0, &pEnumClsObj);
+                            if (SUCCEEDED(hr) && pEnumClsObj != nullptr)
+                            {
+                                m_wmi_interface_define[std::string("IEnumWbemClassObject")] = reinterpret_cast<ULONG_PTR*>(*reinterpret_cast<ULONG_PTR*>(pEnumClsObj));
+                                hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+                                if (SUCCEEDED(hr) && pWbemClsObj != nullptr)
+                                {
+                                    m_wmi_interface_define[std::string("IWbemClassObject")] = reinterpret_cast<ULONG_PTR*>(*reinterpret_cast<ULONG_PTR*>(pWbemClsObj));
+                                    pWbemClsObj->Release();
+                                    bret = true;
+                                }
+                                pEnumClsObj->Release();
+                            }
+                            pWbemSvc->Release();
                         }
-                        else
-                        {
-                            error_log("wmi method hook create: '{}' failed({})!", method_func->GetName(), status);
-                        }
-                    }
+                    pWbemLoc->Release();
                 }
-                else
-                {
-                    error_log("wmi method hook create: '{}' failed({})!", method_func->GetName(), status);
-                }
-                count++;
-                return (status == MH_OK);
-            };
-
-            std::vector<std::pair<std::string, std::string>> enumwbem_next_args = { {"This", "LPVOID"}, {"lTimeout", "LONG"}, {"uCount", "ULONG"}, {"apObjects", "LPVOID*"}, {"puReturned", "ULONG*"} };
-            std::shared_ptr<CFunction> enumwbem_next_func_object(create_function_object(CFunction::call_stdcall, "IEnumWbemClassObject_Next", "ole32.dll", WMI_ENUMWBEM_NEXT, enumwbem_next_args, "HRESULT"));
-            if (!enumwbem_next_func_object) break;
-            if (!create_mhhook_wmi_method(enumwbem_next_func_object, shared_from_this(), m_hookNodeList, count, m_wmi_methods_define.enumwbem_next_func, m_hookImplementFunction, bInit)) break;
-
-            std::vector<std::pair<std::string, std::string>> wbem_get_args = { {"This", "LPVOID"}, {"wszName", "LPCWSTR"}, {"lFlags", "LONG"}, {"pVal", "LPVOID"}, {"pType", "LONG*"}, {"plFlavor", "LONG*"} };
-            std::shared_ptr<CFunction> wbem_get_func_object(create_function_object(CFunction::call_stdcall, "IWbemClassObject_Get", "ole32.dll", WMI_WBEM_GET, wbem_get_args, "HRESULT"));
-            if (!wbem_get_func_object) break;
-            if (!create_mhhook_wmi_method(wbem_get_func_object, shared_from_this(), m_hookNodeList, count, m_wmi_methods_define.wbem_get_func, m_hookImplementFunction, bInit)) break;
-
-            std::vector<std::pair<std::string, std::string>> wbem_put_args = { {"This", "LPVOID"}, {"wszName", "LPCWSTR"}, {"lFlags", "LONG"}, {"pVal", "LPVOID"}, {"Type", "LONG"} };
-            std::shared_ptr<CFunction> wbem_put_func_object(create_function_object(CFunction::call_stdcall, "IWbemClassObject_Put", "ole32.dll", WMI_WBEM_PUT, wbem_put_args, "HRESULT"));
-            if (!wbem_put_func_object) break;
-            if (!create_mhhook_wmi_method(wbem_put_func_object, shared_from_this(), m_hookNodeList, count, m_wmi_methods_define.wbem_put_func, m_hookImplementFunction, bInit)) break;
-
-            std::vector<std::pair<std::string, std::string>> wbem_next_args = { {"This", "LPVOID"}, {"lFlags", "LONG"}, {"strName", "BSTR*"}, {"pVal", "LPVOID"}, {"pType", "LONG*"}, {"plFlavor", "LONG*"} };
-            std::shared_ptr<CFunction> wbem_next_func_object(create_function_object(CFunction::call_stdcall, "IWbemClassObject_Next", "ole32.dll", WMI_WBEM_NEXT, wbem_next_args, "HRESULT"));
-            if (!wbem_next_func_object) break;
-            if (!create_mhhook_wmi_method(wbem_next_func_object, shared_from_this(), m_hookNodeList, count, m_wmi_methods_define.wbem_next_func, m_hookImplementFunction, bInit)) break;
-
-            std::vector<std::pair<std::string, std::string>> wbem_execmethod_args = { {"This", "LPVOID"}, {"strObjectPath", "BSTR"}, {"strMethodName", "BSTR"}, {"lFlags", "LONG"}, {"pCtx", "LPVOID"}, {"pInParams", "LPVOID"}, {"ppOutParams", "LPVOID*"}, {"ppCallResult", "LPVOID*"} };
-            std::shared_ptr<CFunction> wbem_execmethod_func_object(create_function_object(CFunction::call_stdcall, "IWbemServices_ExecMethod", "ole32.dll", WMI_WBEM_EXECMETHOD, wbem_execmethod_args, "HRESULT"));
-            if (!wbem_execmethod_func_object) break;
-            if (!create_mhhook_wmi_method(wbem_execmethod_func_object, shared_from_this(), m_hookNodeList, count, m_wmi_methods_define.wbem_execmethod_func, m_hookImplementFunction, bInit)) break;
-
-            std::vector<std::pair<std::string, std::string>> wbem_execquery_args = { {"This", "LPVOID"}, {"strQueryLanguage", "BSTR"}, {"strQuery", "BSTR"}, {"lFlags", "LONG"}, {"pCtx", "LPVOID"}, {"ppEnum", "LPVOID*"} };
-            std::shared_ptr<CFunction> wbem_execquery_func_object(create_function_object(CFunction::call_stdcall, "IWbemServices_ExecQuery", "ole32.dll", WMI_WBEM_EXECQUERY, wbem_execquery_args, "HRESULT"));
-            if (!wbem_execquery_func_object) break;
-            if (!create_mhhook_wmi_method(wbem_execquery_func_object, shared_from_this(), m_hookNodeList, count, m_wmi_methods_define.wbem_execquery_func, m_hookImplementFunction, bInit)) break;
-            
-            if (!bInit)
-            {
-                // processing wmi hook
-                ADD_POST_PROCESSING(IEnumWbemClassObject_Next, detour_IEnumWbemClassObject_Next);
-                ADD_POST_PROCESSING(IWbemClassObject_Get, detour_IWbemClassObject_Get);
-                ADD_POST_PROCESSING(IWbemClassObject_Put, detour_IWbemClassObject_Put);
-                ADD_POST_PROCESSING(IWbemClassObject_Next, detour_IWbemClassObject_Next);
-                ADD_POST_PROCESSING(IWbemServices_ExecMethod, detour_IWbemServices_ExecMethod);
-                ADD_POST_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_ExecQuery);
-            }
-            m_bwmi_success = bret = true;
-            //error_log("wmi_hook end!");
-        } while (0);
-        if (bret)
-        {
-            error_log("wmi_hook success!");
-        }
-        else
-        {
-            error_log("wmi_hook failed!");
         }
         return bret;
     }

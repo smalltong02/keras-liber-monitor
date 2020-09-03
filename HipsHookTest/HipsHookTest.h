@@ -17,11 +17,13 @@ class CServerObject
 {
 public:
     CServerObject() {
-        m_tempfp = tmpfile();
+        //m_tempfp = tmpfile();
         std::function<void(const std::unique_ptr<CRapidJsonWrapper>)> callback(std::bind(&CServerObject::LogCallBack, this, std::placeholders::_1));
         m_pipe_object = std::make_unique<CLpcPipeObject>();
         if (m_pipe_object)
+        {
             m_pipe_object->Listen(std::move(callback));
+        }
     }
     ~CServerObject() {
         if (m_pipe_object)
@@ -64,9 +66,10 @@ public:
 private:
     bool CheckVerifier(const CRapidJsonWrapper& rapid_log) const
     {
-        std::string verifier_result;
-        if (rapid_log.FindTopMember("verifier_result", verifier_result))
+        if (auto anyvalue(rapid_log.GetMember("verifier_result"));
+            anyvalue.has_value() && anyvalue.type() == typeid(std::string_view))
         {
+            std::string verifier_result(std::any_cast<std::string_view>(anyvalue));
             if (!verifier_result.compare("false")) {
                 return false;
             }
@@ -87,26 +90,26 @@ private:
     {
         if (m_enable_service)
         {
-            std::string value;
-            std::string str = rapid_log.Serialize();
-            if (rapid_log.FindTopMember("Action", value))
+            if (auto anyvalue(rapid_log.GetMember("Action"));
+                anyvalue.has_value() && anyvalue.type() == typeid(std::string_view))
             {
-                if (!value.compare("S0")) {
+                std::string action_str(std::any_cast<std::string_view>(anyvalue));
+                if (!action_str.compare("S0")) {
                     addToLogCountMap("S0");
                 }
-                else if (!value.compare("S1")) {
+                else if (!action_str.compare("S1")) {
                     addToLogCountMap("S1");
                 }
-                else if (!value.compare("S2")) {
+                else if (!action_str.compare("S2")) {
                     addToLogCountMap("S2");
                 }
-                else if (!value.compare("S3")) {
+                else if (!action_str.compare("S3")) {
                     addToLogCountMap("S3");
                 }
-                else if (!value.compare("S4")) {
+                else if (!action_str.compare("S4")) {
                     addToLogCountMap("S4");
                 }
-                else if (!value.compare("S5")) {
+                else if (!action_str.compare("S5")) {
                     addToLogCountMap("S5");
                 }
             }
@@ -118,12 +121,14 @@ private:
     {
         if (m_enable_debugpid)
         {
-            std::string pid_string;
-            if (rapid_log.FindTopMember("Pid", pid_string))
+            if (auto anyvalue(rapid_log.GetMember("Pid"));
+                anyvalue.has_value() && anyvalue.type() == typeid(std::string_view))
             {
-                char* nodig = nullptr;
-                DWORD_PTR pid = (DWORD_PTR)std::strtoll(pid_string.c_str(), &nodig, 10);
+                std::string pid_str(std::any_cast<std::string_view>(anyvalue));
+                if(pid_str.length())
                 {
+                    char* end;
+                    DWORD_PTR pid = (DWORD_PTR)strtol(pid_str.c_str(), &end, 10);
                     std::lock_guard lock(m_debugpid_mutex);
                     auto& it = m_debugpid_list.find(pid);
                     if (it != m_debugpid_list.end())
@@ -146,13 +151,16 @@ private:
         CheckDebugPid(*rapid_log);
         m_logs_total_count++;
         {
+            auto optstring = rapid_log->Serialize();
+            if (!optstring) return;
             std::lock_guard lock(m_log_mutex);
             if (m_tempfp)
             {
-                fputs(rapid_log->Serialize().c_str(), m_tempfp);
+                
+                fputs(optstring.value().c_str(), m_tempfp);
             }
             else
-                std::cout << rapid_log->Serialize() << std::endl;
+                std::cout << optstring.value() << std::endl;
         }
         return;
     }
@@ -172,14 +180,17 @@ class HipsHookTest
 {
 public:
     HipsHookTest() : m_valid(false), m_hipsCfgObject(nullptr), m_hookImplObject(nullptr) {}
-    ~HipsHookTest() {}
+    ~HipsHookTest() {
+        m_hookImplObject->DisableAllApis();
+    }
 
     bool Initialize() {
         m_hookImplObject = g_impl_object;
         m_hipsCfgObject = InitializeConfig();
         if (!m_hookImplObject) return false;
         if (!m_hipsCfgObject) return false;
-        if (!m_hookImplObject->Initialize(m_hipsCfgObject))
+        g_log_object->DisableDupFlt();
+        if (!m_hookImplObject->Initialize(std::move(m_hipsCfgObject)))
             return false;
         if (!m_hookImplObject->HookAllApis())
             return false;

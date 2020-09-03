@@ -5,6 +5,8 @@
 #include <thread>
 #include "..\ServicesBase.h"
 
+using namespace std::chrono_literals;
+
 void error(const char *fmt, ...)
 {
     va_list args;
@@ -28,12 +30,14 @@ int main()
             "Options:\n"
             "  --services                create a service app for gtest\n"
             "  --normal                  create a normal app for gtest\n",
+            "  --loaddll                 Load Hipshook.dll for test\n",
             argv[0]
         );
     }
 
     bool bservices = false;
     bool bnormal = false;
+    bool loaddll = false;
     for (int idx = 1; idx < argc; idx++) {
         if (wcscmp(argv[idx], L"--services") == 0) {
             bservices = true;
@@ -42,6 +46,11 @@ int main()
 
         if (wcscmp(argv[idx], L"--normal") == 0) {
             bnormal = true;
+            break;
+        }
+
+        if(wcscmp(argv[idx], L"--loaddll") == 0) {
+            loaddll = true;
             break;
         }
         error("Found unsupported argument: %S\n", argv[idx]);
@@ -62,7 +71,17 @@ int main()
             error("LoadLibraryA [user32.dll] failed!\n");
         else
             error("LoadLibraryA [user32.dll] success!\n");
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        std::this_thread::sleep_for(5s);
+        return 0;
+    }
+    if (loaddll)
+    {
+        HMODULE  hmodule = LoadLibraryA("hipshook.dll");
+        if (hmodule == nullptr)
+            error("LoadLibraryA [user32.dll] failed!\n");
+        else
+            error("LoadLibraryA [user32.dll] success!\n");
+        std::this_thread::sleep_for(10s);
         return 0;
     }
     return -1;

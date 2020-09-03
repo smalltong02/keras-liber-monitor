@@ -7,11 +7,12 @@
 #include "commutils.h"
 #include "HipsCfgObject.h"
 #include "utils.h"
+#include "PackageWrapper.h"
 #include "rapidjson\document.h"
 
 namespace cchips {
 
-    bool CHipsCfgObject::Initialize(const std::string& json_str)
+    bool CHipsCfgObject::Initialize(const std::string_view& json_str)
     {
         if (m_bValid)
         {
@@ -31,24 +32,25 @@ namespace cchips {
             return false;
         }
 
-        rapidjson::Document document;
-        document.Parse(json_str.c_str());
-        if (!document.IsObject() || document.IsNull())
-        {
+        CRapidJsonWrapper document(json_str);
+        if (!document.IsValid()) {
             //config data is incorrect.
             error_log("CHipsConfigObject::Initialize failed!");
             return false;
         }
 
-        // save base header information
-        if (document.HasMember(FL_NAME) && document[FL_NAME].IsString())
-            m_Info.Name = document[FL_NAME].GetString();
-        if (document.HasMember(FL_VERSION) && document[FL_VERSION].IsString())
-            m_Info.Version = document[FL_VERSION].GetString();
-        if (document.HasMember(FL_CREATEDATE) && document[FL_CREATEDATE].IsString())
-            m_Info.CreateDate = document[FL_CREATEDATE].GetString();
-        if (document.HasMember(FL_DESCRIPTION) && document[FL_DESCRIPTION].IsString())
-            m_Info.Description = document[FL_DESCRIPTION].GetString();
+        if (auto anyvalue(document.GetMember(std::vector<std::string>{FL_NAME})); 
+            anyvalue.has_value() && anyvalue.type() == typeid(std::string_view))
+            m_Info.Name = std::any_cast<std::string_view>(anyvalue);
+        if (auto anyvalue(document.GetMember(std::vector<std::string>{FL_VERSION})); 
+            anyvalue.has_value() && anyvalue.type() == typeid(std::string_view))
+            m_Info.Version = std::any_cast<std::string_view>(anyvalue);
+        if (auto anyvalue(document.GetMember(std::vector<std::string>{FL_CREATEDATE}));
+            anyvalue.has_value() && anyvalue.type() == typeid(std::string_view))
+            m_Info.CreateDate = std::any_cast<std::string_view>(anyvalue);
+        if (auto anyvalue(document.GetMember(std::vector<std::string>{FL_DESCRIPTION}));
+            anyvalue.has_value() && anyvalue.type() == typeid(std::string_view))
+            m_Info.Description = std::any_cast<std::string_view>(anyvalue);
 
         if (!InitializeFlagsObjects(module_handle, document))
             return false;
@@ -63,148 +65,168 @@ namespace cchips {
         return true;
     }
 
-    bool CHipsCfgObject::InitializeFlagsObjects(const HMODULE handle, const rapidjson::Document& document)
+    bool CHipsCfgObject::InitializeFlagsObjects(const HMODULE handle, const CRapidJsonWrapper& document)
     {
+        if (handle == NULL) 
+            return false;
+
         bool bret = false;
-        if (handle == NULL) return bret;
-
-        std::vector<BYTE> ResBuffer;
-        if (document.HasMember(FL_FLAGS) && document[FL_FLAGS].IsArray())
+        if (auto anyvalue(document.GetMember(FL_FLAGS)); 
+            anyvalue.has_value() && anyvalue.type() == typeid(ConstRapidArray))
         {
-            for (auto& flags_array : document[FL_FLAGS].GetArray())
+            std::vector<BYTE> ResBuffer;
+            for (auto& flags_elem : std::any_cast<ConstRapidArray>(anyvalue))
             {
-                DWORD flags_ord = flags_array.GetInt();
+                if (flags_elem.IsInt())
+                {
+                    DWORD flags_ord = flags_elem.GetInt();
 
-                bool result = ExtractResource(handle,
-                    __TEXT("JSONRES"),
-                    MAKEINTRESOURCE(flags_ord),
-                    ResBuffer);
-                if (result && ResBuffer.size() > 0)
-                {
-                    char flags_name[20];
-                    sprintf_s(flags_name, "JSONRES_%d", flags_ord);
-                    std::unique_ptr<CFlagsCfgObject> flags_object = std::make_unique<CFlagsCfgObject>(flags_name);
-                    if (flags_object && flags_object->Initialize(std::string((char*)&ResBuffer[0], ResBuffer.size())))
+                    bool result = ExtractResource(handle,
+                        __TEXT("JSONRES"),
+                        MAKEINTRESOURCE(flags_ord),
+                        ResBuffer);
+                    if (result && ResBuffer.size() > 0)
                     {
-                        m_FlagsObjects.push_back(std::move(flags_object));
+                        std::ostringstream flags_name;
+                        flags_name << "JSONRES_" << flags_ord;
+                        std::unique_ptr<CFlagsCfgObject> flags_object = std::make_unique<CFlagsCfgObject>(flags_name.str());
+                        if (flags_object && flags_object->Initialize(std::string_view((char*)&ResBuffer[0], ResBuffer.size())))
+                        {
+                            m_FlagsObjects.push_back(std::move(flags_object));
+                        }
+                        bret = true;
                     }
-                    bret = true;
-                }
-                else
-                {
-                    error_log("CHipsConfigObject::Initialize extract(flags-{}) failed!", flags_ord);
-                    break;
+                    else
+                    {
+                        error_log("CHipsConfigObject::Initialize extract(flags-{}) failed!", flags_ord);
+                        break;
+                    }
                 }
             }
         }
         return bret;
     }
 
-    bool CHipsCfgObject::InitializeSignsObjects(const HMODULE handle, const rapidjson::Document& document)
+    bool CHipsCfgObject::InitializeSignsObjects(const HMODULE handle, const CRapidJsonWrapper& document)
     {
+        if (handle == NULL) 
+            return false;
+
         bool bret = false;
-        if (handle == NULL) return bret;
-
-        std::vector<BYTE> ResBuffer;
-        if (document.HasMember(FL_SIGS) && document[FL_SIGS].IsArray())
+        if (auto anyvalue(document.GetMember(FL_SIGS));
+            anyvalue.has_value() && anyvalue.type() == typeid(ConstRapidArray))
         {
-            for (auto& sigs_array : document[FL_SIGS].GetArray())
+            std::vector<BYTE> ResBuffer;
+            for (auto& sigs_elem : std::any_cast<ConstRapidArray>(anyvalue))
             {
-                DWORD sigs_ord = sigs_array.GetInt();
-
-                bool result = ExtractResource(handle,
-                    __TEXT("JSONRES"),
-                    MAKEINTRESOURCE(sigs_ord),
-                    ResBuffer);
-                if (result && ResBuffer.size() > 0)
+                if (sigs_elem.IsInt())
                 {
-                    char sigs_name[20];
-                    sprintf_s(sigs_name, "JSONRES_%d", sigs_ord);
-                    std::unique_ptr<CSigsCfgObject> sigs_object = std::make_unique<CSigsCfgObject>(sigs_name);
-                    if (sigs_object && sigs_object->Initialize(std::string((char*)&ResBuffer[0], ResBuffer.size())))
+                    DWORD sigs_ord = sigs_elem.GetInt();
+                        
+                    bool result = ExtractResource(handle,
+                        __TEXT("JSONRES"),
+                        MAKEINTRESOURCE(sigs_ord),
+                        ResBuffer);
+                    if (result && ResBuffer.size() > 0)
                     {
-                        m_SigsObjects.push_back(std::move(sigs_object));
+                        std::ostringstream sigs_name;
+                        sigs_name << "JSONRES_" << sigs_ord;
+                        std::unique_ptr<CSigsCfgObject> sigs_object = std::make_unique<CSigsCfgObject>(sigs_name.str());
+                        if (sigs_object && sigs_object->Initialize(std::string_view((char*)&ResBuffer[0], ResBuffer.size())))
+                        {
+                            m_SigsObjects.push_back(std::move(sigs_object));
+                        }
+                        bret = true;
                     }
-                    bret = true;
-                }
-                else
-                {
-                    error_log("CHipsConfigObject::Initialize extract(sigs-{}) failed!", sigs_ord);
-                    break;
+                    else
+                    {
+                        error_log("CHipsConfigObject::Initialize extract(sigs-{}) failed!", sigs_ord);
+                        break;
+                    }
                 }
             }
         }
         return bret;
     }
 
-    bool CHipsCfgObject::InitializeWmisObjects(const HMODULE handle, const rapidjson::Document& document)
+    bool CHipsCfgObject::InitializeWmisObjects(const HMODULE handle, const CRapidJsonWrapper& document)
     {
+        if (handle == NULL) 
+            return false;
+
         bool bret = false;
-        if (handle == NULL) return bret;
-
-        std::vector<BYTE> ResBuffer;
-        if (document.HasMember(FL_WMIS) && document[FL_WMIS].IsArray())
+        if (auto anyvalue(document.GetMember(FL_WMIS));
+            anyvalue.has_value() && anyvalue.type() == typeid(ConstRapidArray))
         {
-            for (auto& wmis_array : document[FL_WMIS].GetArray())
+            std::vector<BYTE> ResBuffer;
+            for (auto& wmis_elem : std::any_cast<ConstRapidArray>(anyvalue))
             {
-                DWORD wmis_ord = wmis_array.GetInt();
+                if (wmis_elem.IsInt())
+                {
+                    DWORD wmis_ord = wmis_elem.GetInt();
 
-                bool result = ExtractResource(handle,
-                    __TEXT("JSONRES"),
-                    MAKEINTRESOURCE(wmis_ord),
-                    ResBuffer);
-                if (result && ResBuffer.size() > 0)
-                {
-                    char wmis_name[20];
-                    sprintf_s(wmis_name, "JSONRES_%d", wmis_ord);
-                    std::unique_ptr<CWmisCfgObject> wmis_object = std::make_unique<CWmisCfgObject>(wmis_name);
-                    if (wmis_object && wmis_object->Initialize(std::string((char*)&ResBuffer[0], ResBuffer.size())))
+                    bool result = ExtractResource(handle,
+                        __TEXT("JSONRES"),
+                        MAKEINTRESOURCE(wmis_ord),
+                        ResBuffer);
+                    if (result && ResBuffer.size() > 0)
                     {
-                        m_WmisObjects.push_back(std::move(wmis_object));
+                        std::ostringstream wmis_name;
+                        wmis_name << "JSONRES_" << wmis_ord;
+                        std::unique_ptr<CWmisCfgObject> wmis_object = std::make_unique<CWmisCfgObject>(wmis_name.str());
+                        if (wmis_object && wmis_object->Initialize(std::string_view((char*)&ResBuffer[0], ResBuffer.size())))
+                        {
+                            m_WmisObjects.push_back(std::move(wmis_object));
+                        }
+                        bret = true;
                     }
-                    bret = true;
-                }
-                else
-                {
-                    error_log("CHipsConfigObject::Initialize extract(wmis-{}) failed!", wmis_ord);
-                    break;
+                    else
+                    {
+                        error_log("CHipsConfigObject::Initialize extract(wmis-{}) failed!", wmis_ord);
+                        break;
+                    }
                 }
             }
         }
         return bret;
     }
 
-    bool CHipsCfgObject::InitializeComsObjects(const HMODULE handle, const rapidjson::Document& document)
+    bool CHipsCfgObject::InitializeComsObjects(const HMODULE handle, const CRapidJsonWrapper& document)
     {
+        if (handle == NULL) 
+            return false;
+
         bool bret = false;
-        if (handle == NULL) return bret;
-
-        std::vector<BYTE> ResBuffer;
-        if (document.HasMember(FL_COMS) && document[FL_COMS].IsArray())
+        if (auto anyvalue(document.GetMember(FL_COMS));
+            anyvalue.has_value() && anyvalue.type() == typeid(ConstRapidArray))
         {
-            for (auto& coms_array : document[FL_COMS].GetArray())
+            std::vector<BYTE> ResBuffer;
+            for (auto& coms_elem : std::any_cast<ConstRapidArray>(anyvalue))
             {
-                DWORD coms_ord = coms_array.GetInt();
+                if (coms_elem.IsInt())
+                {
+                    DWORD coms_ord = coms_elem.GetInt();
 
-                bool result = ExtractResource(handle,
-                    __TEXT("JSONRES"),
-                    MAKEINTRESOURCE(coms_ord),
-                    ResBuffer);
-                if (result && ResBuffer.size() > 0)
-                {
-                    char coms_name[20];
-                    sprintf_s(coms_name, "JSONRES_%d", coms_ord);
-                    std::unique_ptr<CComsCfgObject> coms_object = std::make_unique<CComsCfgObject>(coms_name);
-                    if (coms_object && coms_object->Initialize(std::string((char*)&ResBuffer[0], ResBuffer.size())))
+                    bool result = ExtractResource(handle,
+                        __TEXT("JSONRES"),
+                        MAKEINTRESOURCE(coms_ord),
+                        ResBuffer);
+                    if (result && ResBuffer.size() > 0)
                     {
-                        m_ComsObjects.push_back(std::move(coms_object));
+                        std::ostringstream coms_name;
+                        coms_name << "JSONRES_" << coms_ord;
+                        std::unique_ptr<CComsCfgObject> coms_object = std::make_unique<CComsCfgObject>(coms_name.str());
+                        if (coms_object && coms_object->Initialize(std::string_view((char*)&ResBuffer[0], ResBuffer.size())))
+                        {
+                            m_ComsObjects.push_back(std::move(coms_object));
+                        }
+                        bret = true;
                     }
-                    bret = true;
-                }
-                else
-                {
-                    error_log("CHipsConfigObject::Initialize extract(coms-{}) failed!", coms_ord);
-                    break;
+                    else
+                    {
+                        error_log("CHipsConfigObject::Initialize extract(coms-{}) failed!", coms_ord);
+                        break;
+                    }
                 }
             }
         }

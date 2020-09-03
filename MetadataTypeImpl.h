@@ -11,15 +11,11 @@
 #include <map>
 #include <memory>
 #include <sstream>
+#include <variant>
 #include "ExceptionThrow.h"
 #include "utils.h"
 
 namespace cchips {
-
-    class CStandardTypeObject;
-    class CArrayObject;
-    class CFlagsObject;
-    class CBaseDef;
 
     //the base class of all data object.
     class CObObject
@@ -37,20 +33,44 @@ namespace cchips {
             ob_symboltable,
             ob_max,
         };
+        enum _c_operator
+        {
+            op_invalid = 0,
+            op_equal,
+            op_n_equal,
+            op_greater,
+            op_greater_e,
+            op_less,
+            op_less_e,
+            op_max,
+        };
 
-        CObObject() : m_ob_type(ob_invalid) {}
+        CObObject() : m_ob_type(ob_invalid), m_ob_size(0), m_op(op_n_equal) {}
         virtual ~CObObject() = default;
         _ob_type GetObType() const { return m_ob_type; }
         size_t GetObSize() const { return m_ob_size; }
-        virtual const std::shared_ptr<CBaseDef> GetMetadataDef() const = 0;
+        _c_operator GetOp() const { return m_op; }
+        virtual const std::shared_ptr<CObObject> GetMetadataDef() const = 0;
         virtual const std::string& GetName() const = 0;
-        virtual const bool IsValidValue(char* pdata) const = 0;
-        virtual std::stringstream GetValue(char* pdata) const = 0;
-        virtual bool SetValue(char* pdata, const std::stringstream& ss) = 0;
+        virtual bool IsValidValue(char* pdata) const = 0;
+        virtual std::any GetCurValue() const = 0;
+        virtual std::any GetValue(char* pdata) const = 0;
+        virtual bool SetCurValue(const std::any& anyvalue) = 0;
+        virtual bool SetValue(char* pdata, const std::any& anyvalue) const = 0;
         virtual bool Success(char* pdata) const = 0;
         virtual bool Failed(char* pdata) const = 0;
         bool IsReference() const {
-            if (m_ob_type == ob_reference || m_ob_type == ob_stringref)
+            if (m_ob_type == ob_reference)
+                return true;
+            return false;
+        }
+        bool IsStringref() const {
+            if (m_ob_type == ob_stringref)
+                return true;
+            return false;
+        }
+        bool IsCommReference() const {
+            if (IsReference() || IsStringref())
                 return true;
             return false;
         }
@@ -69,6 +89,16 @@ namespace cchips {
                 return true;
             return false;
         }
+        bool IsArray() const {
+            if (m_ob_type == ob_array)
+                return true;
+            return false;
+        }
+        bool IsTuple() const {
+            if (m_ob_type == ob_tuple)
+                return true;
+            return false;
+        }
     protected:
         bool SetObType(_ob_type type) {
             ASSERT(type != ob_invalid && type < ob_max);
@@ -79,7 +109,14 @@ namespace cchips {
         void SetObSize(size_t size) {
             m_ob_size = size;
         }
+        void SetOp(_c_operator op) {
+            ASSERT(op != op_invalid && op < op_max);
+            if (op != op_invalid && op < op_max)
+                m_op = op;
+            return;
+        }
     private:
+        _c_operator m_op;
         size_t m_ob_size;
         _ob_type m_ob_type;
     };
@@ -87,111 +124,7 @@ namespace cchips {
     using TYPE_SYMBOLTABLE = std::map<std::string, std::shared_ptr<CObObject>>;
     using IDENPAIR = std::pair<std::string, std::shared_ptr<CObObject>>;
 
-    // the opration of base define
-    template <typename T>
-    class CTraits
-    {
-    public:
-        enum _c_operator
-        {
-            op_invalid = 0,
-            op_equal,
-            op_n_equal,
-            op_greater,
-            op_less,
-            op_max,
-        };
-
-        CTraits() : _value(0), _op(op_n_equal) {}
-        CTraits(const T value, int op = op_n_equal) : _value(value), _op(op) {}
-        CTraits(const CTraits& judge) : _value(judge._value), _op(judge._op) {}
-        ~CTraits() = default;
-
-        bool UpdateOp(int op) {
-            ASSERT(op != op_invalid && op < op_max);
-            if (op != op_invalid && op < op_max)
-            {
-                _op = op;
-                return true;
-            }
-            return false;
-        }
-        void UpdateValue(const T& value) {
-            _value = value;
-        }
-        bool UpdateValue(const std::stringstream& ss) {
-            std::stringstream tmp_ss;
-            tmp_ss << ss.str();
-            tmp_ss >> _value;
-            return true;
-        }
-
-        bool IsValidValue(char* pdata) const
-        {
-            ASSERT(pdata != nullptr);
-            T* p = reinterpret_cast<T*>(pdata);
-            if (!p) return false;
-            //if (*p == _value)
-            //	return false;
-            return true;
-        }
-        std::stringstream GetValue() const
-        {
-            std::stringstream ss;
-            ss << _value;
-            return ss;
-        }
-        std::stringstream GetValue(char* pdata) const
-        {
-            std::stringstream ss;
-            if (IsValidValue(pdata))
-            {
-                T* p = reinterpret_cast<T*>(pdata);
-                ss << *p;
-            }
-            return ss;
-        }
-
-        bool SetValue(char* pdata, const std::stringstream& ss);
-
-        bool Success(char* pdata) const
-        {
-            if (IsValidValue(pdata))
-            {
-                T* p = reinterpret_cast<T*>(pdata);
-                if (_op == op_n_equal)
-                {
-                    if (*p == _value)
-                        return false;
-                    else
-                        return true;
-                }
-                else if (_op == op_greater)
-                {
-                    if (*p >= _value)
-                        return true;
-                    else
-                        return false;
-                }
-                else if (_op == op_less)
-                {
-                    if (*p <= _value)
-                        return true;
-                    else
-                        return false;
-                }
-                if (*p == _value)
-                    return true;
-            }
-            return false;
-        }
-        bool Failed(char* pdata) const { return !Success(pdata); }
-    private:
-        int _op;
-        T _value;
-    };
-
-    // the base class of define, the based on C++ standrad type define.
+    // the base type of define, the based on C++ standrad type define.
     class CBaseDef
     {
     public:
@@ -204,35 +137,31 @@ namespace cchips {
             type_ntstatus, type_string, type_wstring, type_handle, type_guid, type_max,
         };
 
-        CBaseDef() : _base_def(type_invalid), _base_size(0) {}
+        CBaseDef() : _base_def(type_invalid) {}
         virtual ~CBaseDef() = default;
-        int GetBaseDef() const { return _base_def; }
-        size_t GetBaseSize() const { return _base_size; }
-        const static std::string& GetBaseStr(int def) {
+        _standard_type GetBaseDef() const { return _base_def; }
+        const static std::string& GetBaseStr(_standard_type def) {
             ASSERT(def != type_invalid && def < type_max);
             if (def != type_invalid && def < type_max)
             {
-                auto& p = _base_to_str_def.find(def);
+                const auto& p = _base_to_str_def.find(def);
                 if (p != _base_to_str_def.end()) { return (*p).second; }
             }
             return _base_to_str_def.begin()->second;
         }
-        virtual std::shared_ptr<CBaseDef> Clone() const = 0;
-        virtual bool FreshTraits(std::unique_ptr<void>& value, int op) = 0;
-        virtual bool IsValidValue(char* pdata) const = 0;
-        virtual std::stringstream GetValue() const = 0;
-        virtual std::stringstream GetValue(char* pdata) const = 0;
-        virtual bool SetValue(char* pdata, const std::stringstream& ss) = 0;
-        virtual bool SetValue(const std::stringstream& ss) = 0;
-        virtual bool Success(char* pdata) const = 0;
-        virtual bool Failed(char* pdata) const = 0;
+        size_t GetBaseSize() {
+            const auto& p = _base_to_size_def.find(_base_def);
+            if (p == _base_to_size_def.end()) { return _base_to_size_def.begin()->second; }
+            return p->second;
+        }
+
     protected:
-        bool SetBaseDef(int def) {
+        bool SetBaseDef(CBaseDef::_standard_type def) {
             ASSERT(def != type_invalid && def < type_max);
             if (def != type_invalid && def < type_max)
             {
-                auto& p = _base_to_size_def.find(def);
-                if (p != _base_to_size_def.end()) { _base_size = (*p).second; }
+                const auto& p = _base_to_size_def.find(def);
+                if (p == _base_to_size_def.end()) { return false; }
                 _base_def = def;
                 return true;
             }
@@ -240,60 +169,120 @@ namespace cchips {
         }
     private:
         // the list of a pair for base define and size.
-        static const std::map<int, size_t> _base_to_size_def;
+        static const std::map<_standard_type, size_t> _base_to_size_def;
         // the list of a pair for base define and string name.
-        static const std::map<int, std::string> _base_to_str_def;
-        size_t _base_size;
-        int _base_def;
+        static const std::map<_standard_type, std::string> _base_to_str_def;
+        _standard_type _base_def;
     };
 
     // the type define of cchips, contains type information and opration.
     template <typename T>
-    class CBaseType : public CBaseDef
+    class CBaseType : public CBaseDef, public CObObject
     {
     public:
-        CBaseType(int base_def, const CTraits<T>& judge) : _judge(judge) { SetBaseDef(base_def); }
-        CBaseType(const CBaseType<T>& ctype) : _judge(ctype._judge) { SetBaseDef(ctype.GetBaseDef()); }
+        CBaseType() = delete;
+        CBaseType(CBaseDef::_standard_type base_def, T&& init_value = {}, CObObject::_c_operator op = CObObject::op_n_equal) { SetObType(CObObject::ob_basetype); SetBaseDef(base_def); SetObSize(GetBaseSize()); SetOp(op); _value = std::move(init_value); }
+        CBaseType(const CBaseType& ctype) { SetObType(ctype.GetObType()); SetBaseDef(ctype.GetBaseDef()); SetObSize(static_cast<CBaseDef>(ctype).GetBaseSize()); SetOp(ctype.GetOp()); _value = std::any_cast<T>(ctype.GetCurValue()); }
         ~CBaseType() = default;
 
-        CTraits<T>& GetTraits() {
-            return _judge;
+        CBaseType<T>& operator=(CBaseType<T> const& ctype)
+        {
+            SetObType(ctype.GetObType()); SetBaseDef(ctype.GetBaseDef()); SetObSize(ctype.GetBaseSize());
+            return *this;
         }
-        virtual std::shared_ptr<CBaseDef> Clone() const override {
-            std::shared_ptr<CBaseDef> p = std::make_shared<CBaseType<T>>(*this);
-            if (p) return p;
-            return nullptr;
-        }
-        virtual bool FreshTraits(std::unique_ptr<void>& value, int op) override {
-            std::unique_ptr<T> v(reinterpret_cast<T*>(value.get()));
-            if (!_judge.UpdateOp(op)) return false;
-            _judge.UpdateValue(*v);
+        bool operator==(CBaseType<T> const& rhs)
+        {
+            if (GetBaseDef() != rhs.GetBaseDef()) return false;
+            if (GetObType() != rhs.GetObType()) return false;
+            if (GetObSize() != rhs.GetObType()) return false;
             return true;
-        };
-        virtual bool IsValidValue(char* pdata) const override {
-            return _judge.IsValidValue(pdata);
         }
-        std::stringstream GetValue() const override {
-            return _judge.GetValue();
-        }
-        std::stringstream GetValue(char* pdata) const override {
-            return _judge.GetValue(pdata);
-        }
-        virtual bool SetValue(char* pdata, const std::stringstream& ss) override {
-            return _judge.SetValue(pdata, ss);
-        }
-        virtual bool SetValue(const std::stringstream& ss) override {
-            return _judge.UpdateValue(ss);
+        const std::string& GetName() const override { return CBaseDef::GetBaseStr(GetBaseDef()); }
+        virtual const std::shared_ptr<CObObject> GetMetadataDef() const override { return nullptr; }
+        bool IsValidValue(char* pdata) const override {
+            if (GetBaseDef() == CBaseDef::type_void)
+                return true;
+            //ASSERT(pdata != nullptr);
+            T* p = reinterpret_cast<T*>(pdata);
+            if (!p) return false;
+            // please check valid memory at here.
             return true;
+        }
+        std::any GetCurValue() const override {
+            if (GetBaseDef() == CBaseDef::type_void)
+                return {};
+            return _value;
+        }
+        std::any GetValue(char* pdata) const override {
+            if (GetBaseDef() != CBaseDef::type_void && IsValidValue(pdata))
+            {
+                T* p = reinterpret_cast<T*>(pdata);
+                return *p;
+            }
+            return {};
+        }
+        bool SetValue(char* pdata, const std::any& anyvalue) const override;
+        bool SetCurValue(const std::any& anyvalue) override {
+            if (GetBaseDef() == CBaseDef::type_void)
+                return false;
+            if (anyvalue.has_value() && anyvalue.type() == typeid(T))
+            {
+                _value = std::any_cast<T>(anyvalue);
+                return true;
+            }
+            return false;
         }
         bool Success(char* pdata) const override {
-            return _judge.Success(pdata);
+            if (GetBaseDef() == CBaseDef::type_void)
+                return true;
+            if (IsValidValue(pdata))
+            {
+                T* p = reinterpret_cast<T*>(pdata);
+                if (GetOp() == op_n_equal)
+                {
+                    if (*p == _value)
+                        return false;
+                    else
+                        return true;
+                }
+                else if (GetOp() == op_greater)
+                {
+                    if (*p > _value)
+                        return true;
+                    else
+                        return false;
+                }
+                else if (GetOp() == op_greater_e)
+                {
+                    if (*p >= _value)
+                        return true;
+                    else
+                        return false;
+                }
+                else if (GetOp() == op_less)
+                {
+                    if (*p < _value)
+                        return true;
+                    else
+                        return false;
+                }
+                else if (GetOp() == op_less_e)
+                {
+                    if (*p <= _value)
+                        return true;
+                    else
+                        return false;
+                }
+                if (*p == _value)
+                    return true;
+            }
+            return false;
         }
         bool Failed(char* pdata) const override {
-            return _judge.Failed(pdata);
+            return !Success(pdata);
         }
     private:
-        CTraits<T> _judge;
+        T _value;
     };
 
     // the deleter for type define
@@ -320,145 +309,158 @@ namespace cchips {
     {
     public:
         CMetadataTypeObject() = delete;
-        CMetadataTypeObject(const std::string& name, const std::shared_ptr<CBaseDef>& pbasedef) : metadata_name(name), m_pmetadatadef(pbasedef) {
-            SetObType(CObObject::ob_basetype); SetObSize(m_pmetadatadef->GetBaseSize());
+        CMetadataTypeObject(const CMetadataTypeObject& p) = delete;
+        CMetadataTypeObject(const std::string& name, std::shared_ptr<CObObject>& pbasedef) : metadata_name(name), m_pmetadatadef(std::move(pbasedef)) {
+            SetObType(m_pmetadatadef->GetObType()); SetObSize(m_pmetadatadef->GetObSize()); SetOp(m_pmetadatadef->GetOp());
         }
         CMetadataTypeObject(const std::string& name, const std::shared_ptr<CMetadataTypeObject>& pmetadata) : metadata_name(name) {
-            SetObType(CObObject::ob_basetype); m_pmetadatadef = pmetadata->GetMetadataDef(); SetObSize(m_pmetadatadef->GetBaseSize());
+            m_pmetadatadef = pmetadata->GetMetadataDef(); SetObType(m_pmetadatadef->GetObType()); SetObSize(m_pmetadatadef->GetObSize()); SetOp(m_pmetadatadef->GetOp());
         }
         ~CMetadataTypeObject() = default;
-
-        virtual const std::string& GetName() const override { return metadata_name; }
-        const std::shared_ptr<CObObject> GetData() { return shared_from_this(); }
-        virtual const std::shared_ptr<CBaseDef> GetMetadataDef() const override { return m_pmetadatadef; }
-        virtual const bool IsValidValue(char* pdata) const override {
+        CMetadataTypeObject& operator=(const CMetadataTypeObject& p) = delete;
+        const std::string& GetName() const { return metadata_name; }
+        const std::shared_ptr<CObObject> GetInstance() { return shared_from_this(); }
+        const std::shared_ptr<CObObject> GetMetadataDef() const override { return m_pmetadatadef; }
+        virtual bool IsValidValue(char* pdata) const override {
             if (GetMetadataDef())
                 return GetMetadataDef()->IsValidValue(pdata);
             return false;
         }
-        std::stringstream GetValue(char* pdata) const override {
-            std::stringstream ss;
+        virtual std::any GetCurValue() const override {
+            if (GetMetadataDef())
+                return GetMetadataDef()->GetCurValue();
+            return {};
+        }
+        virtual std::any GetValue(char* pdata) const override {
             if (GetMetadataDef())
                 return GetMetadataDef()->GetValue(pdata);
-            return ss;
+            return {};
         }
-        bool SetValue(const std::stringstream& ss) {
+        virtual bool SetCurValue(const std::any& anyvalue) override {
             if (GetMetadataDef())
-                return GetMetadataDef()->SetValue(ss);
+                return GetMetadataDef()->SetCurValue(anyvalue);
             return false;
         }
-        bool SetValue(char* pdata, const std::stringstream& ss) override {
+        virtual bool SetValue(char* pdata, const std::any& anyvalue) const override {
             if (GetMetadataDef())
-                return GetMetadataDef()->SetValue(pdata, ss);
+                return GetMetadataDef()->SetValue(pdata, anyvalue);
             return false;
         }
-        bool Success(char* pdata) const override {
-            if (GetMetadataDef())
-                return GetMetadataDef()->Success(pdata);
-            return false;
-        }
-        bool Failed(char* pdata) const override {
+        virtual bool Success(char* pdata) const override {
             if (GetMetadataDef())
                 return GetMetadataDef()->Success(pdata);
             return false;
         }
-
-        // the function for update type define
-        bool FreshTraits(std::unique_ptr<void>& value, int op);
+        virtual bool Failed(char* pdata) const override {
+            if (GetMetadataDef())
+                return GetMetadataDef()->Failed(pdata);
+            return false;
+        }
     private:
         std::string metadata_name;
-        std::shared_ptr<CBaseDef> m_pmetadatadef;
+        std::shared_ptr<CObObject> m_pmetadatadef;
     };
     // initialize and make the metadata type class object and return the object reference.
-    template <typename _Ty>
-    inline std::shared_ptr<CMetadataTypeObject> make_metadata_s_ptr(int def) noexcept
+    template <typename Ty>
+    inline std::shared_ptr<CMetadataTypeObject> make_metadata_s_ptr(CBaseDef::_standard_type def) noexcept
     {
-        CBaseType<_Ty>* base_ptr = new CBaseType<_Ty>(def, CTraits<_Ty>());
+        CBaseType<Ty>* base_ptr = new CBaseType<Ty>(def);
         if (!base_ptr) return nullptr;
-        std::shared_ptr<CBaseType<_Ty>> ptr(base_ptr, CDeleter<CBaseType<_Ty>>());
-        return std::make_shared<CMetadataTypeObject>(CBaseDef::GetBaseStr(def), std::reinterpret_pointer_cast<CBaseDef>(ptr));
+        std::shared_ptr<CBaseType<Ty>> ptr(base_ptr, CDeleter<CBaseType<Ty>>());
+        return std::make_shared<CMetadataTypeObject>(CBaseDef::GetBaseStr(def), std::static_pointer_cast<CObObject>(ptr));
     }
     // initialize and make the metadata type class object and return the object reference.
-    template <typename _Ty>
-    inline std::shared_ptr<CMetadataTypeObject> make_metadata_j_ptr(int def, CTraits<_Ty>& judge) noexcept
+    template <typename Ty>
+    inline std::shared_ptr<CMetadataTypeObject> make_metadata_j_ptr(CBaseDef::_standard_type def, Ty&& init_value, CObObject::_c_operator op) noexcept
     {
-        CBaseType<_Ty>* base_ptr = new CBaseType<_Ty>(def, judge);
+        CBaseType<Ty>* base_ptr = new CBaseType<Ty>(def, std::forward<Ty>(init_value), op);
         if (!base_ptr) return nullptr;
-        std::shared_ptr<CBaseType<_Ty>> ptr(base_ptr, CDeleter<CBaseType<_Ty>>());
-        return std::make_shared<CMetadataTypeObject>(CBaseDef::GetBaseStr(def), std::reinterpret_pointer_cast<CBaseDef>(ptr));
+        std::shared_ptr<CBaseType<Ty>> ptr(base_ptr, CDeleter<CBaseType<Ty>>());
+        return std::make_shared<CMetadataTypeObject>(CBaseDef::GetBaseStr(def), std::static_pointer_cast<CObObject>(ptr));
     }
     // the reference class object, It is a reference of other data object.
     class CReferenceObject : public CObObject
     {
     public:
-        CReferenceObject() { SetObType(CObObject::ob_reference); SetObSize(sizeof(PVOID)); }
-        CReferenceObject(const std::string name) : m_refername(name) { SetObType(CObObject::ob_reference); SetObSize(sizeof(PVOID)); }
-        CReferenceObject(const std::string name, std::shared_ptr<CObObject>& pelement) : m_refername(name), m_pelement(pelement) {
+        CReferenceObject() = delete;
+        CReferenceObject(const CReferenceObject& p) = delete;
+        CReferenceObject(const std::string_view& name) : m_refername(name) { SetObType(CObObject::ob_reference); SetObSize(sizeof(PVOID)); }
+        CReferenceObject(const std::string& name, std::shared_ptr<CObObject> pelement) : m_refername(name), m_pelement(std::move(pelement)) {
             ResetOb();
         }
         ~CReferenceObject() = default;
-        virtual bool AddReference(std::shared_ptr<CObObject>& pelement) {
-            if (!m_pelement)
-            {
-                m_pelement = pelement;
-                ResetOb();
-                return true;
-            }
-            return false;
+        CReferenceObject& operator=(const CReferenceObject& p) = delete;
+        virtual bool AddReference(std::shared_ptr<CObObject> pelement) {
+            m_pelement = std::move(pelement);
+            ResetOb();
+            return true;
         }
-        virtual const std::string& GetName() const override { return m_refername; }
         const std::shared_ptr<CObObject> GetData() const { return m_pelement; }
-        virtual const std::shared_ptr<CBaseDef> GetMetadataDef() const override { return (*m_pelement).GetMetadataDef(); }
-        virtual const bool IsValidValue(char* pdata) const override {
-            ASSERT(pdata != nullptr);
+        virtual const std::string& GetName() const override { return m_refername; }
+        virtual const std::shared_ptr<CObObject> GetMetadataDef() const override { 
+            if (!m_pelement) return nullptr;
+            return (*m_pelement).GetMetadataDef(); 
+        }
+        virtual bool IsValidValue(char* pdata) const override {
             if (reinterpret_cast<const PVOID*>(pdata) == nullptr)
                 return false;
             // the lpModuleName parameter could be NULL in API GetModuleHandle().
-    //		ASSERT(*reinterpret_cast<const PVOID*>(pdata) != nullptr);
-            //if (*reinterpret_cast<const PVOID*>(pdata) == nullptr)
-            //	return false;
+            if (*reinterpret_cast<const PVOID*>(pdata) == nullptr)
+            	return false;
             return true;
         }
-        std::stringstream GetValue(char* pdata) const override {
-            std::stringstream ss;
-            if (!IsValidValue(pdata)) return ss;
+        virtual std::any GetCurValue() const override {
+            if (GetMetadataDef())
+                return GetMetadataDef()->GetCurValue();
+            return {};
+        }
+        virtual std::any GetValue(char* pdata) const override {
+            if (reinterpret_cast<const PVOID*>(pdata) == nullptr) return {};
             if (*reinterpret_cast<wchar_t**>(pdata) == nullptr)
             {
-                ss << "nullptr";
-                return ss;
+                return {};
             }
-            if (GetObType() == ob_stringref)
+            if (m_pelement && GetObType() == ob_stringref)
             {
-                if (m_pelement->GetMetadataDef()->GetBaseDef() == CBaseDef::type_wchar)
-                    ss << W2AString(std::wstring(*reinterpret_cast<wchar_t**>(pdata))).c_str();
+                if (std::static_pointer_cast<CBaseType<CHAR>>(m_pelement->GetMetadataDef())->GetBaseDef() == CBaseDef::type_wchar)
+                    return std::move(std::wstring(*reinterpret_cast<wchar_t**>(pdata)));
                 else
-                    ss << *reinterpret_cast<const char**>(pdata);
+                    return std::move(std::string(*reinterpret_cast<const char**>(pdata)));
             }
             else
-                ss << std::hex << "0x" << *reinterpret_cast<const PVOID*>(pdata);
-            return ss;
+                return *reinterpret_cast<const PVOID*>(pdata);
+            return {};
         }
-        bool SetValue(char* pdata, const std::stringstream& ss) override;
-        bool Success(char* pdata) const override {
-            std::stringstream ss;
-            ss = GetValue(pdata);
-            if (ss.str().length() == 0 || _stricmp(ss.str().c_str(), "nullptr") == 0)
-                return false;
-            return true;
+        virtual bool SetCurValue(const std::any& anyvalue) override {
+            if (GetMetadataDef())
+            {
+                return GetMetadataDef()->SetCurValue(anyvalue);
+            }
+            return false;
         }
-        bool Failed(char* pdata) const override {
+        virtual bool SetValue(char* pdata, const std::any& anyvalue) const override;
+        virtual bool Success(char* pdata) const override {
+            std::any anyvalue = GetValue(pdata);
+            if (anyvalue.has_value())
+                return true;
+            return false;
+        }
+        virtual bool Failed(char* pdata) const override {
             return !Success(pdata);
         }
     private:
         void ResetOb() {
-            if (m_pelement->IsBaseTy() && IsStringType(m_pelement->GetMetadataDef()->GetBaseDef()))
+            if (m_pelement)
             {
-                // the string is a special reference
-                SetObType(CObObject::ob_stringref); SetObSize(sizeof(PVOID));
-            }
-            else
-            {
-                SetObType(CObObject::ob_reference); SetObSize(sizeof(PVOID));
+                if (m_pelement->IsBaseTy() && IsStringType(std::static_pointer_cast<CBaseType<CHAR>>(m_pelement->GetMetadataDef())->GetBaseDef()))
+                {
+                    // the string is a special reference
+                    SetObType(CObObject::ob_stringref); SetObSize(sizeof(PVOID));
+                }
+                else
+                {
+                    SetObType(CObObject::ob_reference); SetObSize(sizeof(PVOID));
+                }
             }
         }
         static bool IsStringType(int type) {
@@ -477,144 +479,140 @@ namespace cchips {
     {
     public:
         CArrayObject() = delete;
-        CArrayObject(const std::string& name) : m_arrayname(name), m_dim(0) { SetObType(CObObject::ob_array); SetObSize(0); }
-        CArrayObject(const std::string& name, const std::shared_ptr<CObObject>& pelement, int dim) : m_arrayname(name), m_pelement(pelement), m_dim(dim) { SetObType(CObObject::ob_array); SetObSize(m_pelement->GetObSize()*dim); }
+        CArrayObject(const CArrayObject& p) = delete;
+        CArrayObject(const std::string_view& name) : m_arrayname(name), m_dim(0) { SetObType(CObObject::ob_array); SetObSize(0); }
+        CArrayObject(const std::string& name, const std::shared_ptr<CObObject> pelement, unsigned int dim) : m_arrayname(name), m_pelement(std::move(pelement)), m_dim(dim) { SetObType(CObObject::ob_array); SetObSize(m_pelement->GetObSize()*dim); }
         ~CArrayObject() = default;
-        bool AddArray(const std::shared_ptr<CObObject>& pelement, int dim) {
+        CArrayObject& operator=(const CArrayObject& p) = delete;
+        bool AddArray(const std::shared_ptr<CObObject> pelement, unsigned int dim) {
             if (!m_pelement)
             {
                 m_dim = dim;
-                m_pelement = pelement;
+                m_pelement = std::move(pelement);
                 SetObSize(m_pelement->GetObSize()*dim);
                 return true;
             }
             return false;
         }
-        int GetDim() const { return m_dim; }
+        unsigned int GetDim() const { return m_dim; }
+        void SetDim(unsigned int dim) { m_dim = dim; }
         virtual const std::string& GetName() const override { return m_arrayname; }
         const std::shared_ptr<CObObject> GetData() const { return m_pelement; }
-        virtual const std::shared_ptr<CBaseDef> GetMetadataDef() const override { return (*m_pelement).GetMetadataDef(); }
-        virtual const bool IsValidValue(char* pdata) const override {
-            ASSERT(pdata != nullptr);
+        virtual const std::shared_ptr<CObObject> GetMetadataDef() const override { 
+            if (!m_pelement) return nullptr;
+            return (*m_pelement).GetMetadataDef(); 
+        }
+        virtual bool IsValidValue(char* pdata) const override {
             if (pdata == nullptr) return false;
             return true;
         }
-        std::stringstream GetValue(char* pdata) const override {
-            std::stringstream ss;
-            if (!IsValidValue(pdata)) return ss;
-            if (!m_pelement) return ss;
-            char * p = (char *)pdata;
-            for (int i = 0; i < m_dim; i++) {
-                ss << m_pelement->GetValue(p).str();
-                p += m_pelement->GetObSize();
+        virtual std::any GetCurValue() const override {
+            if (GetMetadataDef())
+                return GetMetadataDef()->GetCurValue();
+            return {};
+        }
+        virtual std::any GetValue(char* pdata) const override {
+            if (!IsValidValue(pdata)) return {};
+            if (GetMetadataDef())
+                return GetMetadataDef()->GetValue(pdata);
+            return {};
+        }
+        std::any GetValue(char* pdata, unsigned int sublin) const {
+            if (!IsValidValue(pdata)) return {};
+            if (sublin >= m_dim) return {};
+            if (GetMetadataDef()) {
+                unsigned int offset = (unsigned int)GetMetadataDef()->GetObSize() * sublin;
+                return GetMetadataDef()->GetValue(pdata + offset);
             }
-            return ss;
+            return {};
         }
-        bool SetValue(char* pdata, const std::stringstream& ss) override {
-            if (!IsValidValue(pdata)) return false;
-            if (!m_pelement) return false;
-            char * p = (char *)pdata;
-            for (int i = 0; i < m_dim; i++) {
-                if (m_pelement->SetValue(p, ss))
-                    return false;
-                p += m_pelement->GetObSize();
-            }
-            return true;
-        }
-        bool Success(char* pdata) const override {
-            return true;
-        }
-        bool Failed(char* pdata) const override {
-            return !Success(pdata);
-        }
-    private:
-        int m_dim;
-        std::string m_arrayname;
-        std::shared_ptr<CObObject> m_pelement;
-    };
-    // the tuple class object, it could be contains variable length and variable type of data.
-    class CTupleObject : public CObObject
-    {
-    public:
-        CTupleObject() = delete;
-        CTupleObject(const std::string& name) : m_tuplename(name) { SetObType(CObObject::ob_tuple); SetObSize(0); }
-        CTupleObject(const std::string& name, const std::vector<std::shared_ptr<CObObject>>& parray) : m_tuplename(name) {
-            SetObType(CObObject::ob_tuple);
-            AddArray(parray);
-        }
-        ~CTupleObject() = default;
-        bool AddArray(const std::vector<std::shared_ptr<CObObject>>& parray)
-        {
-            size_t size = 0;
-            for (auto& it : m_parray)
+        virtual bool SetCurValue(const std::any& anyvalue) override {
+            if (GetMetadataDef())
             {
-                if (!it) return false;
-                size = it->GetObSize();
+                return GetMetadataDef()->SetCurValue(anyvalue);
             }
-            m_parray = parray;
-            SetObSize(size);
-            return true;
-        }
-        void AddElement(const std::shared_ptr<CObObject>& pelement)
-        {
-            m_parray.push_back(pelement);
-            SetObSize(GetObSize() + pelement->GetObSize());
-        }
-        virtual const std::string& GetName() const override { return m_tuplename; }
-        const std::vector<std::shared_ptr<CObObject>>& GetData() const { return m_parray; }
-        virtual const std::shared_ptr<CBaseDef> GetMetadataDef() const override { return nullptr; }
-        virtual const bool IsValidValue(char* pdata) const override {
-            ASSERT(pdata != nullptr);
-            if (pdata == nullptr) return false;
-            return true;
-        }
-        std::stringstream GetValue(char* pdata) const override {
-            std::stringstream ss;
-            if (!IsValidValue(pdata)) return ss;
-            if (m_parray.size() == 0) return ss;
-            char * p = pdata;
-
-            for (const auto& elem : m_parray) {
-                if (!ss.str().length())
-                    ss << "{ ";
-                else
-                    ss << "; ";
-                ss << elem->GetName() << ": " << elem->GetValue(p).str();
-                p += elem->GetObSize();
-            }
-            if (ss.str().length())
-                ss << " }";
-            return ss;
-        }
-        bool SetValue(char* pdata, const std::stringstream& ss) override {
             return false;
         }
-        bool Success(char* pdata) const override {
+        virtual bool SetValue(char* pdata, const std::any& anyvalue) const override {
+            if (!IsValidValue(pdata)) return false;
+            if (!GetMetadataDef()) return false;
+            return GetMetadataDef()->SetValue(pdata, anyvalue);
+        }
+        bool SetValue(char* pdata, const std::any& anyvalue, unsigned int sublin) const {
+            if (!IsValidValue(pdata)) return false;
+            if (sublin >= m_dim) return false;
+            if (GetMetadataDef()) {
+                unsigned int offset = (unsigned int)GetMetadataDef()->GetObSize() * sublin;
+                return GetMetadataDef()->SetValue(pdata + offset, anyvalue);
+            }
+            return {};
+        }
+        bool SetArray(char* pdata, const std::any& anyvalue, unsigned int dim) const {
+            if (!IsValidValue(pdata)) return false;
+            if (dim > m_dim) return false;
+            if (GetMetadataDef()) {
+                bool bret = false;
+                for (unsigned int sublin = 0; sublin < dim; sublin++)
+                {
+                    unsigned int offset = (unsigned int)GetMetadataDef()->GetObSize() * sublin;
+                    bret = GetMetadataDef()->SetValue(pdata + offset, anyvalue);
+                    if (!bret) break;
+                }
+                return bret;
+            }
+            return {};
+        }
+        bool SetArray(char* pdata, char* psrc_data, unsigned int dim) const {
+            if (!IsValidValue(pdata)) return false;
+            if (!IsValidValue(psrc_data)) return false;
+            if (dim > m_dim) return false;
+            if (GetMetadataDef()) {
+                bool bret = false;
+                for (unsigned int sublin = 0; sublin < dim; sublin++)
+                {
+                    unsigned int offset = (unsigned int)GetMetadataDef()->GetObSize() * sublin;
+                    std::any anyvalue = GetMetadataDef()->GetValue(psrc_data + offset);
+                    bret = GetMetadataDef()->SetValue(pdata + offset, anyvalue);
+                    if (!bret) break;
+                }
+                return bret;
+            }
+            return {};
+        }
+        unsigned int GetElementOffset(unsigned int dim) {
+            if (!GetData()) return InvalidOffset;
+            return GetData()->GetObSize() * dim;
+        }
+        virtual bool Success(char* pdata) const override {
             return true;
         }
-        bool Failed(char* pdata) const override {
+        virtual bool Failed(char* pdata) const override {
             return !Success(pdata);
         }
+        static const int InvalidOffset = -1;
     private:
-        std::string m_tuplename;
-        std::vector<std::shared_ptr<CObObject>> m_parray;
+        unsigned int m_dim;
+        std::string m_arrayname;
+        std::shared_ptr<CObObject> m_pelement;
     };
     // the struct class object
     class CStructObject : public CObObject
     {
     public:
-        using ElementTypeDefine = std::pair<std::string, std::pair<int, std::shared_ptr<CObObject>>>;
+        using ElementTypeDefine = std::pair<std::string, std::pair<unsigned int, std::shared_ptr<CObObject>>>;
         using ElementListDefine = std::map<std::string, ElementTypeDefine>;
         using iterator = ElementListDefine::iterator;
         using const_iterator = ElementListDefine::const_iterator;
 
-        CStructObject() { SetObType(CObObject::ob_struct); SetObSize(0); }
-        CStructObject(const std::string& name) : m_structname(name) { SetObType(CObObject::ob_struct); SetObSize(0); }
+        CStructObject() = delete;
+        CStructObject(const CStructObject& p) = delete;
+        CStructObject(const std::string_view& name) : m_structname(name) { SetObType(CObObject::ob_struct); SetObSize(0); }
         CStructObject(const std::string& name, const ElementListDefine& pstruct) : m_structname(name) {
             SetObType(CObObject::ob_struct);
             AddStruct(pstruct);
         }
         ~CStructObject() = default;
+        CStructObject& operator=(const CStructObject& p) = delete;
         bool AddStruct(const ElementListDefine& pstruct)
         {
             size_t size = 0;
@@ -627,56 +625,96 @@ namespace cchips {
             SetObSize(size);
             return true;
         }
-        bool AddElement(const std::string name, const ElementTypeDefine& pelement) {
+        bool AddElement(const std::string_view& name, ElementTypeDefine& pelement) {
             ASSERT(name.length());
             if (!name.length()) return false;
-            auto& it = m_pstruct.find(name);
+            std::string name_str(name);
+            auto& it = m_pstruct.find(name_str);
             if (it != m_pstruct.end() && it->second.second.second != nullptr) return false;
-            m_pstruct[name] = pelement;
-            m_pstruct[name].second.first = (int)GetObSize();
-            if (pelement.second.second != nullptr)
+            m_pstruct[name_str] = std::move(pelement);
+            m_pstruct[name_str].second.first = (int)GetObSize();
+            if (m_pstruct[name_str].second.second != nullptr)
             {
-                SetObSize(GetObSize() + pelement.second.second->GetObSize());
+                SetObSize(GetObSize() + m_pstruct[name_str].second.second->GetObSize());
                 return true;
             }
+            else
+                SetObSize(GetObSize() + 4);
             return false;
         }
         virtual const std::string& GetName() const override { return m_structname; }
         const ElementListDefine& GetData() const { return m_pstruct; }
-        virtual const std::shared_ptr<CBaseDef> GetMetadataDef() const override { return nullptr; }
-        virtual const bool IsValidValue(char* pdata) const override {
-            ASSERT(pdata != nullptr);
+        virtual const std::shared_ptr<CObObject> GetMetadataDef() const override { return nullptr; }
+        virtual bool IsValidValue(char* pdata) const override {
             if (pdata == nullptr) return false;
             return true;
         }
-        std::stringstream GetValue(char* pdata) const override {
-            std::stringstream ss;
-            if (!IsValidValue(pdata)) return ss;
-            if (m_pstruct.size() == 0) return ss;
-            char * p = (char *)pdata;
-            for (const auto& elem : *this) {
-                if (!elem.second.second.second)
-                {
-                    ss.str(""); ss.clear(); return ss;
-                }
-                if (!ss.str().length())
-                    ss << "{ ";
-                else
-                    ss << "; ";
-                ss << elem.first << ": " << elem.second.second.second->GetValue(p).str();
-                p += elem.second.second.second->GetObSize();
-            }
-            if (ss.str().length())
-                ss << " }";
-            return ss;
+        virtual std::any GetCurValue() const override {
+            if (GetMetadataDef())
+                return GetMetadataDef()->GetCurValue();
+            return {};
         }
-        bool SetValue(char* pdata, const std::stringstream& ss) override {
+        virtual std::any GetValue(char* pdata) const override {
+            //std::stringstream ss;
+            //if (!IsValidValue(pdata)) return ss;
+            //if (m_pstruct.size() == 0) return ss;
+            //char * p = (char *)pdata;
+            //for (const auto& elem : *this) {
+            //    if (!elem.second.second.second)
+            //    {
+            //        ss.str(""); ss.clear(); return ss;
+            //    }
+            //    if (!ss.str().length())
+            //        ss << "{ ";
+            //    else
+            //        ss << "; ";
+            //    ss << elem.first << ": " << elem.second.second.second->GetValue(p).str();
+            //    p += elem.second.second.second->GetObSize();
+            //}
+            //if (ss.str().length())
+            //    ss << " }";
+            if (!m_pstruct.size()) return {};
+            std::shared_ptr<CObObject> ob_ptr = GetElement(0);
+            if (!ob_ptr) return {};
+            return ob_ptr->GetValue(pdata);
+        }
+        std::any GetValue(char* pdata, const std::string& name) const {
+            if (!name.length()) return {};
+            std::shared_ptr<CObObject> ob_ptr = GetElement(name);
+            if (!ob_ptr) return {};
+            unsigned int offset = GetElementOffset(name);
+            return ob_ptr->GetValue(pdata + offset);
+            return {};
+        }
+        std::any GetValue(char* pdata, unsigned int index) const {
+            std::shared_ptr<CObObject> ob_ptr = GetElement(index);
+            if (!ob_ptr) return {};
+            unsigned int offset = GetElementOffset(index);
+            return ob_ptr->GetValue(pdata + offset);
+            return {};
+        }
+        virtual bool SetCurValue(const std::any& anyvalue) override {
             return false;
         }
-        bool Success(char* pdata) const override {
+        virtual bool SetValue(char* pdata, const std::any& anyvalue) const override {
+            if (!m_pstruct.size()) return {};
+            std::shared_ptr<CObObject> ob_ptr = GetElement(0);
+            if (!ob_ptr) return {};
+            return ob_ptr->SetValue(pdata, anyvalue);
+            return {};
+        }
+        bool SetValue(char* pdata, const std::string& name, const std::any& anyvalue) const {
+            if (!name.length()) return {};
+            std::shared_ptr<CObObject> ob_ptr = GetElement(name);
+            if (!ob_ptr) return {};
+            unsigned int offset = GetElementOffset(name);
+            return ob_ptr->SetValue(pdata + offset, anyvalue);
+            return {};
+        }
+        virtual bool Success(char* pdata) const override {
             return true;
         }
-        bool Failed(char* pdata) const override {
+        virtual bool Failed(char* pdata) const override {
             return !Success(pdata);
         }
         std::shared_ptr<CObObject> GetElement(const std::string& name) const {
@@ -690,17 +728,66 @@ namespace cchips {
             }
             return nullptr;
         }
-        int GetElementOffset(const std::string& name) const {
+        std::shared_ptr<CObObject> GetElement(unsigned int index) const {
+            if (index < m_pstruct.size())
+            {
+                std::map<unsigned int, std::shared_ptr<CObObject>> list;
+                for (const auto& i : m_pstruct)
+                {
+                    list[i.second.second.first] = i.second.second.second;
+                }
+                for (const auto& l : list)
+                {
+                    if(index == 0) return l.second;
+                    index--;
+                }
+            }
+            return nullptr;
+        }
+        unsigned int GetElementIdx(const std::string& name) const {
+            unsigned int index = 0;
+            std::map<unsigned int, std::string> list;
+            for (const auto& i : m_pstruct)
+            {
+                list[i.second.second.first] = i.first;
+            }
+            for (const auto& l : list)
+            {
+                if (_stricmp(l.second.c_str(), name.c_str()) == 0)
+                {
+                    return index;
+                }
+                index++;
+            }
+            return static_cast<unsigned int>(-1);
+        }
+        unsigned int GetElementOffset(const std::string& name) const {
             if (!name.length()) return InvalidOffset;
             const auto p = m_pstruct.find(name);
             if (p == m_pstruct.end()) return InvalidOffset;
             return p->second.second.first;
         }
+        unsigned int GetElementOffset(unsigned int index) const {
+            if (index < m_pstruct.size())
+            {
+                std::map<unsigned int, std::shared_ptr<CObObject>> list;
+                for (const auto& i : m_pstruct)
+                {
+                    list[i.second.second.first] = i.second.second.second;
+                }
+                for (const auto& j : list)
+                {
+                    if (index == 0) return j.first;
+                    index--;
+                }
+            }
+            return InvalidOffset;
+        }
         static const int InvalidOffset = -1;
-        iterator		begin() { return m_pstruct.begin(); }
-        const_iterator	begin() const { return m_pstruct.begin(); }
-        iterator		end() { return m_pstruct.end(); }
-        const_iterator	end() const { return m_pstruct.end(); }
+        iterator        begin() { return m_pstruct.begin(); }
+        const_iterator  begin() const { return m_pstruct.begin(); }
+        iterator        end() { return m_pstruct.end(); }
+        const_iterator  end() const { return m_pstruct.end(); }
     private:
         std::string m_structname;
         ElementListDefine m_pstruct;
@@ -716,10 +803,11 @@ namespace cchips {
             flag_not,
         };
         CFlagObject() = delete;
-        CFlagObject(const std::string& name) : m_flagname(name), m_operation(flag_invalid) { SetObType(CObObject::ob_flag); SetObSize(0); }
+        CFlagObject(const CFlagObject& p) = delete;
+        CFlagObject(const std::string_view& name) : m_flagname(name), m_operation(flag_invalid) { SetObType(CObObject::ob_flag); SetObSize(0); }
         ~CFlagObject() = default;
-
-        int GetFlagOp(const std::string& op_name) const
+        CFlagObject& operator=(const CFlagObject& p) = delete;
+        static _flag_operation GetFlagOp(const std::string& op_name)
         {
             if (_stricmp(op_name.c_str(), "OR") == 0)
                 return flag_or;
@@ -729,11 +817,15 @@ namespace cchips {
                 return flag_not;
             return flag_invalid;
         }
-        bool AddFlags(const std::shared_ptr<CObObject>& pdata, int op, std::unique_ptr<std::map<std::string, int>>& values) {
+        _flag_operation GetFlagOp() const
+        {
+            return m_operation;
+        }
+        bool AddFlags(const std::shared_ptr<CObObject>& pdata, _flag_operation op, std::unique_ptr<std::map<std::string, unsigned int>> values) {
             if (!pdata || (*values).size() == 0) return false;
             if (op == flag_invalid || op > flag_not) return false;
             ASSERT(pdata->IsBaseTy()); // m_pdata must be ob_basetype;
-            m_operation = (_flag_operation)op;
+            m_operation = op;
             m_pflagvalues = std::move(values);
             m_pdata = pdata;
             SetObSize(m_pdata->GetObSize());
@@ -741,7 +833,7 @@ namespace cchips {
         }
         virtual const std::string& GetName() const override { return m_flagname; }
         const std::shared_ptr<CObObject> GetData() const { return m_pdata; }
-        virtual const std::shared_ptr<CBaseDef> GetMetadataDef() const override { return (*m_pdata).GetMetadataDef(); }
+        virtual const std::shared_ptr<CObObject> GetMetadataDef() const override { return (*m_pdata).GetMetadataDef(); }
         int GetFlagVa(const std::string& value_str) const {
             if (!value_str.length()) return InvalidFlagVa;
             if (!m_pflagvalues) return InvalidFlagVa;
@@ -749,23 +841,30 @@ namespace cchips {
             if (it == (*m_pflagvalues).end()) return InvalidFlagVa;
             return it->second;
         }
-        const std::string GetFlagStr(int flag_value) const {
-            if (!m_pflagvalues) return std::string({});
-            if (flag_value == InvalidFlagVa) return std::string({});
+        std::any GetFlagStr(unsigned int flag_value) const {
+            if (!m_pflagvalues) return {};
+            if (flag_value == InvalidFlagVa) return {};
             if (m_operation == flag_or) {
-                std::stringstream flag_list;
                 bool is_first = true;
-                for (const auto& flag : *m_pflagvalues)
-                {
+                std::ostringstream flag_list;
+                std::transform(m_pflagvalues->begin(), m_pflagvalues->end(), std::ostream_iterator<std::string>{flag_list}, [&](const auto& flag) {
                     if ((flag.second & flag_value) == flag.second) {
+                        flag_value = flag_value ^ flag.second;
                         if (!is_first)
-                            flag_list << " | ";
-                        flag_list << flag.first;
+                            return std::string(" | ") + flag.first;
                         is_first = false;
+                        return flag.first;
                     }
+                    return std::string{};
+                    });
+                if (flag_list.str().length())
+                {
+                    if(flag_value == 0)
+                        return flag_list.str();
+                    std::ostringstream ostr;
+                    ostr << std::hex << "0x" << flag_value;
+                    return flag_list.str() + std::string(" | unknown-flags:") + ostr.str();
                 }
-                if (!is_first)
-                    return flag_list.str();
             }
             else {
                 for (const auto& flag : *m_pflagvalues)
@@ -774,57 +873,254 @@ namespace cchips {
                         return flag.first;
                 }
             }
-            std::string ret_string = std::string("unknown-flags:") + std::to_string(flag_value);
-            return ret_string;
+            {
+                std::ostringstream ostr;
+                ostr << std::hex << "0x" << flag_value;
+                std::string ret_string = std::string("unknown-flags:") + ostr.str();
+                return ret_string;
+            }
         }
-        virtual const bool IsValidValue(char* pdata) const override {
+        virtual bool IsValidValue(char* pdata) const override {
             if (!m_pdata) return false;
             return m_pdata->IsValidValue(pdata);
             return false;
         }
-        std::stringstream GetValue(char* pdata) const override {
-            std::stringstream ss;
-            if (m_pdata)
-            {
-                ss = m_pdata->GetValue(pdata);
-                if (!ss.str().length()) return ss;
-                char* nodig = nullptr;
-                int flag_value = std::strtoul(ss.str().c_str(), &nodig, 10);
-                ss.str(""); ss.clear();
-                ss << GetFlagStr(flag_value).c_str();
-            }
-            return ss;
+        virtual std::any GetCurValue() const override {
+            if (GetMetadataDef())
+                return GetMetadataDef()->GetCurValue();
+            return {};
         }
-        bool SetValue(char* pdata, const std::stringstream& ss) override {
-            if (m_pdata)
-            {
-                if (!ss.str().length()) return false;
-                int flag_value = GetFlagVa(ss.str());
-                if (flag_value == InvalidFlagVa) return false;
-                std::stringstream tmp_ss;
-                tmp_ss << flag_value;
-                return m_pdata->SetValue(pdata, ss);
-            }
-            return false;
+        virtual std::any GetValue(char* pdata) const override {
+                if (!m_pdata) return {};
+                return m_pdata->GetValue(pdata);
         }
-        bool Success(char* pdata) const override {
+        virtual bool SetCurValue(const std::any& anyvalue) override {
+            if (!m_pdata) return false;
+            return m_pdata->SetCurValue(anyvalue);
+        }
+        virtual bool SetValue(char* pdata, const std::any& anyvalue) const override {
+            if (!m_pdata) return {};
+            return m_pdata->SetValue(pdata, anyvalue);
+        }
+        virtual bool Success(char* pdata) const override {
             return true;
         }
-        bool Failed(char* pdata) const override {
+        virtual bool Failed(char* pdata) const override {
             return !Success(pdata);
         }
         static const int InvalidFlagVa = -1;
     private:
         std::string m_flagname;
         std::shared_ptr<CObObject> m_pdata;
-        std::unique_ptr<std::map<std::string, int>> m_pflagvalues;
+        std::unique_ptr<std::map<std::string, unsigned int>> m_pflagvalues;
         _flag_operation m_operation;
+    };
+    // the tuple class object, it could be contains variable length and variable type of data.
+    class CTupleObject : public CObObject
+    {
+    public:
+        using function_type = enum {
+            function_isvalidvalue = 0,
+            function_getvalue,
+            function_setvalue,
+            function_success,
+        };
+        enum class _tuple_ref {
+            tuple_ref_addr = 0,
+            tuple_ref_val,
+        };
+        enum class _tuple_flg {
+            tuple_flg_int = 0,
+            tuple_flg_str,
+        };
+        struct _tuple_elem {
+            union {
+                struct _ref {
+                    _tuple_ref tuple_ref;
+                } ref;
+                struct _arr {
+                    unsigned int dim;
+                } arr;
+                struct _struc {
+                    unsigned int idx;
+                } struc;
+                struct _flag {
+                    _tuple_flg tuple_flg;
+                } flag;
+            };
+            std::string elem_name;
+            std::shared_ptr<CObObject> ptr;
+        };
+        using iterator = std::vector<_tuple_elem>::iterator;
+        using const_iterator = std::vector<_tuple_elem>::const_iterator;
+        CTupleObject() = delete;
+        CTupleObject(const CTupleObject& p) = delete;
+        CTupleObject(const std::string_view name) : m_tuplename(name) { SetObType(CObObject::ob_tuple); SetObSize(0); }
+        CTupleObject(const std::string_view name, const std::vector<_tuple_elem>& ptuple) : m_tuplename(name) {
+            SetObType(CObObject::ob_tuple);
+            AddTuple(ptuple);
+        }
+        ~CTupleObject() = default;
+        CTupleObject& operator=(const CTupleObject& p) = delete;
+        unsigned int GetElemCount() const { return (unsigned int)m_ptuple.size(); }
+        bool AddTuple(const std::vector<_tuple_elem>& ptuple)
+        {
+            size_t size = 0;
+            for (auto& it : ptuple)
+            {
+                if (!it.ptr) return false;
+                size = it.ptr->GetObSize();
+            }
+            m_ptuple = ptuple;
+            SetObSize(size);
+            return true;
+        }
+        bool AddElement(const _tuple_elem& pelement)
+        {
+            if (!pelement.ptr) return false;
+            m_ptuple.push_back(pelement);
+            SetObSize(GetObSize() + pelement.ptr->GetObSize());
+            return true;
+        }
+        std::any GetElement(unsigned int index) {
+            if (!GetElemCount()) return {};
+            if (index != static_cast<unsigned int>(-1) && (index > GetElemCount()))
+                return {};
+            if (index == static_cast<unsigned int>(-1))
+                index = GetElemCount() - 1;
+            return &(m_ptuple.at(index));
+        }
+        virtual const std::string& GetName() const override { return m_tuplename; }
+        const std::vector<_tuple_elem>& GetData() const { return m_ptuple; }
+        virtual const std::shared_ptr<CObObject> GetMetadataDef() const override { return nullptr; }
+
+        std::variant<bool, std::any> PolyImplFunction(function_type f_type, char* pdata, const std::any anyval) const
+        {
+            auto default_rr = [=]() ->std::variant<bool, std::any> { if (f_type == function_getvalue) return std::any{}; else return false; };
+            auto call_func = [](std::shared_ptr<CObObject> object, function_type f_type, char* pdata, const std::any anyval) ->std::variant<bool, std::any> {
+                switch (f_type)
+                {
+                case function_success:
+                {
+                    const auto func = std::bind(&CObObject::Success, object, std::placeholders::_1);
+                    return func(pdata);
+                }
+                break;
+                case function_isvalidvalue:
+                {
+                    const auto func = std::bind(&CObObject::IsValidValue, object, std::placeholders::_1);
+                    return func(pdata);
+                }
+                break;
+                case function_getvalue:
+                {
+                    const auto func = std::bind(&CObObject::GetValue, object, std::placeholders::_1);
+                    return func(pdata);
+                }
+                break;
+                case function_setvalue:
+                {
+                    const auto func = std::bind(&CObObject::SetValue, object, std::placeholders::_1, std::placeholders::_2);
+                    return func(pdata, anyval);
+                }
+                break;
+                default:
+                {; }
+                }
+                return false;
+            };
+            char* data_ptr = pdata;
+            if (data_ptr == nullptr) return default_rr();
+            std::any anyvalue;
+            for (const auto& it : m_ptuple)
+            {
+                if (it.ptr == nullptr)
+                    return default_rr();
+                if (it.ptr->IsReference()) {
+                    if (it.ref.tuple_ref == CTupleObject::_tuple_ref::tuple_ref_addr)
+                        return call_func(it.ptr, f_type, data_ptr, anyval);
+                    anyvalue = it.ptr->GetValue(data_ptr);
+                    if (!anyvalue.has_value() || anyvalue.type() != typeid(PVOID))
+                        return default_rr();
+                    data_ptr = static_cast<char*>(std::any_cast<PVOID>(anyvalue));
+                }
+                else if (it.ptr->IsStruct()) {
+                    if (!data_ptr) return default_rr();
+                    std::shared_ptr<CStructObject> struct_ptr = std::static_pointer_cast<CStructObject>(it.ptr);
+                    if (it.struc.idx == static_cast<unsigned int>(-1))
+                        return default_rr();
+                    unsigned int offset = struct_ptr->GetElementOffset(it.struc.idx);
+                    if (offset == CStructObject::InvalidOffset)
+                        return default_rr();
+                    data_ptr = data_ptr + offset;
+                }
+                else if (it.ptr->IsBaseTy()) {
+                    return call_func(it.ptr, f_type, data_ptr, anyval);
+                }
+                else if (it.ptr->IsStringref()) {
+                    return call_func(it.ptr, f_type, data_ptr, anyval);
+                }
+                else if (it.ptr->IsFlag())
+                {
+                    std::shared_ptr<CFlagObject> flag_ptr = std::static_pointer_cast<CFlagObject>(it.ptr);
+                    if(f_type != function_getvalue || it.flag.tuple_flg == CTupleObject::_tuple_flg::tuple_flg_int)
+                        return call_func(it.ptr, f_type, data_ptr, anyval);
+                    std::any val = std::get<std::any>(call_func(it.ptr, f_type, data_ptr, anyval));
+                    unsigned int value = ConvertAnyType<unsigned int>(val);
+                    if (value == static_cast<unsigned int>(-1))
+                        return default_rr();
+                    return flag_ptr->GetFlagStr(value);
+                }
+                else if (it.ptr->IsArray()) {
+                    if (!data_ptr) return default_rr();
+                    std::shared_ptr<CArrayObject> array_ptr = std::static_pointer_cast<CArrayObject>(it.ptr);
+                    if (it.arr.dim == static_cast<unsigned int>(-1))
+                        return default_rr();
+                    unsigned int offset = array_ptr->GetElementOffset(it.arr.dim);
+                    if (offset == CStructObject::InvalidOffset)
+                        return default_rr();
+                    data_ptr = data_ptr + offset;
+                }
+            }
+            return default_rr();
+        }
+
+        virtual bool IsValidValue(char* pdata) const override {
+            return std::get<bool>(PolyImplFunction(function_isvalidvalue, pdata, std::any()));
+        }
+        virtual std::any GetCurValue() const override {
+            if (GetMetadataDef())
+                return GetMetadataDef()->GetCurValue();
+            return {};
+        }
+        virtual std::any GetValue(char* pdata) const override {
+            return std::get<std::any>(PolyImplFunction(function_getvalue, pdata, std::any()));
+        }
+        virtual bool SetCurValue(const std::any& anyvalue) override {
+            return false;
+        }
+        virtual bool SetValue(char* pdata, const std::any& any_value) const override {
+            return std::get<bool>(PolyImplFunction(function_setvalue, pdata, any_value));
+        }
+        virtual bool Success(char* pdata) const override {
+            return std::get<bool>(PolyImplFunction(function_success, pdata, std::any()));
+        }
+        virtual bool Failed(char* pdata) const override {
+            return !Success(pdata);
+        }
+        iterator        begin() { return m_ptuple.begin(); }
+        const_iterator  begin() const { return m_ptuple.begin(); }
+        iterator        end() { return m_ptuple.end(); }
+        const_iterator  end() const { return m_ptuple.end(); }
+    private:
+        std::string m_tuplename;
+        std::vector<_tuple_elem> m_ptuple;
     };
     // the symbol table class object
     class CTypeSymbolTableObject : public CObObject
     {
     public:
-        const std::shared_ptr<CObObject> GetTypeSymbolRefrence(const std::string& symbol_name) const {
+        std::shared_ptr<CObObject> GetTypeSymbolReference(const std::string& symbol_name) const {
             if (!symbol_name.length()) return nullptr;
             auto& it = m_typesymboltable.find(symbol_name);
             if (it == m_typesymboltable.end())
@@ -839,44 +1135,43 @@ namespace cchips {
             }
             return false;
         }
-        static std::unique_ptr<CTypeSymbolTableObject> GetInstance()
+        size_t GetSymbolTableSize() { return m_typesymboltable.size(); }
+        static CTypeSymbolTableObject& GetInstance()
         {
-            if (m_reference_count == 0)
-            {
-                CTypeSymbolTableObject* p = new CTypeSymbolTableObject();
-                if (p)
-                {
-                    m_reference_count++;
-                    return std::unique_ptr<CTypeSymbolTableObject>(p);
-                }
-            }
-            return nullptr;
+            static CTypeSymbolTableObject m_instance;
+            return m_instance;
         }
-        void InitializeTypeSymbolTable();
         virtual const std::string& GetName() const override { return m_symbolname; }
-        virtual const std::shared_ptr<CBaseDef> GetMetadataDef() const override { return nullptr; }
-        virtual const bool IsValidValue(char* pdata) const override {
-            return false;
-        }
-        std::stringstream GetValue(char* pdata) const override {
-            std::stringstream ss;
-            return ss;
-        }
-        bool SetValue(char* pdata, const std::stringstream& ss) override {
+        virtual const std::shared_ptr<CObObject> GetMetadataDef() const override { return nullptr; }
+        virtual bool IsValidValue(char* pdata) const override {
             return true;
         }
-        bool Success(char* pdata) const override {
+        virtual std::any GetCurValue() const override {
+            return {};
+        }
+        virtual std::any GetValue(char* pdata) const override {
+            return {};
+        }
+        virtual bool SetCurValue(const std::any& anyvalue) override {
             return true;
         }
-        bool Failed(char* pdata) const override {
+        virtual bool SetValue(char* pdata, const std::any& anyvalue) const override {
+            return true;
+        }
+        virtual bool Success(char* pdata) const override {
+            return true;
+        }
+        virtual bool Failed(char* pdata) const override {
             return !Success(pdata);
         }
     private:
         CTypeSymbolTableObject() :m_symbolname("type_symbol") { SetObType(CObObject::ob_symboltable); SetObSize(0); InitializeTypeSymbolTable(); }
-
+        ~CTypeSymbolTableObject() = default;
+        CTypeSymbolTableObject(const CTypeSymbolTableObject&) = delete;
+        CTypeSymbolTableObject& operator=(const CTypeSymbolTableObject&) = delete;
+        void InitializeTypeSymbolTable();
         std::string m_symbolname;
         TYPE_SYMBOLTABLE m_typesymboltable;
-        static int m_reference_count;
     };
 
 } // namespace cchips

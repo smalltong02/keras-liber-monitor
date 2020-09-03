@@ -153,10 +153,10 @@
     "PostCheck": {
       "0": {
         "Check": {
-          "Size": "%var0 <= 3298534883328"
+          "Size": "%var0 <= '3298534883328'"
         },
         "Modify": {
-          "Size": "%var1 = 3298534883328"
+          "Size": "%var1 = '3298534883328'"
         },
         "Log": [
           "CreationClassName",

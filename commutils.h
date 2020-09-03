@@ -66,7 +66,7 @@ typedef interface idIWbemQualifierSet idIWbemQualifierSet;
 typedef interface idIEnumWbemClassObject idIEnumWbemClassObject;
 
 std::shared_ptr<CHipsCfgObject> InitializeConfig();
-bool InitializeHook(std::shared_ptr<CHipsCfgObject>& hipsConfigObject);
+bool InitializeHook(std::shared_ptr<CHipsCfgObject> hipsConfigObject);
 void UninitialHook();
 
 extern bool g_is_dll_module;

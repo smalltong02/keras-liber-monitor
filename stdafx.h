@@ -8,6 +8,7 @@
 #include "targetver.h"
 
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
+#define NOMINMAX
 // Windows Header Files:
 #include <windows.h>
 #include <string>
@@ -15,7 +16,6 @@
 #include <cassert>
 #include "memleak.h"
 
-#define NTSTATUS ULONG
-
+#define NTSTATUS LONG
 
 // TODO: reference additional headers your program requires here

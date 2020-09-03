@@ -119,5 +119,7 @@ std::vector<char> CStringCommonTestI::SuperLongData()
     data_str = std::vector<char>(generate_len, '\0');
     for (auto& c : data_str)
         c = distribution(generator);
+    data_str[generate_len - 1] = '\0';
+    data_str[generate_len - 2] = '\0';
     return data_str;
 }

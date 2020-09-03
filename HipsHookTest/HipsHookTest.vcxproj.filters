@@ -88,6 +88,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="utils.cpp" />
+    <ClCompile Include="HookMetadataTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HookLexerTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HookSpecialTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />

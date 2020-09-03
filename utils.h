@@ -4,16 +4,667 @@
 #include <WMIUtils.h>
 #include <OCIdl.h>
 #include <vector>
+#include <codecvt>
+#include <variant>
+#include <any>
 
 bool ExtractResource(HMODULE ModuleHandle, TCHAR const * ResourceName,
     TCHAR const * ResourceId, std::vector<BYTE>& ResoureBuffer);
-bool vir_strcpy_s(char* dst, size_t dst_len, const char* src);
-bool vir_wcscpy_s(wchar_t* dst, size_t dst_len, const wchar_t* src);
+bool vir_strcpy_s(char* dst, size_t dst_len, const void* src);
+bool vir_wcscpy_s(wchar_t* dst, size_t dst_len, const void* src);
 std::wstring A2WString(const std::string& str);
 std::string W2AString(const std::wstring& str);
-bool GetValueString(const VARIANT& Value, std::string& ValueString);
-bool SetValueString(const std::string& ValueString, VARIANT& Value);
 VARTYPE ConvertObTypeToVarintType(const std::string& type_name);
+std::any GetVariantValue(const VARIANT& Value);
+bool SetVariantValue(VARIANT& Value, std::any& anyvalue);
+
+template <typename Func>
+inline void getExecutionTime(const std::string& title, Func func) {
+    const auto sta = std::chrono::steady_clock::now();
+    func();
+    const std::chrono::duration<double> dur = std::chrono::steady_clock::now() - sta;
+    std::cout << title << ": " << dur.count() << " sec." << std::endl;
+}
+
+template <class F> struct y_combinator {
+    F f; // the lambda will be stored here
+
+    // a forwarding operator():
+    template <class... Args> decltype(auto) operator()(Args &&... args) const {
+        // we pass ourselves to f, then the arguments.
+        // the lambda should take the first argument as `auto&& recurse` or similar.
+        return f(*this, std::forward<Args>(args)...);
+    }
+};
+// helper function that deduces the type of the lambda:
+template <class F> y_combinator<std::decay_t<F>> make_y_combinator(F &&f) {
+    return { std::forward<F>(f) };
+}
+
+inline std::stringstream OutputAnyValue(const std::any& anyvalue) {
+    std::stringstream ss;
+    if (!anyvalue.has_value()) return ss;
+    if (anyvalue.type() == typeid(DWORD))
+        ss << std::any_cast<DWORD>(anyvalue);
+    else if (anyvalue.type() == typeid(UINT))
+        ss << std::any_cast<UINT>(anyvalue);
+    else if (anyvalue.type() == typeid(INT16))
+        ss << std::any_cast<INT16>(anyvalue);
+    else if (anyvalue.type() == typeid(UINT16))
+        ss << std::any_cast<UINT16>(anyvalue);
+    else if (anyvalue.type() == typeid(SHORT))
+        ss << std::any_cast<SHORT>(anyvalue);
+    else if (anyvalue.type() == typeid(USHORT))
+        ss << std::any_cast<USHORT>(anyvalue);
+    else if (anyvalue.type() == typeid(WORD))
+        ss << std::any_cast<WORD>(anyvalue);
+    else if (anyvalue.type() == typeid(INT))
+        ss << std::any_cast<INT>(anyvalue);
+    else if (anyvalue.type() == typeid(LONG))
+        ss << std::any_cast<LONG>(anyvalue);
+    else if (anyvalue.type() == typeid(BOOL))
+        ss << std::boolalpha << std::any_cast<BOOL>(anyvalue);
+    else if (anyvalue.type() == typeid(BYTE))
+        ss << std::any_cast<BYTE>(anyvalue);
+    else if (anyvalue.type() == typeid(CHAR))
+        ss << std::any_cast<CHAR>(anyvalue);
+    else if (anyvalue.type() == typeid(UCHAR))
+        ss << std::any_cast<UCHAR>(anyvalue);
+    else if (anyvalue.type() == typeid(WCHAR))
+        ss << std::any_cast<WCHAR>(anyvalue);
+    else if (anyvalue.type() == typeid(LONG_PTR))
+        ss << std::any_cast<LONG_PTR>(anyvalue);
+    else if (anyvalue.type() == typeid(ULONG))
+        ss << std::any_cast<ULONG>(anyvalue);
+    else if (anyvalue.type() == typeid(ULONG_PTR))
+        ss << std::any_cast<ULONG_PTR>(anyvalue);
+    else if (anyvalue.type() == typeid(DWORD_PTR))
+        ss << std::any_cast<DWORD_PTR>(anyvalue);
+    else if (anyvalue.type() == typeid(INT64))
+        ss << std::any_cast<INT64>(anyvalue);
+    else if (anyvalue.type() == typeid(UINT64))
+        ss << std::any_cast<UINT64>(anyvalue);
+    else if (anyvalue.type() == typeid(LONGLONG))
+        ss << std::any_cast<LONGLONG>(anyvalue);
+    else if (anyvalue.type() == typeid(ULONGLONG))
+        ss << std::any_cast<ULONGLONG>(anyvalue);
+    else if (anyvalue.type() == typeid(HRESULT))
+        ss << std::any_cast<HRESULT>(anyvalue);
+    else if (anyvalue.type() == typeid(NTSTATUS))
+        ss << std::any_cast<NTSTATUS>(anyvalue);
+    else if (anyvalue.type() == typeid(PVOID)) {
+        PVOID ptr = std::any_cast<PVOID>(anyvalue);
+        if (ptr == nullptr)
+            ss << "nullptr";
+        else
+            ss << std::hex << "0x" << ptr;
+    }
+    else if (anyvalue.type() == typeid(HANDLE)) {
+        HANDLE ptr = std::any_cast<HANDLE>(anyvalue);
+        if (ptr == nullptr)
+            ss << "nullptr";
+        else
+            ss << std::hex << "0x" << ptr;
+    }
+    else if (anyvalue.type() == typeid(HMODULE)) {
+        HMODULE ptr = std::any_cast<HMODULE>(anyvalue);
+        if (ptr == nullptr)
+            ss << "nullptr";
+        else
+            ss << std::hex << "0x" << ptr;
+    }
+    else if (anyvalue.type() == typeid(SC_HANDLE)) {
+        SC_HANDLE ptr = std::any_cast<SC_HANDLE>(anyvalue);
+        if (ptr == nullptr)
+            ss << "nullptr";
+        else
+            ss << std::hex << "0x" << ptr;
+    }
+    else if (anyvalue.type() == typeid(FLOAT))
+        ss << std::showpoint << std::any_cast<FLOAT>(anyvalue);
+    else if (anyvalue.type() == typeid(DOUBLE))
+        ss << std::showpoint << std::any_cast<DOUBLE>(anyvalue);
+    else if (anyvalue.type() == typeid(LARGE_INTEGER))
+        ss << std::any_cast<LARGE_INTEGER>(anyvalue).QuadPart;
+    else if (anyvalue.type() == typeid(ULARGE_INTEGER))
+        ss << std::any_cast<ULARGE_INTEGER>(anyvalue).QuadPart;
+    else if (anyvalue.type() == typeid(std::string))
+        ss << std::any_cast<std::string>(anyvalue);
+    else if (anyvalue.type() == typeid(std::wstring)) {
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        ss << converter.to_bytes(std::any_cast<std::wstring>(anyvalue));
+    }
+    else if (anyvalue.type() == typeid(GUID)) {
+        const std::string hex = "0123456789abcdef";
+        GUID guid = std::any_cast<GUID>(anyvalue);
+        ss << "{";
+        ss << std::hex << guid.Data1;
+        ss << "-";
+        ss << std::hex << guid.Data2;
+        ss << "-";
+        ss << std::hex << guid.Data3;
+        ss << "-";
+        ss << hex[guid.Data4[0] >> 4] << hex[guid.Data4[0] & 0xf] \
+            << hex[guid.Data4[1] >> 4] << hex[guid.Data4[1] & 0xf] \
+            << "-" \
+            << hex[guid.Data4[2] >> 4] << hex[guid.Data4[2] & 0xf] \
+            << hex[guid.Data4[3] >> 4] << hex[guid.Data4[3] & 0xf] \
+            << hex[guid.Data4[4] >> 4] << hex[guid.Data4[4] & 0xf] \
+            << hex[guid.Data4[5] >> 4] << hex[guid.Data4[5] & 0xf] \
+            << hex[guid.Data4[6] >> 4] << hex[guid.Data4[6] & 0xf] \
+            << hex[guid.Data4[7] >> 4] << hex[guid.Data4[7] & 0xf] \
+            << "}";
+    }
+    return ss;
+}
+inline std::any GetAnyValue(const std::any& anyvalue) {
+    if (!anyvalue.has_value()) return {};
+    if (anyvalue.type() == typeid(DWORD))
+        return static_cast<ULONGLONG>(std::any_cast<DWORD>(anyvalue));
+    else if (anyvalue.type() == typeid(UINT))
+        return static_cast<ULONGLONG>(std::any_cast<UINT>(anyvalue));
+    else if (anyvalue.type() == typeid(INT16))
+        return static_cast<ULONGLONG>(std::any_cast<INT16>(anyvalue));
+    else if (anyvalue.type() == typeid(UINT16))
+        return static_cast<ULONGLONG>(std::any_cast<UINT16>(anyvalue));
+    else if (anyvalue.type() == typeid(SHORT))
+        return static_cast<ULONGLONG>(std::any_cast<SHORT>(anyvalue));
+    else if (anyvalue.type() == typeid(USHORT))
+        return static_cast<ULONGLONG>(std::any_cast<USHORT>(anyvalue));
+    else if (anyvalue.type() == typeid(WORD))
+        return static_cast<ULONGLONG>(std::any_cast<WORD>(anyvalue));
+    else if (anyvalue.type() == typeid(INT))
+        return static_cast<ULONGLONG>(std::any_cast<INT>(anyvalue));
+    else if (anyvalue.type() == typeid(LONG))
+        return static_cast<ULONGLONG>(std::any_cast<LONG>(anyvalue));
+    else if (anyvalue.type() == typeid(BOOL))
+        return static_cast<ULONGLONG>(std::any_cast<BOOL>(anyvalue));
+    else if (anyvalue.type() == typeid(BYTE))
+        return static_cast<ULONGLONG>(std::any_cast<BYTE>(anyvalue));
+    else if (anyvalue.type() == typeid(CHAR))
+        return static_cast<ULONGLONG>(std::any_cast<CHAR>(anyvalue));
+    else if (anyvalue.type() == typeid(UCHAR))
+        return static_cast<ULONGLONG>(std::any_cast<UCHAR>(anyvalue));
+    else if (anyvalue.type() == typeid(WCHAR))
+        return static_cast<ULONGLONG>(std::any_cast<WCHAR>(anyvalue));
+    else if (anyvalue.type() == typeid(LONG_PTR))
+        return static_cast<ULONGLONG>(std::any_cast<LONG_PTR>(anyvalue));
+    else if (anyvalue.type() == typeid(ULONG))
+        return static_cast<ULONGLONG>(std::any_cast<ULONG>(anyvalue));
+    else if (anyvalue.type() == typeid(ULONG_PTR))
+        return static_cast<ULONGLONG>(std::any_cast<ULONG_PTR>(anyvalue));
+    else if (anyvalue.type() == typeid(DWORD_PTR))
+        return static_cast<ULONGLONG>(std::any_cast<DWORD_PTR>(anyvalue));
+    else if (anyvalue.type() == typeid(INT64))
+        return static_cast<ULONGLONG>(std::any_cast<INT64>(anyvalue));
+    else if (anyvalue.type() == typeid(UINT64))
+        return static_cast<ULONGLONG>(std::any_cast<UINT64>(anyvalue));
+    else if (anyvalue.type() == typeid(LONGLONG))
+        return static_cast<ULONGLONG>(std::any_cast<LONGLONG>(anyvalue));
+    else if (anyvalue.type() == typeid(ULONGLONG))
+        return static_cast<ULONGLONG>(std::any_cast<ULONGLONG>(anyvalue));
+    else if (anyvalue.type() == typeid(HRESULT))
+        return static_cast<ULONGLONG>(std::any_cast<HRESULT>(anyvalue));
+    else if (anyvalue.type() == typeid(NTSTATUS))
+        return static_cast<ULONGLONG>(std::any_cast<NTSTATUS>(anyvalue));
+    else if (anyvalue.type() == typeid(PVOID))
+        return ULONGLONG(std::any_cast<PVOID>(anyvalue));
+    else if (anyvalue.type() == typeid(HANDLE))
+        return reinterpret_cast<ULONGLONG>(std::any_cast<HANDLE>(anyvalue));
+    else if (anyvalue.type() == typeid(HMODULE))
+        return reinterpret_cast<ULONGLONG>(std::any_cast<HMODULE>(anyvalue));
+    else if (anyvalue.type() == typeid(SC_HANDLE))
+        return reinterpret_cast<ULONGLONG>(std::any_cast<SC_HANDLE>(anyvalue));
+    if (anyvalue.type() == typeid(FLOAT))
+        return static_cast<DOUBLE>(std::any_cast<FLOAT>(anyvalue));
+    else if (anyvalue.type() == typeid(DOUBLE))
+        return static_cast<DOUBLE>(std::any_cast<DOUBLE>(anyvalue));
+    if (anyvalue.type() == typeid(LARGE_INTEGER))
+        return static_cast<ULONGLONG>(std::any_cast<LARGE_INTEGER>(anyvalue).QuadPart);
+    if (anyvalue.type() == typeid(ULARGE_INTEGER))
+        return static_cast<ULONGLONG>(std::any_cast<ULARGE_INTEGER>(anyvalue).QuadPart);
+    if (anyvalue.type() == typeid(std::string))
+        return std::any_cast<std::string>(anyvalue);
+    if (anyvalue.type() == typeid(std::wstring))
+    {
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        return converter.to_bytes(std::any_cast<std::wstring>(anyvalue));
+    }
+    return {};
+}
+template <typename Ty>
+inline Ty ConvertAnyType(const std::any& anyvalue) {
+    if constexpr (std::is_integral_v<Ty>) {
+        if (!anyvalue.has_value()) return static_cast<Ty>(-1);
+        if (anyvalue.type() == typeid(DWORD))
+            return static_cast<Ty>(std::any_cast<DWORD>(anyvalue));
+        else if (anyvalue.type() == typeid(UINT))
+            return static_cast<Ty>(std::any_cast<UINT>(anyvalue));
+        else if (anyvalue.type() == typeid(INT16))
+            return static_cast<Ty>(std::any_cast<INT16>(anyvalue));
+        else if (anyvalue.type() == typeid(UINT16))
+            return static_cast<Ty>(std::any_cast<UINT16>(anyvalue));
+        else if (anyvalue.type() == typeid(SHORT))
+            return static_cast<Ty>(std::any_cast<SHORT>(anyvalue));
+        else if (anyvalue.type() == typeid(USHORT))
+            return static_cast<Ty>(std::any_cast<USHORT>(anyvalue));
+        else if (anyvalue.type() == typeid(WORD))
+            return static_cast<Ty>(std::any_cast<WORD>(anyvalue));
+        else if (anyvalue.type() == typeid(INT))
+            return static_cast<Ty>(std::any_cast<INT>(anyvalue));
+        else if (anyvalue.type() == typeid(LONG))
+            return static_cast<Ty>(std::any_cast<LONG>(anyvalue));
+        else if (anyvalue.type() == typeid(BOOL))
+            return static_cast<Ty>(std::any_cast<BOOL>(anyvalue));
+        else if (anyvalue.type() == typeid(BYTE))
+            return static_cast<Ty>(std::any_cast<BYTE>(anyvalue));
+        else if (anyvalue.type() == typeid(CHAR))
+            return static_cast<Ty>(std::any_cast<CHAR>(anyvalue));
+        else if (anyvalue.type() == typeid(UCHAR))
+            return static_cast<Ty>(std::any_cast<UCHAR>(anyvalue));
+        else if (anyvalue.type() == typeid(WCHAR))
+            return static_cast<Ty>(std::any_cast<WCHAR>(anyvalue));
+        else if (anyvalue.type() == typeid(LONG_PTR))
+            return static_cast<Ty>(std::any_cast<LONG_PTR>(anyvalue));
+        else if (anyvalue.type() == typeid(ULONG))
+            return static_cast<Ty>(std::any_cast<ULONG>(anyvalue));
+        else if (anyvalue.type() == typeid(ULONG_PTR))
+            return static_cast<Ty>(std::any_cast<ULONG_PTR>(anyvalue));
+        else if (anyvalue.type() == typeid(DWORD_PTR))
+            return static_cast<Ty>(std::any_cast<DWORD_PTR>(anyvalue));
+        else if (anyvalue.type() == typeid(INT64))
+            return static_cast<Ty>(std::any_cast<INT64>(anyvalue));
+        else if (anyvalue.type() == typeid(UINT64))
+            return static_cast<Ty>(std::any_cast<UINT64>(anyvalue));
+        else if (anyvalue.type() == typeid(LONGLONG))
+            return static_cast<Ty>(std::any_cast<LONGLONG>(anyvalue));
+        else if (anyvalue.type() == typeid(ULONGLONG))
+            return static_cast<Ty>(std::any_cast<ULONGLONG>(anyvalue));
+        else if (anyvalue.type() == typeid(HRESULT))
+            return static_cast<Ty>(std::any_cast<HRESULT>(anyvalue));
+        else if (anyvalue.type() == typeid(NTSTATUS))
+            return static_cast<Ty>(std::any_cast<NTSTATUS>(anyvalue));
+        return static_cast<Ty>(-1);
+    } 
+    else if constexpr (std::is_pointer_v<Ty>) {
+        if (!anyvalue.has_value()) return static_cast<Ty>(nullptr);
+        if (anyvalue.type() == typeid(PVOID))
+            return static_cast<Ty>(std::any_cast<PVOID>(anyvalue));
+        else if (anyvalue.type() == typeid(HANDLE))
+            return reinterpret_cast<Ty>(std::any_cast<HANDLE>(anyvalue));
+        else if (anyvalue.type() == typeid(HMODULE))
+            return reinterpret_cast<Ty>(std::any_cast<HMODULE>(anyvalue));
+        else if (anyvalue.type() == typeid(SC_HANDLE))
+            return reinterpret_cast<Ty>(std::any_cast<SC_HANDLE>(anyvalue));
+        return static_cast<Ty>(nullptr);
+    }
+    else if constexpr (std::is_floating_point_v<Ty>) {
+        if (!anyvalue.has_value()) return static_cast<Ty>(-1.0);
+        if (anyvalue.type() == typeid(FLOAT))
+            return static_cast<Ty>(std::any_cast<FLOAT>(anyvalue));
+        else if (anyvalue.type() == typeid(DOUBLE))
+            return static_cast<Ty>(std::any_cast<DOUBLE>(anyvalue));
+        return static_cast<Ty>(-1.0);
+    }
+}
+template <>
+inline LARGE_INTEGER ConvertAnyType(const std::any& anyvalue) {
+    if (!anyvalue.has_value()) return LARGE_INTEGER{};
+    if (anyvalue.type() == typeid(LARGE_INTEGER))
+        return std::any_cast<LARGE_INTEGER>(anyvalue);
+    return LARGE_INTEGER{};
+}
+template <>
+inline ULARGE_INTEGER ConvertAnyType(const std::any& anyvalue) {
+    if (!anyvalue.has_value()) return ULARGE_INTEGER{};
+    if (anyvalue.type() == typeid(ULARGE_INTEGER))
+        return std::any_cast<ULARGE_INTEGER>(anyvalue);
+    return ULARGE_INTEGER{};
+}
+template <>
+inline std::string ConvertAnyType(const std::any& anyvalue) {
+    if (!anyvalue.has_value()) return static_cast<char*>(nullptr);
+    if (anyvalue.type() == typeid(std::string))
+        return std::any_cast<std::string>(anyvalue);
+    else if (anyvalue.type() == typeid(std::wstring))
+    {
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        return converter.to_bytes(std::any_cast<std::wstring>(anyvalue));
+    }
+    return static_cast<char*>(nullptr);
+}
+template <>
+inline std::wstring ConvertAnyType(const std::any& anyvalue) {
+    if (!anyvalue.has_value()) return static_cast<wchar_t*>(nullptr);
+    if (anyvalue.type() == typeid(std::wstring))
+        return std::any_cast<std::wstring>(anyvalue);
+    else if (anyvalue.type() == typeid(std::string))
+    {
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        return converter.from_bytes(std::any_cast<std::string>(anyvalue));
+    }
+    return static_cast<wchar_t*>(nullptr);
+}
+template <typename Ty>
+inline bool AssignAnyType(std::any& anyvalue, Ty value) {
+    if constexpr (std::is_integral_v<Ty>) {
+        if (anyvalue.type() == typeid(DWORD))
+        {
+            anyvalue = static_cast<DWORD>(value); 
+            return true;
+        }
+        else if (anyvalue.type() == typeid(UINT))
+        {
+            anyvalue = static_cast<UINT>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(INT16))
+        {
+            anyvalue = static_cast<INT16>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(UINT16))
+        {
+            anyvalue = static_cast<UINT16>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(SHORT))
+        {
+            anyvalue = static_cast<SHORT>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(USHORT))
+        {
+            anyvalue = static_cast<USHORT>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(WORD))
+        {
+            anyvalue = static_cast<WORD>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(INT))
+        {
+            anyvalue = static_cast<INT>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(LONG))
+        {
+            anyvalue = static_cast<LONG>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(BOOL))
+        {
+            anyvalue = static_cast<BOOL>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(BYTE))
+        {
+            anyvalue = static_cast<BYTE>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(CHAR))
+        {
+            anyvalue = static_cast<CHAR>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(UCHAR))
+        {
+            anyvalue = static_cast<UCHAR>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(WCHAR))
+        {
+            anyvalue = static_cast<WCHAR>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(LONG_PTR))
+        {
+            anyvalue = static_cast<LONG_PTR>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(ULONG))
+        {
+            anyvalue = static_cast<ULONG>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(ULONG_PTR))
+        {
+            anyvalue = static_cast<ULONG_PTR>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(DWORD_PTR))
+        {
+            anyvalue = static_cast<DWORD_PTR>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(INT64))
+        {
+            anyvalue = static_cast<INT64>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(UINT64))
+        {
+            anyvalue = static_cast<UINT64>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(LONGLONG))
+        {
+            anyvalue = static_cast<LONGLONG>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(ULONGLONG))
+        {
+            anyvalue = static_cast<ULONGLONG>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(HRESULT))
+        {
+            anyvalue = static_cast<HRESULT>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(NTSTATUS))
+        {
+            anyvalue = static_cast<NTSTATUS>(value);
+            return true;
+        }
+    }
+    else if constexpr (std::is_pointer_v<Ty>) {
+        if (anyvalue.type() == typeid(PVOID))
+        {
+            anyvalue = reinterpret_cast<PVOID>(value);
+            return true;
+        }
+        else if(anyvalue.type() == typeid(HANDLE))
+        {
+            anyvalue = reinterpret_cast<HANDLE>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(HMODULE))
+        {
+            anyvalue = reinterpret_cast<HMODULE>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(SC_HANDLE))
+        {
+            anyvalue = reinterpret_cast<SC_HANDLE>(value);
+            return true;
+        }
+    }
+    else if constexpr (std::is_floating_point_v<Ty>) {
+        if (anyvalue.type() == typeid(FLOAT))
+        {
+            anyvalue = static_cast<FLOAT>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(DOUBLE))
+        {
+            anyvalue = static_cast<DOUBLE>(value);
+            return true;
+        }
+    }
+    return false;
+}
+template <>
+inline bool AssignAnyType(std::any& anyvalue, char* value) {
+    if (anyvalue.type() == typeid(std::string))
+    {
+        anyvalue = std::string(value);
+        return true;
+    }
+    return false;
+}
+template <>
+inline bool AssignAnyType(std::any& anyvalue, const char* value) {
+    if (anyvalue.type() == typeid(std::string))
+    {
+        anyvalue = std::string(value);
+        return true;
+    }
+    return false;
+}
+template <>
+inline bool AssignAnyType(std::any& anyvalue, wchar_t* value) {
+    if (anyvalue.type() == typeid(std::wstring))
+    {
+        anyvalue = std::wstring(static_cast<wchar_t*>(value));
+        return true;
+    }
+    return false;
+}
+template <>
+inline bool AssignAnyType(std::any& anyvalue, const wchar_t* value) {
+    if (anyvalue.type() == typeid(std::wstring))
+    {
+        anyvalue = std::wstring(value);
+        return true;
+    }
+    return false;
+}
+template <>
+inline bool AssignAnyType(std::any& anyvalue, std::any value) {
+    if (!value.has_value()) return false;
+    if (value.type() == typeid(ULONGLONG)) {
+        return AssignAnyType(anyvalue, std::any_cast<ULONGLONG>(value));
+    }
+    else if (value.type() == typeid(DOUBLE)) {
+        return AssignAnyType(anyvalue, std::any_cast<DOUBLE>(value));
+    }
+    else if (value.type() == typeid(std::string)) {
+        return AssignAnyType(anyvalue, std::any_cast<std::string>(value).c_str());
+    }
+    else if (value.type() == typeid(DWORD)) {
+        return AssignAnyType(anyvalue, std::any_cast<DWORD>(value));
+    }
+    else if (value.type() == typeid(UINT)) {
+        return AssignAnyType(anyvalue, std::any_cast<UINT>(value));
+    }
+    else if (value.type() == typeid(INT16)) {
+        return AssignAnyType(anyvalue, std::any_cast<INT16>(value));
+    }
+    else if (value.type() == typeid(UINT16)) {
+        return AssignAnyType(anyvalue, std::any_cast<UINT16>(value));
+    }
+    else if (value.type() == typeid(SHORT)) {
+        return AssignAnyType(anyvalue, std::any_cast<SHORT>(value));
+    }
+    else if (value.type() == typeid(USHORT)) {
+        return AssignAnyType(anyvalue, std::any_cast<USHORT>(value));
+    }
+    else if (value.type() == typeid(WORD)) {
+        return AssignAnyType(anyvalue, std::any_cast<WORD>(value));
+    }
+    else if (value.type() == typeid(INT)) {
+        return AssignAnyType(anyvalue, std::any_cast<INT>(value));
+    }
+    else if (value.type() == typeid(LONG)) {
+        return AssignAnyType(anyvalue, std::any_cast<LONG>(value));
+    }
+    else if (value.type() == typeid(BOOL)) {
+        return AssignAnyType(anyvalue, std::any_cast<BOOL>(value));
+    }
+    else if (value.type() == typeid(BYTE)) {
+        return AssignAnyType(anyvalue, std::any_cast<BYTE>(value));
+    }
+    else if (value.type() == typeid(CHAR)) {
+        return AssignAnyType(anyvalue, std::any_cast<CHAR>(value));
+    }
+    else if (value.type() == typeid(UCHAR)) {
+        return AssignAnyType(anyvalue, std::any_cast<UCHAR>(value));
+    }
+    else if (value.type() == typeid(WCHAR)) {
+        return AssignAnyType(anyvalue, std::any_cast<WCHAR>(value));
+    }
+    else if (value.type() == typeid(LONG_PTR)) {
+        return AssignAnyType(anyvalue, std::any_cast<LONG_PTR>(value));
+    }
+    else if (value.type() == typeid(ULONG)) {
+        return AssignAnyType(anyvalue, std::any_cast<ULONG>(value));
+    }
+    else if (value.type() == typeid(ULONG_PTR)) {
+        return AssignAnyType(anyvalue, std::any_cast<ULONG_PTR>(value));
+    }
+    else if (value.type() == typeid(DWORD_PTR)) {
+        return AssignAnyType(anyvalue, std::any_cast<DWORD_PTR>(value));
+    }
+    else if (value.type() == typeid(INT64)) {
+        return AssignAnyType(anyvalue, std::any_cast<INT64>(value));
+    }
+    else if (value.type() == typeid(UINT64)) {
+        return AssignAnyType(anyvalue, std::any_cast<UINT64>(value));
+    }
+    else if (value.type() == typeid(LONGLONG)) {
+        return AssignAnyType(anyvalue, std::any_cast<LONGLONG>(value));
+    }
+    else if (value.type() == typeid(HRESULT)) {
+        return AssignAnyType(anyvalue, std::any_cast<HRESULT>(value));
+    }
+    else if (value.type() == typeid(NTSTATUS)) {
+        return AssignAnyType(anyvalue, std::any_cast<NTSTATUS>(value));
+    }
+    else if (value.type() == typeid(PVOID)) {
+        return AssignAnyType(anyvalue, std::any_cast<PVOID>(value));
+    }
+    else if (value.type() == typeid(HANDLE)) {
+        return AssignAnyType(anyvalue, std::any_cast<HANDLE>(value));
+    }
+    else if (value.type() == typeid(HMODULE)) {
+        return AssignAnyType(anyvalue, std::any_cast<HMODULE>(value));
+    }
+    else if (value.type() == typeid(SC_HANDLE)) {
+        return AssignAnyType(anyvalue, std::any_cast<SC_HANDLE>(value));
+    }
+    else if (value.type() == typeid(FLOAT)) {
+        return AssignAnyType(anyvalue, std::any_cast<FLOAT>(value));
+    }
+    else if (value.type() == typeid(LARGE_INTEGER)) {
+        return AssignAnyType(anyvalue, std::any_cast<LARGE_INTEGER>(value));
+    }
+    else if (value.type() == typeid(ULARGE_INTEGER)) {
+        return AssignAnyType(anyvalue, std::any_cast<ULARGE_INTEGER>(value));
+    }
+    else if (value.type() == typeid(std::wstring)) {
+        return AssignAnyType(anyvalue, std::any_cast<std::wstring>(value));
+    }
+    else if (value.type() == typeid(GUID)) {
+        return AssignAnyType(anyvalue, std::any_cast<GUID>(value));
+    }
+    return false;
+}
+
+template <typename In, typename Out, typename T, typename F>
+inline In split_algorithm(In it, In end_it, Out out_it, T split_val,
+    F bin_func)
+{
+    while (it != end_it) {
+        auto slice_end(find(it, end_it, split_val));
+        *out_it++ = bin_func(it, slice_end);
+
+        if (slice_end == end_it) { return end_it; }
+        it = next(slice_end);
+    }
+    return it;
+}
 
 #ifdef _X86_
 #define TLS_TEB 0x18

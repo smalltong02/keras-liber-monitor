@@ -2,96 +2,6 @@
   "Category": "System",
   "Calling convention": "WINAPI",
 
-  "LoadLibraryA": {
-    "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
-    },
-
-    "Parameters": {
-      "lpLibFileName": "LPCSTR"
-    },
-
-    "Ensure": [
-      "lpLibFileName"
-    ],
-
-    "PreLog": [
-      "lpLibFileName"
-    ]
-  },
-
-  "LoadLibraryW": {
-    "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
-    },
-
-    "Parameters": {
-      "lpLibFileName": "LPCWSTR"
-    },
-
-    "Ensure": [
-      "lpLibFileName"
-    ],
-
-    "PreLog": [
-      "lpLibFileName"
-    ]
-  },
-
-  "LoadLibraryExA": {
-    "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
-    },
-
-    "Parameters": {
-      "lpLibFileName": "LPCSTR",
-      "hFile": "HANDLE",
-      "dwFlags": "LOADFLAGS"
-    },
-
-    "Ensure": [
-      "lpLibFileName"
-    ],
-
-    "PreLog": [
-      "lpLibFileName",
-      "dwFlags"
-    ]
-  },
-
-  "LoadLibraryExW": {
-    "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
-    },
-
-    "Parameters": {
-      "lpLibFileName": "LPCWSTR",
-      "hFile": "HANDLE",
-      "dwFlags": "LOADFLAGS"
-    },
-
-    "Ensure": [
-      "lpLibFileName"
-    ],
-
-    "PreLog": [
-      "lpLibFileName",
-      "dwFlags"
-    ]
-  },
-
   "ExitWindowsEx": {
     "Signature": {
       "Library": "user32.dll",
@@ -141,12 +51,11 @@
     "PostCheck": {
       "0": {
         "Check": {
-          "lpDirectoryName": "(%var0 == 'nullptr' || %var0 =~ '^C:.*')",
-          "*lpTotalNumberOfBytes": "(%var1 <= 64424509440)"
+          "lpDirectoryName|*lpTotalNumberOfBytes": "(%var0 == 'nullptr' || %var0 =~ '^(?i)c\\:.*$') && (%var1<=64*1024*1024*1024)"
         },
 
         "Modify": {
-          "*lpTotalNumberOfBytes": "%var2 = 1099511627776"
+          "*lpTotalNumberOfBytes": "%var2=1000*1024*1024*1024"
         }
       }
     }
@@ -169,12 +78,11 @@
     "PostCheck": {
       "0": {
         "Check": {
-          "lpDirectoryName": "(%var0 == 'nullptr' || %var0 =~ '^C:.*')",
-          "*lpTotalNumberOfBytes": "(%var1 <= 64424509440)"
+          "lpDirectoryName|*lpTotalNumberOfBytes": "(%var0 == 'nullptr' || %var0 =~ '^(?i)c\\:.*$') && (%var1<=64*1024*1024*1024)"
         },
 
         "Modify": {
-          "*lpTotalNumberOfBytes": "%var2 = 1099511627776"
+          "*lpTotalNumberOfBytes": "%var2=1000*1024*1024*1024"
         }
       }
     }
@@ -360,6 +268,72 @@
 
         "Modify": {
           "SystemInformation->NumberOfProcessors": "%var2 = 2"
+        }
+      }
+    }
+  },
+
+  "GetSystemInfo": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "VOID",
+      "Feature": "P64"
+    },
+
+    "Parameters": {
+      "lpSystemInfo": "LPSYSTEM_INFO"
+    },
+
+    "Ensure": [
+      "lpSystemInfo"
+    ],
+
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "lpSystemInfo->dwNumberOfProcessors": "%var0 < 9"
+        },
+
+        "Modify": {
+          "lpSystemInfo->dwNumberOfProcessors": "%var1 = 10"
+        }
+      }
+    }
+  },
+
+  "EnumProcesses": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "BOOL",
+      "Feature": "P64"
+    },
+
+    "Parameters": {
+      "lpidProcess": "DWORD*",
+      "cb": "DWORD",
+      "lpcbNeeded": "LPDWORD"
+    },
+
+    "Ensure": [
+      "lpidProcess",
+      "lpcbNeeded"
+    ],
+
+    "PostCheck": {
+      "0": {
+        "CCode": {
+          "main": [
+            "if(lpcbNeeded != 'nullptr' && *lpcbNeeded > sizeof(DWORD)) {",
+            "DWORD cProcesses = *lpcbNeeded / sizeof(DWORD)",
+            "DWORD i = 0",
+            "while(i < cProcesses) {",
+            "if(lpidProcess[i] != 0) {",
+            "LogPrint(i , lpidProcess[i])",
+            "}",
+            "i = i + 1",
+            "}",
+            "}"
+          ]
         }
       }
     }

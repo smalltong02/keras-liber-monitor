@@ -123,7 +123,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -149,7 +149,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_DEBUGGER;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -175,7 +175,7 @@
       <PreprocessorDefinitions>_DEBUG;_LIB;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -201,7 +201,7 @@
       <PreprocessorDefinitions>_DEBUG;_DEBUGGER;_LIB;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -229,7 +229,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4244;4290;4800;4200;4214;4018;4996</DisableSpecificWarnings>
@@ -262,7 +262,7 @@
       <PreprocessorDefinitions>NDEBUG;_LIB;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -320,6 +320,29 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugger|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="g-re2\re2\bitstate.cc" />
+    <ClCompile Include="g-re2\re2\compile.cc" />
+    <ClCompile Include="g-re2\re2\dfa.cc" />
+    <ClCompile Include="g-re2\re2\filtered_re2.cc" />
+    <ClCompile Include="g-re2\re2\mimics_pcre.cc" />
+    <ClCompile Include="g-re2\re2\nfa.cc" />
+    <ClCompile Include="g-re2\re2\onepass.cc" />
+    <ClCompile Include="g-re2\re2\parse.cc" />
+    <ClCompile Include="g-re2\re2\perl_groups.cc" />
+    <ClCompile Include="g-re2\re2\prefilter.cc" />
+    <ClCompile Include="g-re2\re2\prefilter_tree.cc" />
+    <ClCompile Include="g-re2\re2\prog.cc" />
+    <ClCompile Include="g-re2\re2\re2.cc" />
+    <ClCompile Include="g-re2\re2\regexp.cc" />
+    <ClCompile Include="g-re2\re2\set.cc" />
+    <ClCompile Include="g-re2\re2\simplify.cc" />
+    <ClCompile Include="g-re2\re2\stringpiece.cc" />
+    <ClCompile Include="g-re2\re2\tostring.cc" />
+    <ClCompile Include="g-re2\re2\unicode_casefold.cc" />
+    <ClCompile Include="g-re2\re2\unicode_groups.cc" />
+    <ClCompile Include="g-re2\util\pcre.cc" />
+    <ClCompile Include="g-re2\util\rune.cc" />
+    <ClCompile Include="g-re2\util\strutil.cc" />
     <ClCompile Include="HipsCfgObject.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugger|Win32'">NotUsing</PrecompiledHeader>
@@ -387,14 +410,40 @@
     <ClInclude Include="drivermgr.h" />
     <ClInclude Include="ExceptionThrow.h" />
     <ClInclude Include="FlagsObject.h" />
+    <ClInclude Include="g-re2\re2\bitmap256.h" />
+    <ClInclude Include="g-re2\re2\filtered_re2.h" />
+    <ClInclude Include="g-re2\re2\pod_array.h" />
+    <ClInclude Include="g-re2\re2\prefilter.h" />
+    <ClInclude Include="g-re2\re2\prefilter_tree.h" />
+    <ClInclude Include="g-re2\re2\prog.h" />
+    <ClInclude Include="g-re2\re2\re2.h" />
+    <ClInclude Include="g-re2\re2\regexp.h" />
+    <ClInclude Include="g-re2\re2\set.h" />
+    <ClInclude Include="g-re2\re2\sparse_array.h" />
+    <ClInclude Include="g-re2\re2\sparse_set.h" />
+    <ClInclude Include="g-re2\re2\stringpiece.h" />
+    <ClInclude Include="g-re2\re2\unicode_casefold.h" />
+    <ClInclude Include="g-re2\re2\unicode_groups.h" />
+    <ClInclude Include="g-re2\re2\walker-inl.h" />
+    <ClInclude Include="g-re2\util\flags.h" />
+    <ClInclude Include="g-re2\util\logging.h" />
+    <ClInclude Include="g-re2\util\malloc_counter.h" />
+    <ClInclude Include="g-re2\util\mix.h" />
+    <ClInclude Include="g-re2\util\mutex.h" />
+    <ClInclude Include="g-re2\util\pcre.h" />
+    <ClInclude Include="g-re2\util\strutil.h" />
+    <ClInclude Include="g-re2\util\utf.h" />
+    <ClInclude Include="g-re2\util\util.h" />
     <ClInclude Include="HipsCfgObject.h" />
     <ClInclude Include="hookimpl.h" />
     <ClInclude Include="HookImplementObject.h" />
     <ClInclude Include="LogObject.h" />
     <ClInclude Include="memleak.h" />
     <ClInclude Include="MetadataTypeImpl.h" />
+    <ClInclude Include="ntapi.h" />
     <ClInclude Include="ParsingImpl.h" />
     <ClInclude Include="R3LogObject.h" />
+    <ClInclude Include="PackageWrapper.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SafePtr.h" />
     <ClInclude Include="SigsObject.h" />
@@ -426,6 +475,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="bson\LICENSE" />
+    <None Include="g-re2\re2\make_perl_groups.pl" />
+    <None Include="g-re2\re2\make_unicode_casefold.py" />
+    <None Include="g-re2\re2\make_unicode_groups.py" />
+    <None Include="g-re2\re2\unicode.py" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

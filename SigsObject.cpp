@@ -7,39 +7,39 @@
 #include "rapidjson\document.h"
 
 namespace cchips {
-
-    CFunction::_call_convention CSigsCfgObject::GetCallConvention(const std::string& str_call) const
+    CFunction::_call_convention CSigsCfgObject::GetCallConvention(const std::string_view& str_call) const
     {
-        if (_stricmp(str_call.c_str(), CCS_WINAPI) == 0 ||
-            _stricmp(str_call.c_str(), CCS_STDCALL) == 0)
+        std::string str(str_call);
+        if (_stricmp(str.c_str(), CCS_WINAPI) == 0 ||
+            _stricmp(str.c_str(), CCS_STDCALL) == 0)
             return CFunction::call_stdcall;
-        else if (_stricmp(str_call.c_str(), CCS_CDECL) == 0)
+        else if (_stricmp(str.c_str(), CCS_CDECL) == 0)
             return CFunction::call_cdecl;
-        else if (_stricmp(str_call.c_str(), CCS_FASTCALL) == 0)
+        else if (_stricmp(str.c_str(), CCS_FASTCALL) == 0)
             return CFunction::call_fastcall;
-        else if (_stricmp(str_call.c_str(), CCS_VECTORCALL) == 0)
+        else if (_stricmp(str.c_str(), CCS_VECTORCALL) == 0)
             return CFunction::call_vectorcall;
         return CFunction::call_unknown;
     }
 
-    bool CSigsCfgObject::Initialize(const std::string& json_str)
+    bool CSigsCfgObject::Initialize(const std::string_view& json_str)
     {
         if (json_str.length() == 0) return false;
 
-        rapidjson::Document document;
-        document.Parse(json_str.c_str());
-        if (!document.IsObject() || document.IsNull())
-        {
+        CRapidJsonWrapper document(json_str);
+        if (!document.IsValid()) {
             //config data is incorrect.
             error_log("CSigsConfigObject::Initialize failed!");
             return false;
         }
 
         CFunction::_call_convention call_conv = CFunction::call_unknown;
-        if (document.HasMember(SI_CATEGORY) && document[SI_CATEGORY].IsString())
-            m_category_name = document[SI_CATEGORY].GetString();
-        if (document.HasMember(SI_CALL) && document[SI_CALL].IsString())
-            call_conv = GetCallConvention(document[SI_CALL].GetString());
+        if (auto anyvalue(document.GetMember(std::vector<std::string>{SI_CATEGORY}));
+            anyvalue.has_value() && anyvalue.type() == typeid(std::string_view))
+            m_category_name = std::any_cast<std::string_view>(anyvalue);
+        if (auto anyvalue(document.GetMember(std::vector<std::string>{SI_CALL}));
+            anyvalue.has_value() && anyvalue.type() == typeid(std::string_view))
+            call_conv = GetCallConvention(std::any_cast<std::string_view>(anyvalue));
 
         if (call_conv == CFunction::call_unknown)
         {
@@ -47,15 +47,11 @@ namespace cchips {
             return false;
         }
 
-        for (const auto& api_docment : document.GetObject())
+        for (const auto& api_docment : document)
         {
-            if (_stricmp(api_docment.name.GetString(), SI_CATEGORY) == 0)
-                continue;
-            else if (_stricmp(api_docment.name.GetString(), SI_CALL) == 0)
-                continue;
-            else
+            if (api_docment.value.IsObject())
             {
-                if (!InitializeFunction(call_conv, api_docment.name.GetString(), api_docment.value))
+                if (!InitializeFunction(call_conv, api_docment.name.GetString(), api_docment.value.GetObject(), g_impl_object))
                 {
                     error_log("CSigsConfigObject::Initialize InitializeFunction({}) failed!", api_docment.name.GetString());
                     return false;
@@ -66,372 +62,345 @@ namespace cchips {
         return true;
     }
 
-    bool CSigsCfgObject::InitializePrototype(const std::shared_ptr<CFunction>& func_object, const rapidjson::Value& Object)
+    bool CSigsCfgObject::InitializePrototype(const std::shared_ptr<CFunction>& func_object, const ConstRapidObject& Object)
     {
         if (!func_object) return false;
         // set signature information
-        if (!Object.HasMember(SI_SIGNATURE) || !Object[SI_SIGNATURE].IsObject())
-        {
-            error_log("CSigsConfigObject::InitializePrototype the signature not a object!");
-            return false;
-        }
 
-        auto& sign_object = Object[SI_SIGNATURE].GetObject();
-        if (!sign_object.HasMember(SI_LIBRARY) || !sign_object[SI_LIBRARY].IsString())
+        if (auto anysigs(CRapidJsonWrapper::GetMember(SI_SIGNATURE, Object));
+            anysigs.has_value() && anysigs.type() == typeid(ConstRapidObject))
         {
-            error_log("CSigsConfigObject::InitializePrototype the library not a object!");
-            return false;
-        }
-
-        func_object->SetLibrary(sign_object[SI_LIBRARY].GetString());
-
-        if (!sign_object.HasMember(SI_RETURN) || !sign_object[SI_RETURN].GetString())
-        {
-            error_log("CSigsConfigObject::InitializePrototype the return not a object!");
-            return false;
-        }
-
-        std::string return_iden = sign_object[SI_RETURN].GetString();
-        std::shared_ptr<CObObject> return_ptr = func_object->GetTyIdentifier(return_iden);
-        if (!return_ptr)
-        {
-            error_log("CSigsConfigObject::InitializePrototype function({}) has invalid return type({})!", func_object->GetName(), return_iden);
-            return false;
-        }
-        if (!func_object->AddReturn(IDENPAIR(SI_RETURN, return_ptr)))
-        {
-            error_log("CSigsConfigObject::InitializePrototype ({})AddReturn({}) failed!", func_object->GetName(), return_iden);
-            return false;
-        }
-        if (sign_object.HasMember(SI_SPECIAL) && sign_object[SI_SPECIAL].IsBool())
-        {
-            func_object->SetSpecial(sign_object[SI_SPECIAL].GetBool());
-        }
-        if (sign_object.HasMember(SI_FEATURE) && sign_object[SI_FEATURE].IsString())
-        {
-            func_object->SetFeature(sign_object[SI_FEATURE].GetString());
-        }
-        // set parameter information
-        if (Object.HasMember(SI_PARAMETERS) && Object[SI_PARAMETERS].IsObject())
-        {
-            for (auto& param_object : Object[SI_PARAMETERS].GetObject())
+            if (auto anylib(CRapidJsonWrapper::GetMember(std::vector<std::string>{ SI_SIGNATURE, SI_LIBRARY }, Object));
+                anylib.has_value() && anylib.type() == typeid(std::string_view))
             {
-                if (param_object.value.IsString())
+                func_object->SetLibrary(std::any_cast<std::string_view>(anylib));
+            }
+            else {
+                error_log("CSigsConfigObject::InitializePrototype the library is not correct!");
+                return false;
+            }
+            if (auto anyreturn(CRapidJsonWrapper::GetMember(std::vector<std::string>{ SI_SIGNATURE, SI_RETURN }, Object));
+                anyreturn.has_value() && anyreturn.type() == typeid(std::string_view))
+            {
+                std::shared_ptr<CObObject> return_ptr = CLexerTy::GetInstance().GetIdentifier(std::any_cast<std::string_view>(anyreturn));
+                if(!return_ptr)
                 {
-                    std::string param_str = param_object.name.GetString();
-                    std::string param_iden = param_object.value.GetString();
-                    std::shared_ptr<CObObject> param_ptr = func_object->GetTyIdentifier(param_iden);
-                    if (!param_ptr)
-                    {
-                        error_log("CSigsConfigObject::InitializePrototype the parameter {}({}) is a invalid parameter!", param_str, param_iden);
-                        return false;
-                    }
-                    if (!func_object->AddArgument(IDENPAIR(param_str, param_ptr)))
-                    {
-                        error_log("CSigsConfigObject::InitializePrototype the function {} add parameter {} failed!", param_str, param_iden);
-                        return false;
-                    }
+                    error_log("CSigsConfigObject::InitializePrototype function({}) has invalid return type({})!", func_object->GetName(), std::string(std::any_cast<std::string_view>(anyreturn)));
+                    return false;
                 }
-                else
+                if (!func_object->AddReturn(IDENPAIR(SI_RETURN, return_ptr)))
                 {
-                    error_log("CSigsConfigObject::InitializePrototype the param {} not a string!", param_object.name.GetString());
+                    error_log("CSigsConfigObject::InitializePrototype ({})AddReturn({}) failed!", func_object->GetName(), std::string(std::any_cast<std::string_view>(anyreturn)));
                     return false;
                 }
             }
+            else {
+                error_log("CSigsConfigObject::InitializePrototype the return type not correct!");
+                return false;
+            }
+            if (auto anyspecial(CRapidJsonWrapper::GetMember(std::vector<std::string>{ SI_SIGNATURE, SI_SPECIAL }, Object));
+                anyspecial.has_value() && anyspecial.type() == typeid(bool))
+            {
+                func_object->SetSpecial(std::any_cast<bool>(anyspecial));
+            }
+            if (auto anyfeature(CRapidJsonWrapper::GetMember(std::vector<std::string>{ SI_SIGNATURE, SI_FEATURE }, Object));
+                anyfeature.has_value() && anyfeature.type() == typeid(std::string_view))
+            {
+                func_object->SetFeature(std::any_cast<std::string_view>(anyfeature));
+            }
+            // set class information
+            if (auto anyclass(CRapidJsonWrapper::GetMember(SI_CLASS, Object));
+                anyclass.has_value() && anyclass.type() == typeid(ConstRapidObject))
+            {
+                unsigned int class_vtblidx = 0;
+                CPrototype::_class_type class_type;
+                std::string_view class_name;
+                if (auto anytype(CRapidJsonWrapper::GetMember(std::vector<std::string>{ SI_CLASS, SI_CTYPE }, Object));
+                    anytype.has_value() && anytype.type() == typeid(std::string_view))
+                {
+                    class_type = CPrototype::GetClassType(std::any_cast<std::string_view>(anytype));
+                    if (auto anyname(CRapidJsonWrapper::GetMember(std::vector<std::string>{ SI_CLASS, SI_CNAME }, Object));
+                        anyname.has_value() && anyname.type() == typeid(std::string_view))
+                    {
+                        class_name = std::any_cast<std::string_view>(anyname);
+                        if (auto anyvtblidx(CRapidJsonWrapper::GetMember(std::vector<std::string>{ SI_CLASS, SI_CVTBLIDX }, Object));
+                            anyvtblidx.has_value() && anyvtblidx.type() == typeid(int))
+                        {
+                            class_vtblidx = static_cast<unsigned int>(std::any_cast<int>(anyvtblidx));
+                        }
+                    }
+                    std::string_view class_delay;
+                    if (auto anydelay(CRapidJsonWrapper::GetMember(std::vector<std::string>{ SI_CLASS, SI_CDELAY }, Object));
+                        anydelay.has_value() && anydelay.type() == typeid(std::string_view))
+                    {
+                        class_delay = std::any_cast<std::string_view>(anydelay);
+                    }
+                    std::unique_ptr<CPrototype::ClassProto> class_proto = std::make_unique<CPrototype::ClassProto>(class_type, class_name, class_delay, class_vtblidx);
+                    func_object->SetClassProto(std::move(class_proto));
+                }
+            }
+            // set parameter information
+            if (auto anyfeature(CRapidJsonWrapper::GetMember(SI_PARAMETERS, Object));
+                anyfeature.has_value() && anyfeature.type() == typeid(ConstRapidObject))
+            {
+                for (auto& param_object : std::any_cast<ConstRapidObject>(anyfeature))
+                {
+                    if (param_object.value.IsString())
+                    {
+                        std::shared_ptr<CObObject> param_ptr = CLexerTy::GetInstance().GetIdentifier(param_object.value.GetString());
+                        if (!param_ptr)
+                        {
+                            error_log("CSigsConfigObject::InitializePrototype the parameter {}({}) is a invalid parameter!", param_object.name.GetString(), param_object.value.GetString());
+                            return false;
+                        }
+                        if (!func_object->AddArgument(IDENPAIR(param_object.name.GetString(), param_ptr)))
+                        {
+                            error_log("CSigsConfigObject::InitializePrototype the function {} add parameter {} failed!", param_object.name.GetString(), param_object.value.GetString());
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        error_log("CSigsConfigObject::InitializePrototype the param {} not a string!", param_object.name.GetString());
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
-        return true;
+        else {
+            error_log("CSigsConfigObject::InitializePrototype the signature not a object!");
+        }
+        return false;
     }
 
-    bool CSigsCfgObject::InitializeHandle(const std::shared_ptr<CFunction>& func_object, const rapidjson::Value& Object)
+    bool CSigsCfgObject::InitializeHandle(const std::shared_ptr<CFunction>& func_object, const ConstRapidObject& Object)
     {
         if (!func_object) return false;
         // set handle information
-        //if (Object.HasMember(SI_HANDLE) && Object[SI_HANDLE].IsObject())
-        //{
-        //	for (auto& array_elem : Object[SI_HANDLE].GetObject())
-        //	{
-        //		if (array_elem.value.IsString())
-        //		{
-        //			// not finished now
-        //		}
-        //	}
-        //}
-
-        //if (Object.HasMember(SI_HANDLE) && Object[SI_HANDLE].IsObject())
-        //{
-        //	for (auto& array_elem : Object[SI_HANDLE].GetObject())
-        //	{
-        //		if (array_elem.value.IsString())
-        //		{
-        //			// not finished now
-        //		}
-        //	}
-        //}
         return true;
     }
 
-    bool CSigsCfgObject::InitializeEnsure(const std::shared_ptr<CFunction>& func_object, const rapidjson::Value& Object)
+    bool CSigsCfgObject::InitializeEnsure(const std::shared_ptr<CFunction>& func_object, const ConstRapidObject& Object)
     {
         if (!func_object) return false;
         // set ensure information
-        if (Object.HasMember(SI_ENSURE) && Object[SI_ENSURE].IsArray())
+        if (auto anyensure(CRapidJsonWrapper::GetMember(SI_ENSURE, Object));
+            anyensure.has_value() && anyensure.type() == typeid(ConstRapidArray))
         {
-            for (auto& array_elem : Object[SI_ENSURE].GetArray())
+            for (auto& ensure : std::any_cast<ConstRapidArray>(anyensure))
             {
-                if (array_elem.IsString())
+                if (ensure.IsString())
                 {
-                    if (!func_object->AddEnsure(array_elem.GetString()))
-                        error_log("CSigsCfgObject::InitializeEnsure: add ensure {} failed!", array_elem.GetString());
+                    if (!func_object->AddEnsure(ensure.GetString()))
+                    {
+                        error_log("CSigsCfgObject::InitializeEnsure: add ensure {} failed!", ensure.GetString());
+                    }
                 }
             }
         }
         return true;
     }
 
-    bool CSigsCfgObject::InitializeLog(const std::shared_ptr<CFunction>& func_object, const rapidjson::Value& Object)
+    bool CSigsCfgObject::InitializeLog(const std::shared_ptr<CFunction>& func_object, const ConstRapidObject& Object)
     {
         if (!func_object) return false;
         // set log information
         bool blogging = true;
-        if (Object.HasMember(SI_PRELOG) && Object[SI_PRELOG].IsArray())
+        if (auto anyprelog(CRapidJsonWrapper::GetMember(SI_PRELOG, Object));
+            anyprelog.has_value() && anyprelog.type() == typeid(ConstRapidArray))
         {
-            for (const auto& array_elem : Object[SI_PRELOG].GetArray())
+            for (auto& prelog : std::any_cast<ConstRapidArray>(anyprelog))
             {
-                if (array_elem.IsString())
+                if (prelog.IsString())
                 {
-                    if (!func_object->AddLogging(array_elem.GetString()))
-                        error_log("CSigsCfgObject::InitializeLog: add logging {} failed!", array_elem.GetString());
+                    if (!func_object->AddLogging(prelog.GetString()))
+                    {
+                        error_log("CSigsCfgObject::InitializeLog: add logging {} failed!", prelog.GetString());
+                    }
                     blogging = false;
                 }
             }
         }
-
-        if (Object.HasMember(SI_POSTLOG) && Object[SI_POSTLOG].IsArray())
+        if (auto anypostlog(CRapidJsonWrapper::GetMember(SI_POSTLOG, Object));
+            anypostlog.has_value() && anypostlog.type() == typeid(ConstRapidArray))
         {
-            for (const auto& array_elem : Object[SI_POSTLOG].GetArray())
+            for (auto& anypostlog : std::any_cast<ConstRapidArray>(anypostlog))
             {
-                if (array_elem.IsString())
+                if (anypostlog.IsString())
                 {
-                    if (!func_object->AddLogging(array_elem.GetString(), false))
-                        error_log("CSigsCfgObject::InitializeLog: add logging {} failed!", array_elem.GetString());
+                    if (!func_object->AddLogging(anypostlog.GetString(), false))
+                    {
+                        error_log("CSigsCfgObject::InitializeLog: add logging {} failed!", anypostlog.GetString());
+                    }
                     blogging = false;
                 }
             }
         }
-
-        if (Object.HasMember(SI_LOGGING) && Object[SI_LOGGING].IsBool())
+        if (auto anylogging(CRapidJsonWrapper::GetMember(SI_LOGGING, Object));
+            anylogging.has_value() && anylogging.type() == typeid(bool))
         {
-            if (Object[SI_LOGGING].GetBool() && blogging)
+            if (std::any_cast<bool>(anylogging))
             {
-                //for (const auto& i : (*func_object).GetArguments())
-                //{
-                //    if (!func_object->AddLogging(i.first))
-                //        error_log("CSigsCfgObject::InitializeLog: add logging {} failed!", i.first);
-                //}
+                // only record return to r3 log.
                 if (!func_object->AddLogging((*func_object).GetReturn().first, false))
+                {
                     error_log("CSigsCfgObject::InitializeLog: add logging {} failed!", (*func_object).GetReturn().first);
+                }
             }
         }
         return true;
     }
 
-    bool CSigsCfgObject::InitializeCheck(const std::shared_ptr<CFunction>& func_object, const rapidjson::Value& Object)
+    bool CSigsCfgObject::InitializeCheck(const std::shared_ptr<CFunction>& func_object, const ConstRapidObject& Object)
     {
         if (!func_object) return false;
-
         // set precheck information
-        if (Object.HasMember(SI_PRECHECK) && Object[SI_PRECHECK].IsObject())
+        auto check_func = [](CFunction::_CheckPackage& package, const ConstRapidObject& Object) {
+            if (auto anydefine(CRapidJsonWrapper::GetMember(SI_DEFINE, Object));
+                anydefine.has_value() && anydefine.type() == typeid(ConstRapidObject))
+            {
+                CFunction::_CheckDefine::DefinePair define_pair;
+                for (auto& define : std::any_cast<ConstRapidObject>(anydefine))
+                {
+                    if (!define.value.IsString())
+                    {
+                        continue;
+                    }
+                    define_pair.first = define.name.GetString();
+                    define_pair.second = define.value.GetString();
+                    package.define_pairs.push_back(define_pair);
+                }
+            }
+            if (auto anydefine(CRapidJsonWrapper::GetMember(SI_CCODE, Object));
+                anydefine.has_value() && anydefine.type() == typeid(ConstRapidArray))
+            {
+                // process CCode.
+            }
+            if (auto anylog(CRapidJsonWrapper::GetMember(SI_LOG, Object));
+                anylog.has_value() && anylog.type() == typeid(ConstRapidArray))
+            {
+                CFunction::_CheckDefine::CheckLog log;
+                for (auto& log_elem : std::any_cast<ConstRapidArray>(anylog))
+                {
+                    if (log_elem.IsString())
+                    {
+                        log = log_elem.GetString();
+                        package.logs.push_back(log);
+                    }
+                }
+            }
+            if (auto anyhandle(CRapidJsonWrapper::GetMember(SI_HANDLE, Object));
+                anyhandle.has_value() && anyhandle.type() == typeid(ConstRapidObject))
+            {
+                CFunction::_CheckDefine::HandlePair handle_pair;
+                for (auto& handle : std::any_cast<ConstRapidObject>(anyhandle))
+                {
+                    if (handle.value.IsString())
+                    {
+                        handle_pair.first = handle.name.GetString();
+                        handle_pair.second = handle.value.GetString();
+                        package.handle_pair.push_back(handle_pair);
+                    }
+                }
+            }
+            if (auto anycheck(CRapidJsonWrapper::GetMember(SI_CHECK, Object));
+                anycheck.has_value() && anycheck.type() == typeid(ConstRapidObject))
+            {
+                for (auto& check : std::any_cast<ConstRapidObject>(anycheck))
+                {
+                    package.check_pair.push_back(CFunction::_CheckDefine::CheckPair(check.name.GetString(), check.value.GetString()));
+                }
+            }
+            if (auto anymodify(CRapidJsonWrapper::GetMember(SI_MODIFY, Object));
+                anymodify.has_value() && anymodify.type() == typeid(ConstRapidObject))
+            {
+                for (auto& modify : std::any_cast<ConstRapidObject>(anymodify))
+                {
+                    package.modify_pair.push_back(CFunction::_CheckDefine::ModifyPair(modify.name.GetString(), modify.value.GetString()));
+                }
+            }
+            return;
+        };
+        // set precheck information
+        if (auto anyprecheck(CRapidJsonWrapper::GetMember(SI_PRECHECK, Object));
+            anyprecheck.has_value() && anyprecheck.type() == typeid(ConstRapidObject))
         {
-            for (auto& inspect_object : Object[SI_PRECHECK].GetObject())
+            for (auto& inspect_object : std::any_cast<ConstRapidObject>(anyprecheck))
             {
                 if (!inspect_object.value.IsObject())
                 {
                     continue;
                 }
                 CFunction::_CheckPackage package;
-                if (inspect_object.value.HasMember(SI_DEFINE) && inspect_object.value[SI_DEFINE].IsObject())
-                {
-                    CFunction::_CheckDefine::DefinePair define_pair;
-                    for (auto& check_object : inspect_object.value[SI_DEFINE].GetObject())
-                    {
-                        if (!check_object.value.IsString())
-                        {
-                            continue;
-                        }
-                        define_pair.first = check_object.name.GetString();
-                        define_pair.second = check_object.value.GetString();
-                        package.define_pairs.push_back(define_pair);
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_LOG) && inspect_object.value[SI_LOG].IsArray())
-                {
-                    CFunction::_CheckDefine::CheckLog log;
-                    for (auto& array_element : inspect_object.value[SI_LOG].GetArray())
-                    {
-                        if (array_element.IsString())
-                        {
-                            log = array_element.GetString();
-                            package.logs.push_back(log);
-                        }
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_HANDLE) && inspect_object.value[SI_HANDLE].IsArray())
-                {
-                    CFunction::_CheckDefine::HandlePair handle_pair;
-                    for (auto& handle_object : inspect_object.value[SI_HANDLE].GetObject())
-                    {
-                        if (handle_object.value.IsString())
-                        {
-                            handle_pair.first = handle_object.name.GetString();
-                            handle_pair.second = handle_object.value.GetString();
-                            package.handle_pair.push_back(handle_pair);
-                        }
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_CHECK) && inspect_object.value[SI_CHECK].IsObject())
-                {
-                    for (auto& check_object : inspect_object.value[SI_CHECK].GetObject())
-                    {
-                        package.check_pair.push_back(CFunction::_CheckDefine::CheckPair(check_object.name.GetString(), check_object.value.GetString()));
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_MODIFY) && inspect_object.value[SI_MODIFY].IsObject())
-                {
-                    for (auto& modify_object : inspect_object.value[SI_MODIFY].GetObject())
-                    {
-                        package.modify_pair.push_back(CFunction::_CheckDefine::ModifyPair(modify_object.name.GetString(), modify_object.value.GetString()));
-                    }
-                }
+                check_func(package, inspect_object.value.GetObject());
                 if (!func_object->AddChecks(package))
+                {
                     error_log("CSigsCfgObject::InitializeCheck: function({}) add pre checks failed!", func_object->GetName());
+                }
             }
         }
         // set postcheck information
-        if (Object.HasMember(SI_POSTCHECK) && Object[SI_POSTCHECK].IsObject())
+        if (auto anypostcheck(CRapidJsonWrapper::GetMember(SI_POSTCHECK, Object));
+            anypostcheck.has_value() && anypostcheck.type() == typeid(ConstRapidObject))
         {
-            for (auto& inspect_object : Object[SI_POSTCHECK].GetObject())
+            for (auto& inspect_object : std::any_cast<ConstRapidObject>(anypostcheck))
             {
                 if (!inspect_object.value.IsObject())
                 {
                     continue;
                 }
                 CFunction::_CheckPackage package;
-                if (inspect_object.value.HasMember(SI_DEFINE) && inspect_object.value[SI_DEFINE].IsObject())
-                {
-                    CFunction::_CheckDefine::DefinePair define_pair;
-                    for (auto& check_object : inspect_object.value[SI_DEFINE].GetObject())
-                    {
-                        if (!check_object.value.IsString())
-                        {
-                            continue;
-                        }
-                        define_pair.first = check_object.name.GetString();
-                        define_pair.second = check_object.value.GetString();
-                        package.define_pairs.push_back(define_pair);
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_LOG) && inspect_object.value[SI_LOG].IsArray())
-                {
-                    CFunction::_CheckDefine::CheckLog log;
-                    for (auto& array_element : inspect_object.value[SI_LOG].GetArray())
-                    {
-                        if (array_element.IsString())
-                        {
-                            log = array_element.GetString();
-                            package.logs.push_back(log);
-                        }
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_HANDLE) && inspect_object.value[SI_HANDLE].IsObject())
-                {
-                    CFunction::_CheckDefine::HandlePair handle_pair;
-                    for (auto& handle_object : inspect_object.value[SI_HANDLE].GetObject())
-                    {
-                        if (handle_object.value.IsString())
-                        {
-                            handle_pair.first = handle_object.name.GetString();
-                            handle_pair.second = handle_object.value.GetString();
-                            package.handle_pair.push_back(handle_pair);
-                        }
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_CHECK) && inspect_object.value[SI_CHECK].IsObject())
-                {
-                    for (auto& check_object : inspect_object.value[SI_CHECK].GetObject())
-                    {
-                        package.check_pair.push_back(CFunction::_CheckDefine::CheckPair(check_object.name.GetString(), check_object.value.GetString()));
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_MODIFY) && inspect_object.value[SI_MODIFY].IsObject())
-                {
-                    for (auto& modify_object : inspect_object.value[SI_MODIFY].GetObject())
-                    {
-                        package.modify_pair.push_back(CFunction::_CheckDefine::ModifyPair(modify_object.name.GetString(), modify_object.value.GetString()));
-                    }
-                }
+                check_func(package, inspect_object.value.GetObject());
                 if (!func_object->AddChecks(package, false))
-                    error_log("CSigsCfgObject::InitializeCheck: function({}) add pre checks failed!", func_object->GetName());
+                {
+                    error_log("CSigsCfgObject::InitializeCheck: function({}) add post checks failed!", func_object->GetName());
+                }
             }
         }
-
         return true;
     }
 
-    bool CSigsCfgObject::InitializeFunction(CFunction::_call_convention call_conv, const std::string& func_name, const rapidjson::Value& Object, std::shared_ptr<CFunctionProtos> func_protos)
+    bool CSigsCfgObject::InitializeFunction(CFunction::_call_convention call_conv, const std::string& func_name, const ConstRapidObject& object, std::shared_ptr<CFunctionProtos> func_protos)
     {
-        if (!Object.IsObject() || Object.IsNull())
-        {
-            error_log("CSigsCfgObject::InitializeFunction the {} not a object!", func_name);
-            return false;
-        }
+        if (!func_protos) return false;
+        ASSERT(func_protos != nullptr);
+
         // create api object
-        std::shared_ptr<CFunction> func_object = std::make_shared<CFunction>(call_conv, func_name.c_str());
+        std::shared_ptr<CFunction> func_object = std::make_shared<CFunction>(call_conv, func_name);
         if (!func_object)
         {
             error_log("CSigsConfigObject::InitializeFunction create func_object({}) failed!", func_name);
             return false;
         }
-
-        if (!InitializePrototype(func_object, Object))
+        if (!InitializePrototype(func_object, object))
         {
             error_log("CSigsConfigObject::InitializePrototype failed!");
             return false;
         }
-        if (!InitializeHandle(func_object, Object))
+        if (!InitializeHandle(func_object, object))
         {
             error_log("CSigsConfigObject::InitializeHandle failed!");
             return false;
         }
-        if (!InitializeEnsure(func_object, Object))
+        if (!InitializeEnsure(func_object, object))
         {
             error_log("CSigsConfigObject::InitializeEnsure failed!");
             return false;
         }
-        if (!InitializeLog(func_object, Object))
+        if (!InitializeLog(func_object, object))
         {
             error_log("CSigsConfigObject::InitializeLog failed!");
             return false;
         }
-        if (!InitializeCheck(func_object, Object))
+        if (!InitializeCheck(func_object, object))
         {
             error_log("CSigsConfigObject::InitializeCheck failed!");
             return false;
         }
-        std::shared_ptr<CFunctionProtos> protos = func_protos;
-        if (!protos) protos = g_impl_object;
-        ASSERT(protos != nullptr);
-
-        if (!protos || !protos->AddFunction(func_object))
+        if (!func_protos->AddFunction(std::move(func_object)))
         {
-            error_log("g_impl_object->AddFunction({}) failed!", func_object->GetName());
+            error_log("g_impl_object->AddFunction({}) failed!", func_name);
             return false;
         }
         return true;

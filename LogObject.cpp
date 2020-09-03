@@ -125,16 +125,14 @@ namespace cchips {
             return true;
         return false;
     }
-
     RAPID_DOC_PAIR CLogObject::GetData() {
-        static std::once_flag flag;
-        std::call_once(flag, &CHookImplementObject::AddFilterThread, g_impl_object, std::this_thread::get_id());
+        static std::once_flag log_flag;
         std::shared_ptr<CLogEntry> log = nullptr;
         do {
-            auto x_safe_log = xlock_safe_ptr(m_cache_logs);
-            if (x_safe_log->empty()) break;
-            log = *x_safe_log->begin();
-            x_safe_log->pop_front();
+            std::lock_guard<std::recursive_mutex> lockGuard(m_recursive_mutex);
+            if (m_cache_logs.empty()) break;
+            log = m_cache_logs.front();
+            m_cache_logs.pop_front();
         } while (0);
         if (log)
             return log->Serialize();

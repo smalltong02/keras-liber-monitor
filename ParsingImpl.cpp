@@ -10,588 +10,725 @@
 
 namespace cchips {
 
+    const std::map<std::string, CLexer::_token> CLexer::_token_str_def = {
+        {"if", token_if}, {"else", token_else}, {"while", token_while}, {"define", token_define}, {"extern", token_extern}, {"(", token_parentheses_b}, {")", token_parentheses_e},
+        {"{", token_curlybraces_b}, {"}", token_curlybraces_e}, {"[", token_brackets_b}, {"]", token_brackets_e},{"*", token_asterisk}, {"->", token_arrow},
+        {".", token_point}, {"=", token_assign}, {"'", token_s_quotes}, {"\"", token_d_quotes},
+    };
+    const std::map<std::string, CLexerTy::_token_ty> CLexerTy::_token_ty_str_def = {
+        {"LP", token_reference_b}, {"*", token_reference_e}, {"[", token_brackets_b}, {"]", token_brackets_e},
+    };
+    const std::string CLexerTy::_re2_pattern_ty_def = {
+        "^([A-Za-z_]\\w*)\\[([0-9]+)\\]$|^([A-Za-z_]\\w*)[*]$|^LP([A-Za-z_]\\w*)$|^([A-Za-z_]\\w*)$"
+    };
+    std::unique_ptr<RE2> CLexerTy::_pattern_ty_ptr = std::make_unique<RE2>(_re2_pattern_ty_def, RE2::Quiet);
+    const std::map<std::string, CLexerVr::_token_vr> CLexerVr::_token_vr_str_def = {
+        {"(", token_parentheses_b}, {")", token_parentheses_e}, {"*", token_asterisk}, {"->", token_arrow}, {".", token_point},
+    };
+    const std::string CLexerVr::_re2_pattern_vr_def = {
+        "^[*]([A-Za-z_(][A-Za-z_0-9)\\[\\].>-]*)$|^[(]([A-Za-z_*][A-Za-z0-9_\\[\\].>-]*)[)]([A-Za-z_0-9\\[\\].>-]*)$|^([A-Za-z_][A-Za-z_0-9\\[\\]]*)->([A-Za-z_][A-Za-z_0-9\\[\\].>-]*)$|^([A-Za-z_][A-Za-z_0-9\\[\\]]*)[.]([A-Za-z_][A-Za-z_0-9\\[\\].>-]*)$|^([A-Za-z_]\\w*)\\[([0-9]+)\\]$|^([A-Za-z_]\\w*)$"
+    };
+    std::unique_ptr<RE2> CLexerVr::_pattern_vr_ptr = std::make_unique<RE2>(_re2_pattern_vr_def, RE2::Quiet);
     const std::map<CExpParsing::_token, std::string> CExpParsing::_token_str_def = {
-        {token_invalid, "invalid"}, {token_def, "def"}, {token_extern, "extern"}, {token_string, "string"}, {token_number, "number"},
+        {token_invalid, "invalid"}, {token_string, "string"}, {token_integral, "integral"}, {token_float_pointer, "float_pointer"},
     };
     const std::map<std::string, int> CExpParsing::_op_precedence = {
-        {"(", -10},  {"=", -7}, {"||", -5}, {"&&", -4}, {"|", -3}, {"&", -2}, {">", -1}, {">=", -1}, {"<", -1}, {"<=", -1}, {"==", -1}, {"!=", -1}, {"=~", -1}, {"!~", -1},
+        {"(", -10}, {")", -10},  {"=", -7}, {"||", -5}, {"&&", -4}, {"|", -3}, {"&", -2}, {">", -1}, {">=", -1}, {"<", -1}, {"<=", -1}, {"==", -1}, {"!=", -1}, {"=~", -1}, {"!~", -1},
         {"<<", 1}, {">>", 1}, {"+", 2}, {"-", 2}, {"*", 3}, {"/", 3}, {"^", 4}, {"!", 5},
     };
+    const std::map<std::string, int> CExpParsing::_op_type_def = {
+        {"=", binary_type}, {"||", binary_type}, {"&&", binary_type}, {"|", binary_type}, {"&", binary_type}, {">", binary_type}, {">=", binary_type}, {"<", binary_type}, {"<=", binary_type}, {"==", binary_type}, {"!=", binary_type}, 
+        {"=~", binary_type}, {"!~", binary_type}, {"<<", binary_type}, {">>", binary_type}, {"+", binary_type}, {"-", binary_type}, {"*", binary_type}, {"/", binary_type}, {"^", binary_type}, {"!", unary_type},
+    };
     const std::string CExpParsing::_token_var_def = "%var";
+    const std::string CExpParsing::_re2_pattern_exp_def = { "^(%var[0-9]+)$|^'([\\s\\S]+)'$|^\"([\\s\\S]+)\"$|^([1-9]\\d*)$|^([1-9]\\d*\\.\\d*)$|^(0\\.\\d*[1-9]\\d*)$"};
+    std::unique_ptr<RE2> CExpParsing::_pattern_exp_ptr = std::make_unique<RE2>(_re2_pattern_exp_def, RE2::Quiet);
 
-    std::shared_ptr<CObObject> CLexerObject::GetVarIdentifier(const std::string& identifier_str) const
-    {
-        return GetIdentifier(identifier_str);
-    }
+    const std::map<std::string, CPrototype::_class_type> CPrototype::_class_predefine = {
+        {"WMI", CPrototype::class_wmi}, {"VBS", CPrototype::class_vbs}, {"PS", CPrototype::class_ps}, {"KVM", CPrototype::class_kvm}, {"CShape", CPrototype::class_cshape},
+    };
 
-    std::shared_ptr<CObObject> CLexerObject::GetTyIdentifier(const std::string& identifier_str) const
+    std::string CLexerTy::GetWordRoot(const std::string_view& iden_str)
     {
-        return GetIdentifier(identifier_str, symbol_type);
-    }
+        ASSERT(iden_str.length());
+        if (!iden_str.length()) return {};
+        std::string root_str(iden_str);
+        std::string iden_arr_str, sub_str, iden_poi_str, iden_lp_str, res_str;
 
-    bool CLexerObject::AddVarIdentifier(const IDENPAIR& iden_pair)
-    {
-        return AddIdentifier(iden_pair);
-    }
-
-    bool CLexerObject::AddTyIdentifier(const IDENPAIR& iden_pair)
-    {
-        return AddIdentifier(iden_pair, symbol_type);
-    }
-
-    std::string CLexerObject::GetWordRoot(const std::string& identifier_str) const
-    {
-        ASSERT(identifier_str.length());
-        if (!identifier_str.length()) return "";
-        std::string root_str = identifier_str;
-        size_t length = identifier_str.length() - 1;
-        if ((identifier_str[0] == '(') && (identifier_str[length] == ')'))
-            return GetWordRoot(identifier_str.substr(1, length - 1));
-        else if (identifier_str[0] == '[')
-        {
-            size_t pos = identifier_str.find(']');
-            if (pos == -1 || pos <= 1)
-            {
-                ASSERT(0);
-                error_log("GetWordRoot Fatal error: array {} define error!", identifier_str);
-                return "";
+        auto func = make_y_combinator(
+            [](auto&& func, std::string& search_str, std::unique_ptr<RE2>& pattern, std::string& iden_arr_str, std::string& sub_str, std::string& iden_poi_str, std::string& iden_lp_str, std::string& res_str) ->bool{
+                if (RE2::FullMatch(search_str, *pattern, &iden_arr_str, &sub_str, &iden_poi_str, &iden_lp_str, &res_str))
+                {
+                    if (res_str.length())
+                    {
+                        search_str = res_str;
+                        return true;
+                    }
+                    else if (iden_poi_str.length())
+                    {
+                        search_str = iden_poi_str;
+                        return func(search_str, pattern, iden_arr_str, sub_str, iden_poi_str, iden_lp_str, res_str);
+                    }
+                    else if (iden_lp_str.length())
+                    {
+                        search_str = iden_lp_str;
+                        return func(search_str, pattern, iden_arr_str, sub_str, iden_poi_str, iden_lp_str, res_str);
+                    }
+                    else if (iden_arr_str.length() && sub_str.length())
+                    {
+                        search_str = iden_arr_str;
+                        return func(search_str, pattern, iden_arr_str, sub_str, iden_poi_str, iden_lp_str, res_str);
+                    }
+                }
+                return false;
             }
-            return GetWordRoot(identifier_str.substr(pos + 1, length));
-        }
-        else if (identifier_str[length] == ']')
-        {
-            size_t pos = identifier_str.rfind('[');
-            if (pos == -1 || pos > (length - 1))
-            {
-                ASSERT(0);
-                error_log("GetWordRoot Fatal error: array {} define error!", identifier_str);
-                return "";
-            }
-            return GetWordRoot(identifier_str.substr(0, pos));
-        }
-        else if (identifier_str[0] == 'L' && identifier_str[1] == 'P')
-            return GetWordRoot(identifier_str.substr(2));
-        else if (identifier_str[0] == '*')
-            return GetWordRoot(identifier_str.substr(1));
-        else if (identifier_str[length] == '*')
-            return GetWordRoot(identifier_str.substr(0, length));
+        );
+        if(func(root_str, _pattern_ty_ptr, iden_arr_str, sub_str, iden_poi_str, iden_lp_str, res_str))
+            return res_str;
         return root_str;
     }
 
-    std::shared_ptr<CObObject> CLexerObject::GetIdentifier(const std::string& identifier_str, _symbol symbol) const
+    std::shared_ptr<CObObject> CLexerTy::GetIdentifier(const std::string_view& iden_str) const
     {
-        ASSERT(identifier_str.length());
-        if (!identifier_str.length()) return nullptr;
-        std::shared_ptr<CObObject> id_ptr;
-        std::string root_str;
-        if ((id_ptr = GetSymbol(identifier_str, symbol)) != nullptr)
-            return id_ptr;
+        ASSERT(iden_str.length());
+        if (!iden_str.length()) return nullptr;
+        std::string root_str(iden_str);
+        std::string iden_arr_str, sub_str, iden_poi_str, iden_lp_str, res_str;
+        std::shared_ptr<CObObject> ob_ptr;
 
-        size_t length = identifier_str.length() - 1;
-        if ((identifier_str[0] == '(') && (identifier_str[length] == ')'))
-        {
-            root_str = identifier_str.substr(1, length - 1);
-            id_ptr = GetIdentifier(root_str, symbol);
-            return id_ptr;
-        }
-        else if (identifier_str[0] == '[')
-        {
-            size_t pos = identifier_str.find(']');
-            if (pos == -1 || pos <= 1)
-            {
-                ASSERT(0);
-                error_log("GetIdentifier Fatal error: array {} define error!", identifier_str);
-                return false;
-            }
-            int dim = atoi(identifier_str.substr(1, pos - 1).c_str());
-            root_str = identifier_str.substr(pos + 1, length);
-            if ((id_ptr = GetSymbol(root_str, symbol)) != nullptr || (id_ptr = GetIdentifier(root_str, symbol)) != nullptr)
-            {
-                std::shared_ptr<CArrayObject> parent_ptr = std::make_shared<CArrayObject>(identifier_str);
-                if (!parent_ptr) return nullptr;
-                parent_ptr->AddArray(id_ptr, dim);
-                return parent_ptr;
-            }
-        }
-        else if (identifier_str[length] == ']')
-        {
-            size_t pos = identifier_str.rfind('[');
-            if (pos == -1 || pos > (length - 1))
-            {
-                ASSERT(0);
-                error_log("GetIdentifier Fatal error: array {} define error!", identifier_str);
-                return false;
-            }
-            int dim = atoi(identifier_str.substr(pos + 1, length - 1).c_str());
-            root_str = identifier_str.substr(0, pos);
-            if ((id_ptr = GetSymbol(root_str, symbol)) != nullptr || (id_ptr = GetIdentifier(root_str, symbol)) != nullptr)
-            {
-                std::shared_ptr<CArrayObject> parent_ptr = std::make_shared<CArrayObject>(identifier_str);
-                ASSERT(parent_ptr != nullptr);
-                if (!parent_ptr) return nullptr;
-                parent_ptr->AddArray(id_ptr, dim);
-                return parent_ptr;
-            }
-        }
-        else if (identifier_str[0] == 'L' && identifier_str[1] == 'P')
-        {
-            root_str = identifier_str.substr(2);
-            if ((id_ptr = GetSymbol(root_str, symbol)) != nullptr || (id_ptr = GetIdentifier(root_str, symbol)) != nullptr)
-            {
-                std::shared_ptr<CReferenceObject> parent_ptr = std::make_shared<CReferenceObject>(identifier_str);
-                ASSERT(parent_ptr != nullptr);
-                if (!parent_ptr) return nullptr;
-                parent_ptr->AddReference(id_ptr);
-                return parent_ptr;
-            }
-        }
-        else if (identifier_str[0] == '*')
-        {
-            root_str = identifier_str.substr(1);
-            if ((id_ptr = GetSymbol(root_str, symbol)) != nullptr || (id_ptr = GetIdentifier(root_str, symbol)) != nullptr)
-            {
-                std::shared_ptr<CReferenceObject> parent_ptr = std::make_shared<CReferenceObject>(identifier_str);
-                ASSERT(parent_ptr != nullptr);
-                if (!parent_ptr) return nullptr;
-                parent_ptr->AddReference(id_ptr);
-                return parent_ptr;
-            }
-        }
-        else if (identifier_str[length] == '*')
-        {
-            root_str = identifier_str.substr(0, length);
-            if ((id_ptr = GetSymbol(root_str, symbol)) != nullptr || (id_ptr = GetIdentifier(root_str, symbol)) != nullptr)
-            {
-                std::shared_ptr<CReferenceObject> parent_ptr = std::make_shared<CReferenceObject>(identifier_str);
-                ASSERT(parent_ptr != nullptr);
-                if (!parent_ptr) return nullptr;
-                parent_ptr->AddReference(id_ptr);
-                return parent_ptr;
-            }
-        }
-        return nullptr;
-    }
-
-    std::shared_ptr<CObObject> CLexerObject::GetSymbol(const std::string& sym_str, _symbol symbol) const
-    {
-        ASSERT(sym_str.length());
-        if (!sym_str.length()) return nullptr;
-        if (symbol == symbol_variable && m_variablesymbols)
-        {
-            auto& it = (*m_variablesymbols).find(sym_str);
-            if (it != (*m_variablesymbols).end())
-                return (*it).second;
-        }
-        if (symbol == symbol_type && g_typesymbolobject)
-        {
-            auto& it = (*g_typesymbolobject).GetTypeSymbolRefrence(sym_str);
-            if (it != nullptr)
-                return it;
-        }
-        return nullptr;
-    }
-
-    bool CLexerObject::AddIdentifier(const IDENPAIR& iden_pair, _symbol symbol)
-    {
-        ASSERT(iden_pair.first.length());
-        ASSERT(iden_pair.second != nullptr);
-        if (symbol == symbol_variable && m_variablesymbols)
-        {
-            auto& it = (*m_variablesymbols).find(iden_pair.first);
-            if (it != (*m_variablesymbols).end())
-                return false;
-            (*m_variablesymbols)[iden_pair.first] = iden_pair.second;
-            return true;
-        }
-        else if (symbol == symbol_type && g_typesymbolobject)
-        {
-            return (*g_typesymbolobject).AddTypeSymbol(iden_pair);
-        }
-        return false;
-    }
-
-    bool CParsingObject::ParsingIdentifiers(const std::string& identifiers)
-    {
-        ASSERT(identifiers.length());
-        if (!identifiers.length()) return false;
-        std::string iden_str = identifiers;
-
-        if (!m_globalsymbols) return false;
-
-        size_t pos = identifiers.find('|');
-        if (pos != std::string::npos)
-        {
-            if (ParsingIdentifiers(identifiers.substr(0, pos)))
-                return ParsingIdentifiers(identifiers.substr(pos + 1));
-            else return false;
-        }
-
-        auto func = std::make_shared<std::unique_ptr<std::function<std::shared_ptr<CObObject>(std::shared_ptr<CLexerObject>, std::shared_ptr<CObObject>, std::string)>>>();
-        *func = std::make_unique<std::function<std::shared_ptr<CObObject>(std::shared_ptr<CLexerObject>, std::shared_ptr<CObObject>, std::string)>>
-            ([=](std::shared_ptr<CLexerObject> symbols, std::shared_ptr<CObObject> iden_ptr, std::string& identifiers) -> std::shared_ptr<CObObject>
+        auto func = make_y_combinator(
+            [](auto&& func, std::string& search_str, std::unique_ptr<RE2>& pattern, std::string& iden_arr_str, std::string& sub_str, std::string& iden_poi_str, std::string& iden_lp_str, std::string& res_str) ->std::shared_ptr<CObObject> {
+                if (RE2::FullMatch(search_str, *pattern, &iden_arr_str, &sub_str, &iden_poi_str, &iden_lp_str, &res_str))
                 {
-                    size_t pos = identifiers.find_first_of("*.-");
-                    if (pos == std::string::npos)
+                    if (res_str.length())
                     {
-                        std::shared_ptr<CObObject> ob_ptr = nullptr;
-                        if (!iden_ptr)
-                        {
-                            ob_ptr = std::static_pointer_cast<CObObject>(symbols->GetVarIdentifier(identifiers));
-                        }
-                        else if (iden_ptr->IsStruct())
-                        {
-                            std::shared_ptr<CStructObject> struct_ptr = std::static_pointer_cast<CStructObject>(iden_ptr);
-                            ob_ptr = struct_ptr->GetElement(identifiers);
-                        }
-                        else ob_ptr = iden_ptr;
-                        if (!ob_ptr || (!ob_ptr->IsBaseTy() && !ob_ptr->IsReference() && !ob_ptr->IsFlag()))
-                            return nullptr;
-                        if (ob_ptr->GetObType() == CObObject::ob_reference)
-                        {
-                            std::shared_ptr<CReferenceObject> ref_ptr = std::make_shared<CReferenceObject>(identifiers);
-                            ASSERT(ref_ptr != nullptr);
-                            return ref_ptr;
-                        }
-                        return ob_ptr;
+                        return std::move(CTypeSymbolTableObject::GetInstance().GetTypeSymbolReference(res_str));
                     }
-                    if (!iden_ptr)
+                    else if (iden_poi_str.length())
                     {
-                        if (identifiers[pos] == '.')
-                        {
-                            std::shared_ptr<CStructObject> ob_ptr = std::static_pointer_cast<CStructObject>(symbols->GetVarIdentifier(identifiers.substr(0, pos)));
-                            if (!ob_ptr || !ob_ptr->IsStruct())
-                                return nullptr;
-                            std::shared_ptr<CStructObject> new_ptr = std::make_shared<CStructObject>(identifiers.substr(0, pos));
-                            ASSERT(new_ptr != nullptr);
-                            if (!new_ptr) return nullptr;
-                            std::shared_ptr<CObObject> pelement = (**func)(symbols, ob_ptr, identifiers.substr(pos + 1));
-                            if (!pelement) return nullptr;
-                            if ((*new_ptr).AddElement(identifiers.substr(pos + 1), CStructObject::ElementTypeDefine(pelement->GetName(), { CStructObject::InvalidOffset, pelement })))
-                                return new_ptr;
-                            return nullptr;
-                        }
-                        else if (identifiers[pos] == '-' && identifiers[pos + 1] == '>')
-                        {
-                            std::shared_ptr<CReferenceObject> ob_ptr = std::static_pointer_cast<CReferenceObject>(symbols->GetVarIdentifier(identifiers.substr(0, pos)));
-                            if (!ob_ptr || !ob_ptr->IsReference() || !ob_ptr->GetData())
-                                return nullptr;
-                            std::shared_ptr<CReferenceObject> reference_ptr = std::make_shared<CReferenceObject>(identifiers.substr(0, pos));
-                            ASSERT(reference_ptr != nullptr);
-                            if (!reference_ptr) return nullptr;
-                            if (!(*ob_ptr->GetData()).IsStruct())
-                                return nullptr;
-                            std::shared_ptr<CStructObject> new_ptr = std::make_shared<CStructObject>(std::static_pointer_cast<CStructObject>(ob_ptr->GetData())->GetName());
-                            ASSERT(new_ptr != nullptr);
-                            if (!new_ptr) return nullptr;
-                            if (!reference_ptr->AddReference(std::static_pointer_cast<CObObject>(new_ptr)))
-                                return nullptr;
-                            std::shared_ptr<CObObject> pelement = (**func)(symbols, ob_ptr->GetData(), identifiers.substr(pos + 2));
-                            if (!pelement) return nullptr;
-                            if ((*new_ptr).AddElement(identifiers.substr(pos + 2), CStructObject::ElementTypeDefine(pelement->GetName(), { CStructObject::InvalidOffset,pelement })))
-                                return reference_ptr;
-                            return nullptr;
-                        }
-                        else if (identifiers[pos] == '*')
-                        {
-                            // only support like to "*lpName", "*lpTotalNumberOfBytes"
-                            // not support "(*SystemInformation).dwNumberOfProcessors", please used to "SystemInformation->dwNumberOfProcessors"
-                            if (pos != 0) return nullptr;
-                            std::shared_ptr<CObObject> ob_ptr = symbols->GetVarIdentifier(identifiers.substr(1));
-                            if (!ob_ptr || !ob_ptr->IsReference())
-                                return nullptr;
-                            std::shared_ptr<CReferenceObject> reference_ptr = std::make_shared<CReferenceObject>(identifiers);
-                            if (!reference_ptr) return nullptr;
-                            std::shared_ptr<CObObject> pelement = std::static_pointer_cast<CReferenceObject>(ob_ptr)->GetData();
-                            if (!pelement) return nullptr;
-                            if (!reference_ptr->AddReference(pelement))
-                                return nullptr;
-                            return reference_ptr;
-                        }
-                        else return nullptr;
+                        auto ref_ptr = std::make_shared<CReferenceObject>(search_str);
+                        ASSERT(ref_ptr != nullptr);
+                        if (!ref_ptr) return nullptr;
+                        search_str = iden_poi_str;
+                        std::shared_ptr<CObObject> ob_ptr = func(search_str, pattern, iden_arr_str, sub_str, iden_poi_str, iden_lp_str, res_str);
+                        if (!ob_ptr) return nullptr;
+                        ref_ptr->AddReference(std::move(ob_ptr));
+                        return ref_ptr;
                     }
-                    else
+                    else if (iden_lp_str.length())
                     {
-                        if (identifiers[pos] == '.')
-                        {
-                            std::shared_ptr<CStructObject> struct_ptr = std::static_pointer_cast<CStructObject>(iden_ptr);
-                            std::shared_ptr<CObObject> ob_ptr = struct_ptr->GetElement(identifiers.substr(0, pos));
-                            if (!ob_ptr || !ob_ptr->IsStruct()) return nullptr;
-                            std::shared_ptr<CStructObject> new_ptr = std::make_shared<CStructObject>(std::static_pointer_cast<CStructObject>(ob_ptr)->GetName());
-                            ASSERT(new_ptr != nullptr);
-                            if (!new_ptr) return nullptr;
-                            std::shared_ptr<CObObject> pelement = (**func)(symbols, ob_ptr, identifiers.substr(pos + 1));
-                            if (!pelement) return nullptr;
-                            if ((*new_ptr).AddElement(identifiers.substr(pos + 1), CStructObject::ElementTypeDefine(pelement->GetName(), { CStructObject::InvalidOffset,pelement })))
-                                return new_ptr;
-                            return nullptr;
-                        }
-                        else if (identifiers[pos] == '-' && identifiers[pos + 1] == '>')
-                        {
-                            std::shared_ptr<CStructObject> struct_ptr = std::static_pointer_cast<CStructObject>(iden_ptr);
-                            std::shared_ptr<CReferenceObject> ob_ptr = std::static_pointer_cast<CReferenceObject>(struct_ptr->GetElement(identifiers.substr(0, pos)));
-                            if (!ob_ptr || !ob_ptr->IsReference() || !ob_ptr->GetData())
-                                return nullptr;
-                            std::shared_ptr<CReferenceObject> reference_ptr = std::make_shared<CReferenceObject>(identifiers.substr(0, pos));
-                            ASSERT(reference_ptr != nullptr);
-                            if (!reference_ptr) return nullptr;
-                            if (!(*ob_ptr->GetData()).IsStruct())
-                                return nullptr;
-                            std::shared_ptr<CStructObject> new_ptr = std::make_shared<CStructObject>(std::static_pointer_cast<CStructObject>(ob_ptr->GetData())->GetName());
-                            ASSERT(new_ptr != nullptr);
-                            if (!new_ptr) return nullptr;
-                            if (!reference_ptr->AddReference(std::static_pointer_cast<CObObject>(new_ptr)))
-                                return nullptr;
-                            std::shared_ptr<CObObject> pelement = (**func)(symbols, ob_ptr->GetData(), identifiers.substr(pos + 2));
-                            if (!pelement) return nullptr;
-                            if ((*new_ptr).AddElement(identifiers.substr(pos + 2), CStructObject::ElementTypeDefine(pelement->GetName(), { CStructObject::InvalidOffset,pelement })))
-                                return reference_ptr;
-                            return nullptr;
-                        }
-                        else if (identifiers[pos] == '*')
-                            return nullptr;
-                        else return nullptr;
-
+                        auto ref_ptr = std::make_shared<CReferenceObject>(search_str);
+                        ASSERT(ref_ptr != nullptr);
+                        if (!ref_ptr) return nullptr;
+                        search_str = iden_lp_str;
+                        std::shared_ptr<CObObject> ob_ptr = func(search_str, pattern, iden_arr_str, sub_str, iden_poi_str, iden_lp_str, res_str);
+                        if (!ob_ptr) return nullptr;
+                        ref_ptr->AddReference(std::move(ob_ptr));
+                        return ref_ptr;
                     }
-                    return nullptr;
+                    else if (iden_arr_str.length() && sub_str.length())
+                    {
+                        int dim = atoi(sub_str.c_str());
+                        auto array_ptr = std::make_shared<CArrayObject>(search_str);
+                        ASSERT(array_ptr != nullptr);
+                        if (!array_ptr) return nullptr;
+                        search_str = iden_arr_str;
+                        std::shared_ptr<CObObject> ob_ptr = func(search_str, pattern, iden_arr_str, sub_str, iden_poi_str, iden_lp_str, res_str);
+                        if (!ob_ptr) return nullptr;
+                        array_ptr->AddArray(std::move(ob_ptr), dim);
+                        return array_ptr;
+                    }
                 }
+                return nullptr;
+            }
         );
-        std::shared_ptr<CObObject> ob_ptr = nullptr;
-        if (GetLocalSymbols()->GetSymbolTableSize())
-            ob_ptr = (**func)(GetLocalSymbols(), nullptr, identifiers);
-        if (!ob_ptr && GetGlobalSymbols()->GetSymbolTableSize())
-            ob_ptr = (**func)(GetGlobalSymbols(), nullptr, identifiers);
-        ASSERT(ob_ptr != nullptr);
-        return AddIdentifier(IDENPAIR(identifiers, ob_ptr));
+        ob_ptr = func(root_str, _pattern_ty_ptr, iden_arr_str, sub_str, iden_poi_str, iden_lp_str, res_str);
+        return ob_ptr;
     }
 
-    bool CExpParsing::Parsing(const std::string& exp_str, std::shared_ptr<CLexerObject> symboltable)
+    std::string CLexerVr::GetWordRoot(const std::string_view& iden_str)
+    {
+        ASSERT(iden_str.length());
+        if (!iden_str.length()) return {};
+        std::string root_str(iden_str);
+        std::string iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str;
+
+        auto func = make_y_combinator(
+            [](auto&& func, std::string& search_str, std::unique_ptr<RE2>& pattern, std::string& iden_ast_str, std::string& iden_par_b_str, std::string& iden_par_e_str, std::string& iden_arrow_b_str, std::string& iden_arrow_e_str, 
+                std::string& iden_poi_b_str, std::string& iden_poi_e_str, std::string& iden_arr_str, std::string& sub_str, std::string& res_str) ->bool {
+                if (RE2::FullMatch(search_str, *pattern, &iden_ast_str, &iden_par_b_str, &iden_par_e_str, &iden_arrow_b_str, &iden_arrow_e_str, &iden_poi_b_str, &iden_poi_e_str, &iden_arr_str, &sub_str, &res_str))
+                {
+                    if (res_str.length())
+                    {
+                        search_str = res_str;
+                        return true;
+                    }
+                    else if (iden_poi_b_str.length())
+                    {
+                        search_str = iden_poi_b_str;
+                        return func(search_str, pattern, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str);
+                    }
+                    else if (iden_arrow_b_str.length())
+                    {
+                        search_str = iden_arrow_b_str;
+                        return func(search_str, pattern, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str);
+                    }
+                    else if (iden_ast_str.length())
+                    {
+                        search_str = iden_ast_str;
+                        return func(search_str, pattern, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str);
+                    }
+                    else if (iden_par_b_str.length())
+                    {
+                        search_str = iden_par_b_str;
+                        return func(search_str, pattern, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str);
+                    }
+                    else if (iden_arr_str.length())
+                    {
+                        search_str = iden_arr_str;
+                        return func(search_str, pattern, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str);
+                    }
+                }
+                return false;
+            }
+        );
+        if (func(root_str, _pattern_vr_ptr, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str))
+            return res_str;
+        return {};
+    }
+
+    std::shared_ptr<CObObject> CLexerVr::GetIdentifier(const std::string_view& iden_str) const
+    {
+        if (!GetVariableSymbolTable()) return nullptr;
+        ASSERT(iden_str.length());
+        if (!iden_str.length()) return nullptr;
+        std::string root_str(iden_str);
+        std::string iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str;
+
+        auto func = make_y_combinator(
+            [this](auto&& func, std::string& search_str, std::unique_ptr<RE2>& pattern, std::string& iden_ast_str, std::string& iden_par_b_str, std::string& iden_par_e_str, std::string& iden_arrow_b_str, std::string& iden_arrow_e_str,
+                std::string& iden_poi_b_str, std::string& iden_poi_e_str, std::string& iden_arr_str, std::string& sub_str, std::string& res_str, std::shared_ptr<CTupleObject> final_ptr, bool bast = false) ->bool {
+                    auto init_func = [](std::shared_ptr<CObObject>& ptr, std::string_view elem_name, std::shared_ptr<CTupleObject>& final_ptr) ->bool {
+                        if (!ptr) return false;
+                        if (!elem_name.length()) return false;
+                        CTupleObject::_tuple_elem elem{};
+                        elem.ptr = ptr;
+                        elem.elem_name = elem_name;
+                        if (elem.ptr->IsCommReference()) {
+                            elem.ref.tuple_ref = CTupleObject::_tuple_ref::tuple_ref_addr;
+                        }
+                        else if (elem.ptr->IsArray()) {
+                            elem.arr.dim = static_cast<unsigned int>(-1);
+                        }
+                        else if (elem.ptr->IsStruct()) {
+                            elem.struc.idx = static_cast<unsigned int>(-1);
+                        }
+                        else if (elem.ptr->IsFlag()) {
+                            elem.flag.tuple_flg = CTupleObject::_tuple_flg::tuple_flg_str;
+                        }
+                        else {
+                            elem.arr.dim = 0;
+                        }
+                        return final_ptr->AddElement(elem);
+                    };
+                    if (!final_ptr) return false;
+                    if (RE2::FullMatch(search_str, *pattern, &iden_ast_str, &iden_par_b_str, &iden_par_e_str, &iden_arrow_b_str, &iden_arrow_e_str, &iden_poi_b_str, &iden_poi_e_str, &iden_arr_str, &sub_str, &res_str))
+                    {
+                        if (res_str.length())
+                        {
+                            if (final_ptr->GetElemCount())
+                            {
+                                std::any anyvalue = final_ptr->GetElement(static_cast<unsigned int>(-1));
+                                if (!anyvalue.has_value() || anyvalue.type() != typeid(CTupleObject::_tuple_elem*)) return false;
+                                auto elem = std::any_cast<CTupleObject::_tuple_elem*>(anyvalue);
+                                if (!elem->ptr || !elem->ptr->IsStruct()) return false;
+                                std::shared_ptr<CStructObject> struct_ptr = std::static_pointer_cast<CStructObject>(elem->ptr);
+                                elem->struc.idx = struct_ptr->GetElementIdx(res_str);
+                                if (elem->struc.idx == static_cast<unsigned int>(-1)) return false;
+                                return init_func(struct_ptr->GetElement(res_str), res_str, final_ptr);
+                            }
+                            else {
+                                std::shared_ptr<CObObject> ob_ptr = GetSymbolReference(res_str);
+                                if (!ob_ptr) return false;
+                                bool bret = init_func(ob_ptr, res_str, final_ptr);
+                                if (!bast)
+                                    return bret;
+                                else {
+                                    if (!bret) return bret;
+                                    std::any anyvalue = final_ptr->GetElement(static_cast<unsigned int>(-1));
+                                    if (!anyvalue.has_value() || anyvalue.type() != typeid(CTupleObject::_tuple_elem*)) return false;
+                                    auto elem = std::any_cast<CTupleObject::_tuple_elem*>(anyvalue);
+                                    if (!elem->ptr || !elem->ptr->IsCommReference()) return false;
+                                    elem->ref.tuple_ref = CTupleObject::_tuple_ref::tuple_ref_val;
+                                    std::shared_ptr<CObObject> ptr = std::static_pointer_cast<CReferenceObject>(elem->ptr)->GetData();
+                                    if (!init_func(ptr, "*", final_ptr)) return false;
+                                    return true;
+                                }
+                            }
+                        }
+                        else if (iden_poi_b_str.length() && iden_poi_e_str.length())
+                        {
+                            search_str = iden_poi_b_str;
+                            std::string bak_search_str = iden_poi_e_str;
+                            bool bret = func(search_str, pattern, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str, final_ptr, bast);
+                            if (bret) {
+                                if (!final_ptr) return false;
+                                std::any anyvalue = final_ptr->GetElement(static_cast<unsigned int>(-1));
+                                if (!anyvalue.has_value() || anyvalue.type() != typeid(CTupleObject::_tuple_elem*)) return false;
+                                auto elem = std::any_cast<CTupleObject::_tuple_elem*>(anyvalue);
+                                if (!elem->ptr || !elem->ptr->IsStruct()) return false;
+                                search_str = bak_search_str;
+                                return func(search_str, pattern, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str, final_ptr);
+                            }
+                            return false;
+                        }
+                        else if (iden_arrow_b_str.length() && iden_arrow_e_str.length())
+                        {
+                            search_str = iden_arrow_b_str;
+                            std::string bak_search_str = iden_arrow_e_str;
+                            bool bret = func(search_str, pattern, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str, final_ptr, bast);
+                            if (bret) {
+                                if (!final_ptr) return false;
+                                std::any anyvalue = final_ptr->GetElement(static_cast<unsigned int>(-1));
+                                if (!anyvalue.has_value() || anyvalue.type() != typeid(CTupleObject::_tuple_elem*)) return false;
+                                auto elem = std::any_cast<CTupleObject::_tuple_elem*>(anyvalue);
+                                if (!elem->ptr || !elem->ptr->IsCommReference()) return false;
+                                elem->ref.tuple_ref = CTupleObject::_tuple_ref::tuple_ref_val;
+                                std::shared_ptr<CObObject> ob_ptr = std::static_pointer_cast<CReferenceObject>(elem->ptr)->GetData();
+                                if (init_func(ob_ptr, "->", final_ptr)) {
+                                    search_str = bak_search_str;
+                                    return func(search_str, pattern, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str, final_ptr);
+                                }
+                            }
+                            return false;
+                        }
+                        else if (iden_ast_str.length())
+                        {
+                            search_str = iden_ast_str;
+                            return func(search_str, pattern, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str, final_ptr, true);
+                        }
+                        else if (iden_par_b_str.length())
+                        {
+                            search_str = iden_par_b_str;
+                            std::string bak_search_str = iden_par_e_str;
+                            bool bret = func(search_str, pattern, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str, final_ptr);
+                            if(bret) {
+                                if (!final_ptr) return false;
+                                if (bast) {
+                                    std::any anyvalue = final_ptr->GetElement(static_cast<unsigned int>(-1));
+                                    if (!anyvalue.has_value() || anyvalue.type() != typeid(CTupleObject::_tuple_elem*)) return false;
+                                    auto elem = std::any_cast<CTupleObject::_tuple_elem*>(anyvalue);
+                                    if (!elem->ptr || !elem->ptr->IsCommReference()) return false;
+                                    elem->ref.tuple_ref = CTupleObject::_tuple_ref::tuple_ref_val;
+                                    std::shared_ptr<CObObject> ob_ptr = std::static_pointer_cast<CReferenceObject>(elem->ptr)->GetData();
+                                    if (!init_func(ob_ptr, "*", final_ptr)) return false;
+                                }
+                                if (!bak_search_str.length())
+                                    return true;
+                                if (bak_search_str[0] == '.') {
+                                    std::any anyvalue = final_ptr->GetElement(static_cast<unsigned int>(-1));
+                                    if (!anyvalue.has_value() || anyvalue.type() != typeid(CTupleObject::_tuple_elem*)) return false;
+                                    auto elem = std::any_cast<CTupleObject::_tuple_elem*>(anyvalue);
+                                    if (!elem->ptr || !elem->ptr->IsStruct()) return false;
+                                    search_str = bak_search_str.substr(1);
+                                    return func(search_str, pattern, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str, final_ptr);
+                                }
+                                else if (bak_search_str[0] == '-' && bak_search_str[1] == '>') {
+                                    std::any anyvalue = final_ptr->GetElement(static_cast<unsigned int>(-1));
+                                    if (!anyvalue.has_value() || anyvalue.type() != typeid(CTupleObject::_tuple_elem*)) return false;
+                                    auto elem = std::any_cast<CTupleObject::_tuple_elem*>(anyvalue);
+                                    if (!elem->ptr || !elem->ptr->IsCommReference()) return false;
+                                    elem->ref.tuple_ref = CTupleObject::_tuple_ref::tuple_ref_val;
+                                    std::shared_ptr<CObObject> ob_ptr = std::static_pointer_cast<CReferenceObject>(elem->ptr)->GetData();
+                                    if (init_func(ob_ptr, "->", final_ptr)) {
+                                        search_str = bak_search_str.substr(2);
+                                        return func(search_str, pattern, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str, final_ptr);
+                                    }
+                                    return false;
+                                }
+                                else if (std::string dim_str; RE2::FullMatch(bak_search_str, "^\\[([0-9]+)\\]$", &dim_str) && dim_str.length()) {
+                                    std::any anyvalue = final_ptr->GetElement(static_cast<unsigned int>(-1));
+                                    if (!anyvalue.has_value() || anyvalue.type() != typeid(CTupleObject::_tuple_elem*)) return false;
+                                    auto elem = std::any_cast<CTupleObject::_tuple_elem*>(anyvalue);
+                                    if (!elem->ptr || !elem->ptr->IsArray()) return false;
+                                    unsigned int dim = static_cast<unsigned int>(atoi(dim_str.c_str()));
+                                    elem->arr.dim = dim;
+                                    return true;
+                                }
+                            }
+                            return false;
+                        }
+                        else if (iden_arr_str.length() && sub_str.length())
+                        {
+                            search_str = iden_arr_str;
+                            std::string bak_sub_str = sub_str;
+                            bool bret = func(search_str, pattern, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str, final_ptr, bast);
+                            if (bret) {
+                                if (!final_ptr) return false;
+                                std::any anyvalue = final_ptr->GetElement(static_cast<unsigned int>(-1));
+                                if (!anyvalue.has_value() || anyvalue.type() != typeid(CTupleObject::_tuple_elem*)) return false;
+                                auto elem = std::any_cast<CTupleObject::_tuple_elem*>(anyvalue);
+                                if (!elem->ptr || !elem->ptr->IsArray()) return false;
+                                std::shared_ptr<CArrayObject> ob_array = std::static_pointer_cast<CArrayObject>(elem->ptr);
+                                unsigned int dim = static_cast<unsigned int>(atoi(bak_sub_str.c_str()));
+                                if (dim >= ob_array->GetDim()) return false;
+                                elem->arr.dim = dim;
+                                std::shared_ptr<CObObject> ob_ptr = std::static_pointer_cast<CArrayObject>(elem->ptr)->GetData();
+                                return init_func(ob_ptr, "[]", final_ptr);
+                            }
+                        }
+                    }
+                    return false;
+            }
+        );
+        std::shared_ptr<CObObject> iden_ptr = GetSymbolReference(root_str);
+        if (iden_ptr) return iden_ptr;
+        else {
+            std::shared_ptr<CTupleObject> tuple_ptr = std::make_shared<CTupleObject>(root_str);
+            if (func(root_str, _pattern_vr_ptr, iden_ast_str, iden_par_b_str, iden_par_e_str, iden_arrow_b_str, iden_arrow_e_str, iden_poi_b_str, iden_poi_e_str, iden_arr_str, sub_str, res_str, tuple_ptr))
+                return tuple_ptr;
+        }
+        return nullptr;
+    }
+    
+    bool CExpParsing::Parsing(const std::string& exp_str, std::shared_ptr<CParsing> symboltable)
     {
         if (symboltable == nullptr) return false;
         if (!exp_str.length()) return false;
         int step = 0;
         if (m_expression_str.length()) return false;
-        auto isvarchar = [](int c) {if (isalpha(c) || c == '_' || c == '%') return true; else return false; };
         std::stack<std::string> operator_stack;
         bool last_tok_was_op = true;
+        auto process_final_op = [this](std::deque<std::shared_ptr<_Value>>& expression_ast) {
+            if (expression_ast.size() < 2) return;
+            auto& it_rbegin = expression_ast.crbegin();
+            if (it_rbegin == expression_ast.crend() || !(*it_rbegin)) return;
+            if ((*it_rbegin)->GetToken() != token_op) return;
+            const auto& type_def = _op_type_def.find((*it_rbegin)->GetString());
+            if (type_def == _op_type_def.end()) return;
+            if (type_def->second == binary_type) {
+                if (expression_ast.size() < 3) return;
+                auto& op = (*it_rbegin);
+                it_rbegin++;
+                if (it_rbegin == expression_ast.crend() || !(*it_rbegin)) return;
+                auto& rhs = (*it_rbegin);
+                it_rbegin++;
+                if (it_rbegin == expression_ast.crend() || !(*it_rbegin)) return;
+                auto& lhs = (*it_rbegin);
+                if (rhs->isIntegral() && lhs->isIdentifier()) {
+                    std::shared_ptr<CObObject> iden_ptr = GetTokenIdentifier(lhs->GetString());
+                    if (!iden_ptr) return;
+                    if (iden_ptr->IsTuple()) {
+                        auto anyvalue = std::static_pointer_cast<CTupleObject>(iden_ptr)->GetElement(static_cast<unsigned int>(-1));
+                        if (!anyvalue.has_value() || anyvalue.type() != typeid(CTupleObject::_tuple_elem*)) return;
+                        auto elem = std::any_cast<CTupleObject::_tuple_elem*>(anyvalue);
+                        if (elem == nullptr || elem->ptr == nullptr) return;
+                        if (elem->ptr->IsFlag()) {
+                            elem->flag.tuple_flg = CTupleObject::_tuple_flg::tuple_flg_int;
+                        }
+                    }
+                }
+                else if (lhs->isIntegral() && rhs->isIdentifier()) {
+                    std::shared_ptr<CObObject> iden_ptr = GetTokenIdentifier(rhs->GetString());
+                    if (!iden_ptr) return;
+                    if (iden_ptr->IsTuple()) {
+                        auto anyvalue = std::static_pointer_cast<CTupleObject>(iden_ptr)->GetElement(static_cast<unsigned int>(-1));
+                        if (!anyvalue.has_value() || anyvalue.type() != typeid(CTupleObject::_tuple_elem*)) return;
+                        auto elem = std::any_cast<CTupleObject::_tuple_elem*>(anyvalue);
+                        if (elem == nullptr || elem->ptr == nullptr) return;
+                        if (elem->ptr->IsFlag()) {
+                            elem->flag.tuple_flg = CTupleObject::_tuple_flg::tuple_flg_int;
+                        }
+                    }
+                }
+                else if ((rhs->isIntegral() && lhs->isIntegral()) ||
+                    (rhs->isFloat() && lhs->isFloat()) ||
+                    (rhs->isString() && lhs->isString())) {
+                    std::string op_str = op->GetString();
+                    std::shared_ptr<_Value> new_value = std::make_shared<_Value>(Calculate(op_str, *rhs, *lhs));
+                    if (!new_value || !new_value->isValid()) return;
+                    expression_ast.pop_back();
+                    expression_ast.pop_back();
+                    expression_ast.pop_back();
+                    expression_ast.emplace_back(std::move(new_value));
+                }
+            }
+            return;
+        };
+        auto get_token_define = [&](const std::stringstream& iden_token, const std::unique_ptr<RE2>& pattern) ->std::shared_ptr<_Value> {
+            std::string iden_str, string_str1, string_str2, integral_str, float_str1, float_str2;
+            std::shared_ptr<_Value> value = nullptr;
+            if (RE2::FullMatch(iden_token.str(), *pattern, &iden_str, &string_str1, &string_str2, &integral_str, &float_str1, &float_str2))
+            {
+                if (iden_str.length())
+                {
+                    std::shared_ptr<CObObject> ptr = symboltable->GetIdentifier(iden_str);
+                    if (ptr == nullptr) return nullptr;
+                    if (!ptr->IsTuple()) {
+                        std::shared_ptr<CTupleObject> tuple_ptr = std::make_shared<CTupleObject>(ptr->GetName());
+                            CTupleObject::_tuple_elem elem{};
+                            elem.ptr = ptr;
+                            elem.elem_name = ptr->GetName();
+                            if (elem.ptr->IsCommReference()) {
+                                elem.ref.tuple_ref = CTupleObject::_tuple_ref::tuple_ref_addr;
+                            }
+                            else if (elem.ptr->IsArray()) {
+                                elem.arr.dim = static_cast<unsigned int>(-1);
+                            }
+                            else if (elem.ptr->IsStruct()) {
+                                elem.struc.idx = static_cast<unsigned int>(-1);
+                            }
+                            else if (elem.ptr->IsFlag()) {
+                                elem.flag.tuple_flg = CTupleObject::_tuple_flg::tuple_flg_str;
+                            }
+                            else {
+                                elem.arr.dim = 0;
+                            }
+                            if (tuple_ptr->AddElement(elem)) {
+                                AddTokenIdentifier(IDENPAIR(iden_str, tuple_ptr));
+                            }
+                            else {
+                                AddTokenIdentifier(IDENPAIR(iden_str, tuple_ptr));
+                            }
+                    }
+                    else {
+                        AddTokenIdentifier(IDENPAIR(iden_str, ptr));
+                    }
+                    value = std::make_shared<_Value>(iden_str, token_iden);
+                }
+                else if (string_str1.length())
+                {
+                    value = std::make_shared<_Value>(string_str1);
+                }
+                else if (string_str2.length())
+                {
+                    value = std::make_shared<_Value>(string_str2);
+                }
+                else if (integral_str.length())
+                {
+                    char* nodig = 0;
+                    unsigned long long integral = strtoull(integral_str.c_str(), &nodig, 10);
+                    value = std::make_shared<_Value>(integral);
+                }
+                else if (float_str1.length())
+                {
+                    char* nodig = 0;
+                    double float_pointer = strtod(float_str1.c_str(), &nodig);
+                    value = std::make_shared<_Value>(float_pointer);
+                }
+                else if (float_str2.length())
+                {
+                    char* nodig = 0;
+                    double float_pointer = strtod(float_str1.c_str(), &nodig);
+                    value = std::make_shared<_Value>(float_pointer);
+                }
+            }
+            return value;
+        };
+        
 
         while (exp_str[step] && isspace(exp_str[step])) ++step;
-        while (exp_str[step])
-        {
-            if (isdigit(exp_str[step]))
+        std::stringstream ss;
+        std::stringstream iden_ss;
+        do {
+            bool bstr = false;
+            while (exp_str[step] && !isspace(exp_str[step]))
             {
-                char* nodig = 0;
-                double digit = strtod(&exp_str[step], &nodig);
-
-                std::unique_ptr<_Value> value = std::make_unique<_Value>(digit);
-                m_expression_ast.push_back(std::move(value));
-                step = nodig - &exp_str[0];
-                last_tok_was_op = false;
-            }
-            else if (isvarchar(exp_str[step]))
-            {
-                std::stringstream ss;
-                do {
-                    ss << exp_str[step];
-                    ++step;
-                } while (isvarchar(exp_str[step]));
-
-                std::string key = ss.str();
-                if (key == "true")
-                    m_expression_ast.push_back(std::make_unique<_Value>("true"));
-                else if (key == "false")
-                    m_expression_ast.push_back(std::make_unique<_Value>("false"));
-                else if (key == _token_var_def) {
-                    while (isdigit(exp_str[step]))
-                    {
-                        ss << exp_str[step];
-                        ++step;
+                if (exp_str[step] == '\'' || exp_str[step] == '"') {
+                    bstr = !bstr;
+                    if (!bstr) {
+                        iden_ss << exp_str[step++];
+                        break;
                     }
-                    key = ss.str();
-                    std::shared_ptr<CObObject> ptr = symboltable->GetVarIdentifier(key);
-                    ASSERT(ptr != nullptr);
-                    if (ptr == nullptr)
-                        return false;
-                    AddTokenIdentifier(IDENPAIR(key, ptr));
-                    m_expression_ast.push_back(std::make_unique<_Value>(key, token_iden));
                 }
-                last_tok_was_op = false;
+                ss << exp_str[step++];
+                if (!bstr) {
+                    auto it_find = _op_precedence.find(ss.str());
+                    if (it_find != _op_precedence.end()) break;
+                }
+                iden_ss << ss.str();
+                ss.str(""); ss.clear();
             }
-            else if (exp_str[step] == '\'' || exp_str[step] == '"')
-            {
-                char startChr = exp_str[step];
-                ++step;
-                std::stringstream ss;
-                do {
-                    ss << exp_str[step];
-                    ++step;
-                } while (exp_str[step] && exp_str[step] != startChr);
-                if (exp_str[step]) step++;
 
-                m_expression_ast.push_back(std::make_unique<_Value>(ss.str()));
+            if (iden_ss.str().length())
+            {
+                std::shared_ptr<_Value> value = get_token_define(iden_ss, _pattern_exp_ptr);
+                if (!value) {
+                    m_expression_ast.clear();
+                    return false;
+                }
+                m_expression_ast.emplace_back(std::move(value));
                 last_tok_was_op = false;
+                iden_ss.str(""); iden_ss.clear();
             }
-            else
+          
+            if(ss.str().length())
             {
-                switch (exp_str[step]) {
-                case '(':
-                    operator_stack.push("(");
-                    ++step;
-                    break;
-                case ')':
-                    while (operator_stack.top().compare("(")) {
-                        m_expression_ast.push_back(std::make_unique<_Value>(operator_stack.top(), token_op));
-                        operator_stack.pop();
-                    }
-                    operator_stack.pop();
-                    ++step;
-                    break;
-                default:
-                {
-                    std::stringstream ss;
-                    ss << exp_str[step];
-                    ++step;
-                    while (exp_str[step] && !isspace(exp_str[step]) && !isdigit(exp_str[step])
-                        && !isvarchar(exp_str[step]) && exp_str[step] != '(' && exp_str[step] != ')') {
-                        ss << exp_str[step];
-                        ++step;
-                    }
-                    ss.clear();
-                    std::string str;
-                    ss >> str;
-
-                    if (last_tok_was_op) {
-                        if (!str.compare("-") || !str.compare("+") || !str.compare("!"))
-                            m_expression_ast.push_back(std::make_unique<_Value>(0));
-                        else
-                        {
-                            ASSERT(0);
-                            error_log("Unrecognized unary operator: '{}'", str);
+                switch (ss.str()[0]) {
+                    case '(':
+                        operator_stack.push("(");
+                        break;
+                    case ')':
+                        while (operator_stack.top().compare("(")) {
+                            m_expression_ast.push_back(std::make_unique<_Value>(operator_stack.top(), token_op));
+                            process_final_op(m_expression_ast);
+                            operator_stack.pop();
                         }
-
-                    }
-
-                    while ([&]() ->bool {
-                        if (operator_stack.empty()) return false;
-                        auto it1 = _op_precedence.find(str);
-                        auto it2 = _op_precedence.find(operator_stack.top());
-                        if (it1 == _op_precedence.end()) return false;
-                        if (it2 == _op_precedence.end()) return false;
-                        if (it1->second > it2->second) return false;
-                        return true;
-                        }())
-                    {
-                        m_expression_ast.push_back(std::make_unique<_Value>(operator_stack.top(), token_op));
                         operator_stack.pop();
-                    }
-                        operator_stack.push(str);
+                        break;
+                    default: {
+                        std::stringstream op_ss;
+                        op_ss << ss.str();
+                        if (exp_str[step] && !isspace(exp_str[step]))
+                        {
+                            op_ss << exp_str[step];
+                            auto it_find = _op_precedence.find(op_ss.str());
+                            if (it_find != _op_precedence.end()) {
+                                ss.str(""); ss.clear();
+                                ss << op_ss.str();
+                                step++;
+                            }
+                        }
+                        while ([&]() ->bool {
+                            if (operator_stack.empty()) return false;
+                            auto it1 = _op_precedence.find(ss.str());
+                            auto it2 = _op_precedence.find(operator_stack.top());
+                            if (it1 == _op_precedence.end()) return false;
+                            if (it2 == _op_precedence.end()) return false;
+                            if (it1->second > it2->second) return false;
+                            return true;
+                            }())
+                        {
+                            m_expression_ast.emplace_back(std::make_unique<_Value>(operator_stack.top(), token_op));
+                            process_final_op(m_expression_ast);
+                            operator_stack.pop();
+                        }
+                        operator_stack.emplace(ss.str());
                         last_tok_was_op = true;
+                    }
                 }
-                }
+                ss.str(""); ss.clear();
             }
             while (exp_str[step] && isspace(exp_str[step])) ++step;
-        }
+        } while (exp_str[step]);
+
         while (!operator_stack.empty()) {
-            m_expression_ast.push_back(std::make_unique<_Value>(operator_stack.top(), token_op));
+            m_expression_ast.emplace_back(std::make_unique<_Value>(operator_stack.top(), token_op));
+            process_final_op(m_expression_ast);
             operator_stack.pop();
         }
-
         m_expression_str = exp_str;
         return true;
     }
 
-    bool CExpParsing::SetIdentifierValue(const ValuePair& iden_pair) {
+    bool CExpParsing::SetIdentifierValue(_ValueMap& value_map, const ValuePair& iden_pair) {
         ASSERT(iden_pair.first.length());
-        ASSERT(iden_pair.second.str().length());
+        ASSERT(iden_pair.second.has_value());
         if (!iden_pair.first.length()) return false;
-        if (!iden_pair.second.str().length()) return false;
-        auto value = m_value_map.find(iden_pair.first);
-        if (value != m_value_map.end())
+        if (!iden_pair.second.has_value()) return false;
+        auto value = value_map.find(iden_pair.first);
+        if (value != value_map.end())
             return true;
-
-        auto ptr = m_identifier_symbol.find(iden_pair.first);
-        if (ptr == m_identifier_symbol.end())
-        {
-            ASSERT(0); return false;
-        }
-        ASSERT(ptr->second != nullptr);
-
-        CLexerObject lexer_object;
-        auto final_ptr = lexer_object.GetFinalObObject(ptr->second);
-        ASSERT(final_ptr != nullptr);
-        if (!final_ptr) return nullptr;
-        _token tok = token_invalid;
-        switch (final_ptr->GetObType())
-        {
-        case CObObject::ob_basetype:
-        {
-            std::shared_ptr<CMetadataTypeObject> obj_ptr = std::reinterpret_pointer_cast<CMetadataTypeObject>(final_ptr);
-            ASSERT(obj_ptr->GetMetadataDef() != nullptr);
-            int std_type = obj_ptr->GetMetadataDef()->GetBaseDef();
-            switch (std_type)
-            {
-            case CBaseDef::type_byte: case CBaseDef::type_bool: case CBaseDef::type_int16: case CBaseDef::type_uint16: case CBaseDef::type_short: case CBaseDef::type_ushort:
-            case CBaseDef::type_word: case CBaseDef::type_int: case CBaseDef::type_uint: case CBaseDef::type_long: case CBaseDef::type_ulong: case CBaseDef::type_dword:
-            case CBaseDef::type_float: case CBaseDef::type_int64: case CBaseDef::type_uint64: case CBaseDef::type_longlong: case CBaseDef::type_ulonglong: case CBaseDef::type_qword:
-            case CBaseDef::type_double: case CBaseDef::type_large_integer: case CBaseDef::type_ularge_integer: case CBaseDef::type_hresult: case CBaseDef::type_ntstatus:
-            {
-                tok = token_number;
-            }
-            break;
-            case CBaseDef::type_char: case CBaseDef::type_uchar: case CBaseDef::type_wchar: case CBaseDef::type_long_ptr: case CBaseDef::type_ulong_ptr: case CBaseDef::type_dword_ptr:
-            case CBaseDef::type_lpvoid: case CBaseDef::type_hmodule: case CBaseDef::type_schandle: case CBaseDef::type_handle: case CBaseDef::type_string: case CBaseDef::type_wstring:
-            {
-                tok = token_string;
-            }
-            break;
-            case CBaseDef::type_void:
-            case CBaseDef::type_guid:
-            default:
-                break;
-            }
-        }
-        break;
-        case CObObject::ob_reference:
-        case CObObject::ob_stringref:
-        case CObObject::ob_flag:
-        {
-            tok = token_string;
-        }
-        break;
-        default:
-            break;
-        }
-        if (tok == token_string)
-            m_value_map[iden_pair.first] = _Value(iden_pair.second.str());
-        else if (tok == token_number)
-        {
-            char* nodig = 0;
-            double digit = strtod(iden_pair.second.str().c_str(), &nodig);
-            m_value_map[iden_pair.first] = _Value(digit);
-        }
+        std::any anyvalue = GetAnyValue(iden_pair.second);
+        if (!anyvalue.has_value()) return false;
+        if (anyvalue.type() == typeid(ULONGLONG))
+            value_map[iden_pair.first] = _Value(std::any_cast<ULONGLONG>(anyvalue));
+        else if (anyvalue.type() == typeid(DOUBLE))
+            value_map[iden_pair.first] = _Value(std::any_cast<DOUBLE>(anyvalue));
+        else if (anyvalue.type() == typeid(std::string))
+            value_map[iden_pair.first] = _Value(std::any_cast<std::string>(anyvalue));
         else
         {
-            ASSERT(0);
-            error_log("SetIdentifierValue failed because tok incorrect!");
+            error_log("SetIdentifierValue failed because token incorrect!");
             return false;
         }
         return true;
     }
 
-    std::variant<bool, std::unique_ptr<CExpParsing::ValuePair>> CExpParsing::EvalExpression()
+    CExpParsing::_Value CExpParsing::Calculate(std::string& op, _Value& rhs, _Value& lhs)
     {
-        ASSERT(m_expression_ast.size());
-        if (!m_expression_ast.size())
-            return false;
-        if (!m_value_map.size())
-            return false;
+        if (!op.compare("!")) {
+            return !rhs;
+        }
+        else if (!op.compare("+")) {
+            return (lhs + rhs);
+        }
+        else if (!op.compare("*")) {
+            return (lhs * rhs);
+        }
+        else if (!op.compare("-")) {
+            return (lhs - rhs);
+        }
+        else if (!op.compare("/")) {
+            return (lhs / rhs);
+        }
+        else if (!op.compare("<<")) {
+            return (lhs << rhs);
+        }
+        else if (!op.compare("^")) {
+            return (lhs ^ rhs);
+        }
+        else if (!op.compare(">>")) {
+            return (lhs >> rhs);
+        }
+        else if (!op.compare(">")) {
+            return (lhs > rhs);
+        }
+        else if (!op.compare(">=")) {
+            return (lhs >= rhs);
+        }
+        else if (!op.compare("<")) {
+            return (lhs < rhs);
+        }
+        else if (!op.compare("<=")) {
+            return (lhs <= rhs);
+        }
+        else if (!op.compare("&")) {
+            return (lhs & rhs);
+        }
+        else if (!op.compare("|")) {
+            return (lhs | rhs);
+        }
+        else if (!op.compare("&&")) {
+            return (lhs && rhs);
+        }
+        else if (!op.compare("||")) {
+            return (lhs || rhs);
+        }
+        else if (!op.compare("==")) {
+            return (lhs == rhs);
+        }
+        else if (!op.compare("!=")) {
+            return (lhs != rhs);
+        }
+        else if (!op.compare("="))
+        {
+            lhs = rhs;
+            return lhs;
+        }
+        else if (!op.compare("=~"))
+        {
+            RE2 pattern(rhs.GetString(), RE2::Quiet);
+            return (ULONGLONG)RE2::FullMatch(lhs.GetString(), pattern);
+        }
+        else if (!op.compare("!~"))
+        {
+            RE2 pattern(rhs.GetString(), RE2::Quiet);
+            return (ULONGLONG)(!RE2::FullMatch(lhs.GetString(), pattern));
+        }
+        return {};
+    }
 
-        std::string last_identifier;
-        std::stack<_Value> evaluation;
+    std::variant<ULONGLONG, std::unique_ptr<CExpParsing::ValuePair>> CExpParsing::EvalExpression(const _ValueMap& value_map)
+    {
+        if (!value_map.size()) return 0;
         std::unique_ptr<std::queue<std::unique_ptr<_Value>>> expression_ast = std::move(GetQueueExpressionAst());
         ASSERT(expression_ast != nullptr && (*expression_ast).size());
         if (!expression_ast || !expression_ast->size())
-            return false;
+            return 0;
 
+        std::string last_identifier;
+        std::stack<_Value> evaluation;
         while (!expression_ast->empty()) {
             std::unique_ptr<_Value> token = std::move(expression_ast->front());
             expression_ast->pop();
@@ -602,107 +739,74 @@ namespace cchips {
                 if (evaluation.size() < 2) {
                     ASSERT(!evaluation.size());
                     if (evaluation.size() == 0)
-                        return false;
+                        return 0;
                     _Value value = evaluation.top(); evaluation.pop();
-                    if (!str.compare("!"))
-                        evaluation.push(!value.GetNumber());
+                    _Value new_value = Calculate(str, value, _Value());
+                    if(new_value.isValid())
+                        evaluation.push(!value);
+                    else return 0;
                 }
                 _Value rhs = evaluation.top(); evaluation.pop();
                 _Value lhs = evaluation.top(); evaluation.pop();
-                if (!str.compare("+") && lhs.isNumber())
-                    evaluation.push(lhs + rhs);
-                else if (!str.compare("*"))
-                    evaluation.push(lhs * rhs);
-                else if (!str.compare("-"))
-                    evaluation.push(lhs - rhs);
-                else if (!str.compare("/"))
-                    evaluation.push(lhs / rhs);
-                else if (!str.compare("<<"))
-                    evaluation.push(lhs << rhs);
-                else if (!str.compare("^"))
-                    evaluation.push(lhs ^ rhs);
-                else if (!str.compare(">>"))
-                    evaluation.push(lhs >> rhs);
-                else if (!str.compare(">"))
-                    evaluation.push(lhs > rhs);
-                else if (!str.compare(">="))
-                    evaluation.push(lhs >= rhs);
-                else if (!str.compare("<"))
-                    evaluation.push(lhs < rhs);
-                else if (!str.compare("<="))
-                    evaluation.push(lhs <= rhs);
-                else if (!str.compare("&"))
-                    evaluation.push(lhs & rhs);
-                else if (!str.compare("|"))
-                    evaluation.push(lhs | rhs);
-                else if (!str.compare("&&"))
-                    evaluation.push(lhs && rhs);
-                else if (!str.compare("||"))
-                    evaluation.push(lhs || rhs);
-                else if (!str.compare("=="))
-                    evaluation.push(lhs == rhs);
-                else if (!str.compare("!="))
-                    evaluation.push(lhs != rhs);
-                else if (!str.compare("="))
+                if (!str.compare("="))
                 {
-                    evaluation.push(lhs = rhs);
-                    if (last_identifier.length() && evaluation.size() == 1 && expression_ast->empty())
+                    Calculate(str, rhs, lhs);
+                    if (!lhs.isValid())
+                        return 0;
+                    if (last_identifier.length() && evaluation.size() == 0 && expression_ast->empty())
                     {
                         // Back propagation
-                        auto result_value = std::make_unique<ValuePair>(last_identifier, lhs.GetString());
+                        auto result_value = std::make_unique<ValuePair>(last_identifier, lhs.GetAnyValue());
                         return result_value;
                     }
                 }
-                else if (!str.compare("=~"))
-                {
-                    std::regex reg_ex(rhs.GetString(), std::regex::icase);
-                    evaluation.push(std::regex_match(lhs.GetString(), reg_ex));
-                }
-                else if (!str.compare("!~"))
-                {
-                    std::regex reg_ex(rhs.GetString(), std::regex::icase);
-                    evaluation.push(!std::regex_match(lhs.GetString(), reg_ex));
-                }
-                else
-                {
-                    error_log("Unknown operator: {} {} {}.", lhs.GetString(), str, rhs.GetString());
-                    return false;
+                else {
+                    _Value new_value = Calculate(str, rhs, lhs);
+                    if (new_value.isValid())
+                        evaluation.push(new_value);
+                    else {
+                        error_log("Unknown operator: {} {} {}.", lhs.GetString(), str, rhs.GetString());
+                        return 0;
+                    }
                 }
             }
-            else if (token->isNumber() || token->isString())
+            else if (token->isConstant())
             {
                 evaluation.push(*token);
             }
             else if (token->isIdentifier())
             {
                 last_identifier = token->GetString();
-                auto r_token = m_value_map.find(token->GetString());
-                if (r_token == m_value_map.end())
+                auto r_token = value_map.find(token->GetString());
+                if (r_token == value_map.end())
                 {
-                    ASSERT(0);
                     error_log("Unknown identifier: {}", token->GetString());
+                    return 0;
                 }
                 evaluation.push(r_token->second);
             }
             else
             {
                 error_log("Invalid token '{}'.", token->GetString());
-                return false;
+                return 0;
             }
         }
-        if (evaluation.top().GetNumber() == 0)
-            return false;
-        return true;
+        if (evaluation.top().GetIntegral() == 0)
+            return 0;
+        return evaluation.top().GetIntegral();
     }
 
     bool CFunction::AddChecks(const _CheckPackage& package, bool bpre)
     {
-        std::unique_ptr<CCheck> pcheck = std::make_unique<CCheck>(shared_from_this());
+        std::shared_ptr<CCheck> pcheck = std::make_shared<CCheck>(shared_from_this());
         if (!pcheck) return false;
+        auto bin_func([](auto it_b, auto it_e) {
+            return std::string(it_b, it_e);
+            });
 
         for (const auto& define : package.define_pairs)
         {
-            std::shared_ptr<CObObject> define_ptr = GetTyIdentifier(define.second);
+            std::shared_ptr<CObObject> define_ptr = CLexerTy::GetInstance().GetIdentifier(define.second);
             if (define_ptr)
                 pcheck->AddLocalSymbol(PrototypeArgument(define.first, define_ptr));
         }
@@ -718,18 +822,46 @@ namespace cchips {
         }
         for (const auto& check : package.check_pair)
         {
-            if (check.first.length() &&
-                pcheck->ParsingIdentifiers(check.first))
+            if (check.first.length())
             {
-                pcheck->AddCheck(check.second);
+                bool bsuccess = false;
+                std::list<std::string> split_list;
+                split_algorithm(std::begin(check.first), std::end(check.first), back_inserter(split_list), '|', bin_func);
+                for (const auto& it : split_list) {
+                    std::shared_ptr<CObObject> ob_ptr = pcheck->GetIdentifier(it);
+                    if (ob_ptr) {
+                        bsuccess = pcheck->AddIdentifier(IDENPAIR(it, ob_ptr));
+                        if (!bsuccess) break;
+                    }
+                    else {
+                        bsuccess = false;
+                        break;
+                    }
+                }
+                if (bsuccess)
+                    pcheck->AddCheck(check.second);
             }
         }
         for (const auto& modify : package.modify_pair)
         {
-            if (modify.first.length() &&
-                pcheck->ParsingIdentifiers(modify.first))
+            if (modify.first.length())
             {
-                pcheck->AddModify(modify.second);
+                bool bsuccess = false;
+                std::list<std::string> split_list;
+                split_algorithm(std::begin(modify.first), std::end(modify.first), back_inserter(split_list), '|', bin_func);
+                for (const auto& it : split_list) {
+                    std::shared_ptr<CObObject> ob_ptr = pcheck->GetIdentifier(it);
+                    if (ob_ptr) {
+                        bsuccess = pcheck->AddIdentifier(IDENPAIR(it, ob_ptr));
+                        if (!bsuccess) break;
+                    }
+                    else {
+                        bsuccess = false;
+                        break;
+                    }
+                }
+                if (bsuccess)
+                    pcheck->AddModify(modify.second);
             }
         }
         if (bpre)
@@ -747,10 +879,10 @@ namespace cchips {
         if (!de_node || !de_node->log_entry) return processing_skip;
 
         ASSERT(de_node->return_va != nullptr);
-        std::shared_ptr<CObObject> ob_ptr = GetVarIdentifier(SI_RETURN);
+        std::shared_ptr<CObObject> ob_ptr = GetIdentifier(SI_RETURN);
         ASSERT(ob_ptr != nullptr);
         if (!ob_ptr) return processing_continue;
-        if (Success(ob_ptr, reinterpret_cast<char*>(de_node->return_va)))
+        if (ob_ptr->Success(reinterpret_cast<char*>(de_node->return_va)))
         {
             return processing_continue;
         }
@@ -770,9 +902,9 @@ namespace cchips {
             ASSERT(ensure.second != nullptr);
             if (!ensure.second)
                 continue;
-            if (_stricmp(GetWordRoot(ensure.first).c_str(), SI_RETURN) == 0)
+            if (_stricmp(CLexerVr::GetWordRoot(ensure.first).c_str(), SI_RETURN) == 0)
                 continue;
-            int arg_offset = GetArgumentOffset(GetWordRoot(ensure.first));
+            int arg_offset = GetArgumentOffset(CLexerVr::GetWordRoot(ensure.first));
             if (arg_offset == invalid_arg_offset)
             {
                 arg_offset = GetArgumentOffset(ensure.second->GetName());
@@ -781,9 +913,8 @@ namespace cchips {
             }
 
             ASSERT(de_node->pparams != nullptr);
-            if (!IsValidValue(ensure.second, de_node->pparams + arg_offset))
+            if (!ensure.second->IsValidValue(de_node->pparams + arg_offset))
             {
-                ASSERT(0);
                 error_log("Function({}): argument({}) invalid!", GetName(), ensure.first);
                 return processing_skip;
             }
@@ -820,13 +951,13 @@ namespace cchips {
                 continue;
             int arg_offset = 0;
             char* param_adress = nullptr;
-            if (_stricmp(GetWordRoot(plog.first).c_str(), SI_RETURN) == 0)
+            if (_stricmp(CLexerVr::GetWordRoot(plog.first).c_str(), SI_RETURN) == 0)
             {
                 param_adress = reinterpret_cast<char*>(de_node->return_va);
             }
             else
             {
-                arg_offset = GetArgumentOffset(GetWordRoot(plog.first));
+                arg_offset = GetArgumentOffset(CLexerVr::GetWordRoot(plog.first));
                 if (arg_offset == invalid_arg_offset)
                 {
                     arg_offset = GetArgumentOffset(plog.second->GetName());
@@ -837,11 +968,12 @@ namespace cchips {
             }
 
             ASSERT(param_adress != nullptr);
-            std::stringstream ss = GetValue(plog.second, param_adress + arg_offset);
-            if (!ss.str().length())
+            std::any anyvalue = plog.second->GetValue(param_adress + arg_offset);
+            std::stringstream ss;
+            if (ss = OutputAnyValue(anyvalue); !ss.str().length())
             {
                 error_log("Function({}): get argument({}) value failed!", GetName(), plog.first);
-                return processing_skip;
+                continue;
             }
             LOGGING(plog.first, ss.str());
         }
@@ -850,7 +982,7 @@ namespace cchips {
         return processing_continue;
     }
 
-    bool CFunction::checking(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const
+    bool CFunction::checking(PVOID pnode, const std::shared_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const
     {
         BEGIN_LOG("checking");
         CHookImplementObject::detour_node* de_node = reinterpret_cast<CHookImplementObject::detour_node*>(pnode);
@@ -860,6 +992,7 @@ namespace cchips {
         {
             ASSERT(pcheck != nullptr);
             if (!check) continue;
+            CExpParsing::_ValueMap value_map;
             for (const auto& iden : check->GetIdenifierSymbol())
             {
                 ASSERT(iden.second != nullptr);
@@ -867,13 +1000,13 @@ namespace cchips {
                     continue;
                 int arg_offset = 0;
                 char* param_adress = nullptr;
-                if (_stricmp(GetWordRoot(pcheck->GetRealName(iden.first)).c_str(), SI_RETURN) == 0)
+                if (_stricmp(CLexerVr::GetWordRoot(pcheck->GetRealName(iden.first)).c_str(), SI_RETURN) == 0)
                 {
                     param_adress = reinterpret_cast<char*>(de_node->return_va);
                 }
                 else
                 {
-                    arg_offset = GetArgumentOffset(GetWordRoot(pcheck->GetRealName(iden.first)));
+                    arg_offset = GetArgumentOffset(CLexerVr::GetWordRoot(pcheck->GetRealName(iden.first)));
                     if (arg_offset == invalid_arg_offset)
                     {
                         arg_offset = GetArgumentOffset(iden.second->GetName());
@@ -884,19 +1017,19 @@ namespace cchips {
                 }
 
                 ASSERT(param_adress != nullptr);
-                std::stringstream ss = GetValue(iden.second, param_adress + arg_offset);
-                if (!ss.str().length())
+                std::any anyvalue = iden.second->GetValue(param_adress + arg_offset);
+                if (!anyvalue.has_value())
                 {
                     error_log("Function({}): get argument({}) value failed!", GetName(), iden.first);
                     return false;
                 }
-                if (!check->SetIdentifierValue(CExpParsing::ValuePair(iden.first, ss.str())))
+                if (!check->SetIdentifierValue(value_map, CExpParsing::ValuePair(iden.first, anyvalue)))
                 {
                     error_log("Function({}): SetCheckIdenValue({}) value failed!", GetName(), iden.first);
                     return false;
                 }
             }
-            if (!std::get<bool>(check->EvalExpression()))
+            if (auto variant_value = check->EvalExpression(value_map); variant_value.index() == 0 && !std::get<ULONGLONG>(variant_value))
             {
                 bcheck = false;
                 break;
@@ -906,7 +1039,7 @@ namespace cchips {
         return bcheck;
     }
 
-    processing_status CFunction::modifying(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle)
+    processing_status CFunction::modifying(PVOID pnode, const std::shared_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle)
     {
         BEGIN_LOG("modifying");
         CHookImplementObject::detour_node* de_node = reinterpret_cast<CHookImplementObject::detour_node*>(pnode);
@@ -923,14 +1056,14 @@ namespace cchips {
                     continue;
                 int arg_offset = 0;
                 char* param_adress = nullptr;
-                if (_stricmp(GetWordRoot(pcheck->GetRealName(iden.first)).c_str(), SI_RETURN) == 0)
+                if (_stricmp(CLexerVr::GetWordRoot(pcheck->GetRealName(iden.first)).c_str(), SI_RETURN) == 0)
                 {
                     param_adress = reinterpret_cast<char*>(de_node->return_va);
                     breturn = true;
                 }
                 else
                 {
-                    arg_offset = GetArgumentOffset(GetWordRoot(pcheck->GetRealName(iden.first)));
+                    arg_offset = GetArgumentOffset(CLexerVr::GetWordRoot(pcheck->GetRealName(iden.first)));
                     if (arg_offset == invalid_arg_offset)
                     {
                         arg_offset = GetArgumentOffset(iden.second->GetName());
@@ -941,33 +1074,40 @@ namespace cchips {
                 }
 
                 ASSERT(param_adress != nullptr);
-                std::stringstream ss = GetValue(iden.second, param_adress + arg_offset);
-                if (!ss.str().length())
+                std::any anyvalue = iden.second->GetValue(param_adress + arg_offset);
+                if (!anyvalue.has_value())
                 {
                     error_log("Function({}): get argument({}) value failed!", GetName(), iden.first);
                     return processing_skip;
                 }
-                if (!modify->SetIdentifierValue(CExpParsing::ValuePair(iden.first, ss.str())))
+                CExpParsing::_ValueMap value_map;
+                if (!modify->SetIdentifierValue(value_map, CExpParsing::ValuePair(iden.first, anyvalue)))
                 {
                     error_log("Function({}): SetCheckIdenValue({}) value failed!", GetName(), iden.first);
                     return processing_skip;
                 }
                 // back propagation
-                std::unique_ptr<CExpParsing::ValuePair> value = std::get<std::unique_ptr<CExpParsing::ValuePair>>(modify->EvalExpression());
+                auto variant_value = modify->EvalExpression(value_map);
+                if (variant_value.index() != 1) break;
+                std::unique_ptr<CExpParsing::ValuePair> value = std::move(std::get<std::unique_ptr<CExpParsing::ValuePair>>(variant_value));
                 if (value == nullptr)
                     break;
                 if (_stricmp(iden.first.c_str(), value->first.c_str()) != 0)
                 {
                     ASSERT(0); continue;
                 }
-                if (!SetValue(iden.second, param_adress + arg_offset, value->second))
+                std::any any_new_val = anyvalue;
+                if (AssignAnyType(any_new_val, value->second))
                 {
-                    error_log("Function({}): ({})SetValue({} : {}) failed!", GetName(), pcheck->GetRealName(iden.first), ss.str(), value->second.str());
-                }
-                else
-                {
-                    LOGGING(pcheck->GetRealName(iden.first), value->second.str());
-                    debug_log("Function({}): ({})SetValue({} : {}) success!", GetName(), pcheck->GetRealName(iden.first), ss.str(), value->second.str());
+                    if (!iden.second->SetValue(param_adress + arg_offset, any_new_val))
+                    {
+                        error_log("Function({}): ({})SetValue({} : {}) failed!", GetName(), pcheck->GetRealName(iden.first), OutputAnyValue(anyvalue).str(), OutputAnyValue(value->second).str());
+                    }
+                    else
+                    {
+                        LOGGING(pcheck->GetRealName(iden.first), OutputAnyValue(value->second).str());
+                        debug_log("Function({}): ({})SetValue({} : {}) success!", GetName(), pcheck->GetRealName(iden.first), OutputAnyValue(anyvalue).str(), OutputAnyValue(value->second).str());
+                    }
                 }
             }
         }
@@ -977,7 +1117,7 @@ namespace cchips {
         return processing_continue;
     }
 
-    bool CFunction::handling(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const
+    bool CFunction::handling(PVOID pnode, const std::shared_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const
     {
         BEGIN_LOG("handling");
         CHookImplementObject::detour_node* de_node = reinterpret_cast<CHookImplementObject::detour_node*>(pnode);
@@ -994,13 +1134,13 @@ namespace cchips {
                     continue;
                 int arg_offset = 0;
                 char* param_adress = nullptr;
-                if (_stricmp(GetWordRoot(pcheck->GetRealName(handle.first)).c_str(), SI_RETURN) == 0)
+                if (_stricmp(CLexerVr::GetWordRoot(pcheck->GetRealName(handle.first)).c_str(), SI_RETURN) == 0)
                 {
                     param_adress = reinterpret_cast<char*>(de_node->return_va);
                 }
                 else
                 {
-                    arg_offset = GetArgumentOffset(GetWordRoot(pcheck->GetRealName(handle.first)));
+                    arg_offset = GetArgumentOffset(CLexerVr::GetWordRoot(pcheck->GetRealName(handle.first)));
                     if (arg_offset == invalid_arg_offset)
                     {
                         arg_offset = GetArgumentOffset(ob_ptr->GetName());
@@ -1011,17 +1151,16 @@ namespace cchips {
                 }
 
                 ASSERT(param_adress != nullptr);
-                std::stringstream ss = GetValue(ob_ptr, param_adress + arg_offset);
-                if (ss.str().length())
+                std::any anyvalue = ob_ptr->GetValue(param_adress + arg_offset);
+                if (anyvalue.has_value())
                 {
                     // send process id to driver for add target.
-                    LOGGING("AddTarget", ss.str());
+                    LOGGING("AddTarget", OutputAnyValue(anyvalue).str());
                     if (hook_implement_object && hook_implement_object->GetDriverMgr())
                     {
-                        char* nodig = nullptr;
                         DWORD BytesReturned = 0;
-                        DWORD pid = (DWORD)std::strtoll(ss.str().c_str(), &nodig, 10);
-                        if (hook_implement_object->GetDriverMgr()->IoControl(IOCTL_HIPS_SETTARGETPID, &pid, sizeof(DWORD), NULL, 0, &BytesReturned))
+                        DWORD pid = ConvertAnyType<DWORD>(anyvalue);
+                        if (pid != static_cast<DWORD>(-1) && hook_implement_object->GetDriverMgr()->IoControl(IOCTL_HIPS_SETTARGETPID, &pid, sizeof(DWORD), NULL, 0, &BytesReturned))
                         {
                             debug_log("add target pid({}) success!", pid);
                         }
@@ -1035,7 +1174,7 @@ namespace cchips {
         return bhandle;
     }
 
-    bool CFunction::logging(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const
+    bool CFunction::logging(PVOID pnode, const std::shared_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const
     {
         BEGIN_LOG("logging");
         CHookImplementObject::detour_node* de_node = reinterpret_cast<CHookImplementObject::detour_node*>(pnode);
@@ -1048,13 +1187,13 @@ namespace cchips {
                 continue;
             int arg_offset = 0;
             char* param_adress = nullptr;
-            if (_stricmp(GetWordRoot(log.first).c_str(), SI_RETURN) == 0)
+            if (_stricmp(CLexerVr::GetWordRoot(log.first).c_str(), SI_RETURN) == 0)
             {
                 param_adress = reinterpret_cast<char*>(de_node->return_va);
             }
             else
             {
-                arg_offset = GetArgumentOffset(GetWordRoot(log.first));
+                arg_offset = GetArgumentOffset(CLexerVr::GetWordRoot(log.first));
                 if (arg_offset == invalid_arg_offset)
                 {
                     arg_offset = GetArgumentOffset(log.second->GetName());
@@ -1065,12 +1204,11 @@ namespace cchips {
             }
 
             ASSERT(param_adress != nullptr);
-            std::stringstream ss = GetValue(log.second, param_adress + arg_offset);
-            if (!ss.str().length())
+            std::any anyvalue = log.second->GetValue(param_adress + arg_offset);
+            if (anyvalue.has_value())
             {
-                return false;
+                LOGGING(log.first, OutputAnyValue(anyvalue).str());
             }
-            LOGGING(log.first, ss.str());
         }
         END_LOG(log_handle->GetHandle());
         return blog;
@@ -1131,12 +1269,12 @@ namespace cchips {
 
     bool CWmiObject::AddChecks(const CFunction::_CheckPackage& package, bool bpre)
     {
-        std::unique_ptr<CCheck> pcheck = std::make_unique<CCheck>(shared_from_this());
+        std::shared_ptr<CCheck> pcheck = std::make_unique<CCheck>(shared_from_this());
         if (!pcheck) return false;
 
         for (const auto& define : package.define_pairs)
         {
-            std::shared_ptr<CObObject> define_ptr = GetTyIdentifier(define.second);
+            std::shared_ptr<CObObject> define_ptr = GetIdentifier(define.second);
             if (define_ptr)
                 pcheck->AddLocalSymbol(PrototypeData(define.first, define_ptr));
         }
@@ -1152,18 +1290,24 @@ namespace cchips {
         }
         for (const auto& check : package.check_pair)
         {
-            if (check.first.length() &&
-                pcheck->ParsingIdentifiers(check.first))
+            if (check.first.length())
             {
-                pcheck->AddCheck(check.second);
+                std::shared_ptr<CObObject> ob_ptr = pcheck->GetIdentifier(check.first);
+                if (ob_ptr) {
+                    pcheck->AddIdentifier(IDENPAIR(check.first, ob_ptr));
+                    pcheck->AddCheck(check.second);
+                }
             }
         }
         for (const auto& modify : package.modify_pair)
         {
-            if (modify.first.length() &&
-                pcheck->ParsingIdentifiers(modify.first))
+            if (modify.first.length())
             {
-                pcheck->AddModify(modify.second);
+                std::shared_ptr<CObObject> ob_ptr = pcheck->GetIdentifier(modify.first);
+                if (ob_ptr) {
+                    pcheck->AddIdentifier(IDENPAIR(modify.first, ob_ptr));
+                    pcheck->AddModify(modify.second);
+                }
             }
         }
         if (bpre)

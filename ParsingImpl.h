@@ -13,7 +13,8 @@
 #include <memory>
 #include <functional>
 #include <variant>
-#include <regex>
+#include "re2/re2.h"
+#include "re2/stringpiece.h"
 #include "hookimpl.h"
 #include "MetadataTypeImpl.h"
 #include "LogObject.h"
@@ -23,296 +24,174 @@ namespace cchips {
 #define HD_DUPLICATE "Duplicate"
 #define HD_ADDTARGET "AddTarget"
 
-    extern std::unique_ptr<CTypeSymbolTableObject> g_typesymbolobject;
-
     using VAR_SYMBOLTABLE = TYPE_SYMBOLTABLE;
     using SYMBOLTABLE = TYPE_SYMBOLTABLE;
     using IDENTIFIERTABLE = std::map<std::string, std::pair<int, std::shared_ptr<CObObject>>>;
 
-    class CLexerObject
+    class CLexer 
     {
     public:
-        enum _symbol {
-            symbol_type = 0,
-            symbol_variable = 1,
+        enum _token {
+            token_invalid = -1,
+            token_if = 0,
+            token_else,
+            token_while,
+            token_identifier,
+            token_type,
+            token_define,
+            token_extern,
+            token_stringconst,
+            token_integerconst,
+            token_decimalconst,
+            token_parentheses_b,
+            token_parentheses_e,
+            token_curlybraces_b,
+            token_curlybraces_e,
+            token_brackets_b,
+            token_brackets_e,
+            token_asterisk,
+            token_arrow,
+            token_point,
+            token_assign,
+            token_s_quotes,
+            token_d_quotes,
         };
+        CLexer() = default;
+        ~CLexer() = default;
 
-        using function_type = enum {
-            function_getvalue = 0,
-            function_setvalue,
-            function_success,
+    private:
+        const static std::map<std::string, CLexer::_token> _token_str_def;
+    };
+
+    class CLexerTy
+    {
+    public:
+        enum _token_ty {
+            token_n_invalid = -1,
+            token_reference_b = 0,
+            token_reference_e,
+            token_brackets_b,
+            token_brackets_e,
         };
+        enum _reg_re2_ty {
+            re2_ty_invalid = -1,
+            re2_ty_pattern = 0,
+            re2_ty_normal,
+            re2_ty_ref_b,
+            re2_ty_ref_e,
+            re2_ty_arr,
+        };
+        static CLexerTy& GetInstance()
+        {
+            static CLexerTy m_instance;
+            return m_instance;
+        }
+        static std::string GetWordRoot(const std::string_view& iden_str);
+        std::shared_ptr<CObObject> GetIdentifier(const std::string_view& iden_str) const;
+        bool AddIdentifier(const IDENPAIR& iden_pair) {
+            return CTypeSymbolTableObject::GetInstance().AddTypeSymbol(iden_pair);
+        }
+        size_t GetSymbolTableSize() const {
+            return CTypeSymbolTableObject::GetInstance().GetSymbolTableSize();
+        }
+    private:
+        CLexerTy() {
+            ASSERT(_pattern_ty_ptr);
+            if (_pattern_ty_ptr) _pattern_ty_ptr->ok();
+        }
+        ~CLexerTy() = default;
+        const static std::map<std::string, _token_ty> _token_ty_str_def;
+        const static std::string _re2_pattern_ty_def;
+        static std::unique_ptr<RE2> _pattern_ty_ptr;
+    };
 
+    class CLexerVr
+    {
+    public:
+        enum _token_vr {
+            token_n_invalid = -1,
+            token_parentheses_b = 0,
+            token_parentheses_e,
+            token_asterisk,
+            token_arrow,
+            token_point,
+        };
+        enum _reg_re2_vr {
+            re2_vr_invalid = -1,
+            re2_vr_pattern = 0,
+        };
         using iterator = SYMBOLTABLE::iterator;
         using const_iterator = SYMBOLTABLE::const_iterator;
-
-        CLexerObject() { CreateVariableSymbol(); }
-        CLexerObject(std::unique_ptr<SYMBOLTABLE>& table) : m_variablesymbols(std::move(table)) { }
-        ~CLexerObject() = default;
-
-        std::string GetWordRoot(const std::string& identifier_str) const;
-        std::shared_ptr<CObObject> GetVarIdentifier(const std::string& identifier_str) const;
-        std::shared_ptr<CObObject> GetTyIdentifier(const std::string& identifier_str) const;
-        bool AddVarIdentifier(const IDENPAIR& iden_pair);
-        bool AddTyIdentifier(const IDENPAIR& iden_pair);
-        int GetSymbolTableSize() const {
-            if (m_variablesymbols)
-                return (int)(*m_variablesymbols).size();
-            return 0;
+        CLexerVr() {
+            static std::once_flag lexer_vr_flag;
+            ASSERT(_pattern_vr_ptr);
+            std::call_once(lexer_vr_flag, [](std::unique_ptr<RE2>& pattern_ptr) {
+                if (pattern_ptr) pattern_ptr->ok();
+                }, _pattern_vr_ptr);
+            CreateVariableSymbolTable();
         }
-        std::shared_ptr<CObObject> GetFinalObObject(std::shared_ptr<CObObject> object) const {
-            while (object)
+        ~CLexerVr() = default;
+        static std::string GetWordRoot(const std::string_view& iden_str);
+        std::shared_ptr<CObObject> GetIdentifier(const std::string_view& iden_str) const;
+        bool AddIdentifier(const IDENPAIR& iden_pair) {
+            if (!GetVariableSymbolTable()) return false;
+            if (GetVariableSymbolTable()->find(iden_pair.first) == GetVariableSymbolTable()->end())
             {
-                switch (object->GetObType())
-                {
-                case CObObject::ob_basetype:
-                case CObObject::ob_flag:
-                    return object;
-                case CObObject::ob_reference:
-                case CObObject::ob_stringref:
-                {
-                    if (std::static_pointer_cast<CReferenceObject>(object)->GetData() == nullptr)
-                        return object;
-                    object = std::static_pointer_cast<CReferenceObject>(object)->GetData();
-                }
-                break;
-                case CObObject::ob_array:
-                {
-                    ASSERT(0);
-                    if (std::static_pointer_cast<CArrayObject>(object)->GetData() == nullptr)
-                        return object;
-                    object = std::static_pointer_cast<CArrayObject>(object)->GetData();
-                }
-                break;
-                case CObObject::ob_tuple:
-                {
-                    if (std::static_pointer_cast<CTupleObject>(object)->GetData().size() != 1)
-                        return object;
-                    object = *std::static_pointer_cast<CTupleObject>(object)->GetData().begin();
-                }
-                break;
-                case CObObject::ob_struct:
-                {
-                    if (std::static_pointer_cast<CStructObject>(object)->GetData().size() != 1)
-                        return object;
-                    object = (*std::static_pointer_cast<CStructObject>(object)->GetData().begin()).second.second.second;
-                }
-                break;
-                default:
-                    return nullptr;
-                }
-            }
-            return object;
-        }
-
-        std::variant<bool, std::stringstream> ImplFuncFinalObObject(std::shared_ptr<CObObject> object, function_type f_type, char* pdata, const std::stringstream* ss = nullptr) const
-        {
-            ASSERT(object != nullptr);
-            ASSERT(pdata != nullptr);
-            if (!object) return false;
-            if (!pdata) return false;
-            char* p = pdata;
-            auto default_rr = [=]() ->std::variant<bool, std::stringstream> { if (f_type == function_getvalue) return std::stringstream(""); else return false; };
-            auto call_func = [](std::shared_ptr<CObObject> object, function_type f_type, char* pdata, const std::stringstream* ss = nullptr) ->std::variant<bool, std::stringstream> {
-                switch (f_type)
-                {
-                case function_success:
-                {
-                    const std::function<bool(char*)> func = std::bind(&CObObject::Success, object, std::placeholders::_1);
-                    return func(pdata);
-                }
-                break;
-                case function_getvalue:
-                {
-                    const std::function<std::stringstream(char*)> func = std::bind(&CObObject::GetValue, object, std::placeholders::_1);
-                    return func(pdata);
-                }
-                break;
-                case function_setvalue:
-                {
-                    const std::function<bool(char*, const std::stringstream&)> func = std::bind(&CObObject::SetValue, object, std::placeholders::_1, std::placeholders::_2);
-                    ASSERT(ss != nullptr); if (!ss->str().length()) return false; return func(pdata, *ss);
-                }
-                break;
-                default:
-                {; }
-                }
-                return false;
-            };
-
-            while (object)
-            {
-                switch (object->GetObType())
-                {
-                case CObObject::ob_basetype:
-                case CObObject::ob_flag:
-                case CObObject::ob_stringref:
-                    return call_func(object, f_type, p, ss);
-                    break;
-                case CObObject::ob_reference:
-                {
-                    if (std::static_pointer_cast<CReferenceObject>(object)->GetData() == nullptr)
-                        return call_func(object, f_type, p, ss);
-                    char* nodig = nullptr;
-                    std::stringstream p_str = object->GetValue(p);
-                    p = (char*)std::strtoll(p_str.str().c_str(), &nodig, 16);
-                    if (!p) return default_rr();
-                    object = std::static_pointer_cast<CReferenceObject>(object)->GetData();
-                }
-                break;
-                case CObObject::ob_array:
-                {
-                    ASSERT(0);
-                }
-                break;
-                case CObObject::ob_tuple:
-                {
-                    ASSERT(0);
-                }
-                break;
-                case CObObject::ob_struct:
-                {
-                    if (std::static_pointer_cast<CStructObject>(object)->GetData().size() != 1)
-                        return call_func(object, f_type, p, ss);
-                    std::shared_ptr<CStructObject> ob_ptr = std::static_pointer_cast<CStructObject>(GetTyIdentifier(std::static_pointer_cast<CStructObject>(object)->GetName()));
-                    if (!ob_ptr) return default_rr();
-                    int offset = ob_ptr->GetElementOffset((*std::static_pointer_cast<CStructObject>(object)->GetData().begin()).first);
-                    ASSERT(offset >= 0);
-                    p += offset;
-                    object = (*std::static_pointer_cast<CStructObject>(object)->GetData().begin()).second.second.second;
-                }
-                break;
-                default:
-                { return default_rr(); }
-                }
-            }
-            return default_rr();
-        }
-
-        bool IsValidValue(std::shared_ptr<CObObject> object, char* pdata) const {
-            ASSERT(object != nullptr);
-            ASSERT(pdata != nullptr);
-            if (!object) return false;
-            if (!pdata) return false;
-            char* p = pdata;
-            while (object)
-            {
-                switch (object->GetObType())
-                {
-                case CObObject::ob_basetype:
-                case CObObject::ob_stringref:
-                    return object->IsValidValue(p);
-                    break;
-                case CObObject::ob_flag:
-                    return true;
-                    break;
-                case CObObject::ob_reference:
-                {
-                    if (std::static_pointer_cast<CReferenceObject>(object)->GetData() == nullptr)
-                        return object->IsValidValue(p);
-                    char* nodig = nullptr;
-                    std::stringstream ss = object->GetValue(p);
-                    p = (char*)std::strtoll(ss.str().c_str(), &nodig, 16);
-                    if (!p) return false;
-                    object = std::static_pointer_cast<CReferenceObject>(object)->GetData();
-                }
-                break;
-                case CObObject::ob_array:
-                {
-                    ASSERT(0);
-                    if (std::static_pointer_cast<CArrayObject>(object)->GetData() == nullptr)
-                        return object->IsValidValue(p);
-                    int dim = std::static_pointer_cast<CArrayObject>(object)->GetDim();
-                    size_t size = std::static_pointer_cast<CArrayObject>(object)->GetData()->GetObSize();
-                    ASSERT(dim >= 0);
-                    ASSERT(size != 0);
-                    if (dim < 0 || size == 0) return false;
-                    p += (dim*size);
-                    object = std::static_pointer_cast<CArrayObject>(object)->GetData();
-                }
-                break;
-                case CObObject::ob_tuple:
-                {
-                    if (std::static_pointer_cast<CTupleObject>(object)->GetData().size() != 1)
-                        return object->IsValidValue(p);
-                    char* nodig = nullptr;
-                    std::stringstream ss = object->GetValue(p);
-                    p = (char*)std::strtoll(ss.str().c_str(), &nodig, 16);
-                    ASSERT(p != nullptr);
-                    if (!p) return false;
-                    object = *std::static_pointer_cast<CTupleObject>(object)->GetData().begin();
-                }
-                break;
-                case CObObject::ob_struct:
-                {
-                    if (std::static_pointer_cast<CStructObject>(object)->GetData().size() != 1)
-                        return object->IsValidValue(p);
-                    std::shared_ptr<CStructObject> ob_ptr = std::static_pointer_cast<CStructObject>(GetTyIdentifier(std::static_pointer_cast<CStructObject>(object)->GetName()));
-                    if (!ob_ptr) return false;
-                    int offset = ob_ptr->GetElementOffset((*std::static_pointer_cast<CStructObject>(object)->GetData().begin()).first);
-                    ASSERT(offset >= 0);
-                    p += offset;
-                    object = (*std::static_pointer_cast<CStructObject>(object)->GetData().begin()).second.second.second;
-                }
-                break;
-                default:
-                    return false;
-                }
+                (*GetVariableSymbolTable())[iden_pair.first] = iden_pair.second;
+                return true;
             }
             return false;
         }
-        std::stringstream GetValue(std::shared_ptr<CObObject> object, char* pdata) const {
-            return std::get<std::stringstream>(ImplFuncFinalObObject(object, function_getvalue, pdata));
+        size_t GetSymbolTableSize() const {
+            if(GetVariableSymbolTable())
+                return GetVariableSymbolTable()->size();
+            return 0;
         }
-        bool SetValue(std::shared_ptr<CObObject> object, char* pdata, const std::stringstream& ss) {
-            return std::get<bool>(ImplFuncFinalObObject(object, function_setvalue, pdata, &ss));
+        std::shared_ptr<CObObject> GetSymbolReference(const std::string& vr_name) const {
+            if (!vr_name.length()) return nullptr;
+            if (!GetVariableSymbolTable()) return nullptr;
+            auto& it = GetVariableSymbolTable()->find(vr_name);
+            if (it == GetVariableSymbolTable()->end())
+                return nullptr;
+            return it->second;
         }
-        bool Success(std::shared_ptr<CObObject> object, char* pdata) const {
-            return std::get<bool>(ImplFuncFinalObObject(object, function_success, pdata));
-        }
-        bool Failed(std::shared_ptr<CObObject> object, char* pdata) const {
-            return !Success(object, pdata);
-        }
-        iterator		begin() { return (*m_variablesymbols).begin(); }
-        const_iterator	begin() const { return (*m_variablesymbols).begin(); }
-        iterator		end() { return (*m_variablesymbols).end(); }
-        const_iterator	end() const { return (*m_variablesymbols).end(); }
+        iterator        begin() { return (*m_variablesymboltable).begin(); }
+        const_iterator  begin() const { return (*m_variablesymboltable).begin(); }
+        iterator        end() { return (*m_variablesymboltable).end(); }
+        const_iterator  end() const { return (*m_variablesymboltable).end(); }
     protected:
-        bool CreateVariableSymbol() { if (m_variablesymbols = std::make_unique<SYMBOLTABLE>()) return true; else return false; }
+        bool CreateVariableSymbolTable() { if (m_variablesymboltable = std::make_unique<SYMBOLTABLE>()) return true; else return false; }
     private:
-        std::shared_ptr<CObObject> GetIdentifier(const std::string& identifier_str, _symbol symbol = symbol_variable) const;
-        bool AddIdentifier(const IDENPAIR& iden_pair, _symbol symbol = symbol_variable);
-        std::shared_ptr<CObObject> GetSymbol(const std::string& sym_str, _symbol symbol = symbol_variable) const;
-        std::unique_ptr<SYMBOLTABLE> m_variablesymbols;
+        const std::unique_ptr<SYMBOLTABLE>& GetVariableSymbolTable() const { return m_variablesymboltable; }
+        const static std::map<std::string, _token_vr> _token_vr_str_def;
+        const static std::string _re2_pattern_vr_def;
+        static std::unique_ptr<RE2> _pattern_vr_ptr;
+        std::unique_ptr<SYMBOLTABLE> m_variablesymboltable;
     };
 
-    class CParsingObject
+    class CParsing
     {
     public:
         using iterator = SYMBOLTABLE::iterator;
         using const_iterator = SYMBOLTABLE::const_iterator;
 
-        CParsingObject() = delete;
-        CParsingObject(std::shared_ptr<CLexerObject> table) : m_globalsymbols(table) { }
-        ~CParsingObject() = default;
-
-        bool ParsingIdentifiers(const std::string& identifiers);
-        std::shared_ptr<CLexerObject> GetGlobalSymbols() const { return m_globalsymbols; }
-        std::shared_ptr<CLexerObject> GetLocalSymbols() const { return m_localsymbols; }
-        std::shared_ptr<CObObject> GetIdentifier(const std::string& identifier_str) const {
-            ASSERT(identifier_str.length());
-            if (!identifier_str.length()) return nullptr;
-            if (m_localsymbols)
+        CParsing() = delete;
+        CParsing(std::shared_ptr<CParsing> parent_table) : m_globalsymboltable(parent_table) { }
+        ~CParsing() = default;
+        std::shared_ptr<CObObject> GetIdentifier(const std::string_view& iden_str) const {
+            ASSERT(iden_str.length());
+            if (!iden_str.length()) return nullptr;
+            if (m_localsymboltable)
             {
-                auto& it = (*m_localsymbols).GetVarIdentifier(identifier_str);
-                if (it != nullptr)
-                    return it;
+                auto& iden_ptr = (*m_localsymboltable).GetIdentifier(iden_str);
+                if (iden_ptr != nullptr)
+                    return iden_ptr;
             }
-            if (m_globalsymbols)
+            if (m_globalsymboltable)
             {
-                auto& it = (*m_globalsymbols).GetVarIdentifier(identifier_str);
-                if (it != nullptr)
-                    return it;
+                auto& iden_ptr = (*m_globalsymboltable).GetIdentifier(iden_str);
+                if (iden_ptr != nullptr)
+                    return iden_ptr;
             }
             return nullptr;
         }
@@ -336,15 +215,15 @@ namespace cchips {
             return it->second;
         }
         bool AddLocalSymbol(const IDENPAIR& iden_pair) {
-            if (!m_localsymbols) return false;
-            return m_localsymbols->AddVarIdentifier(iden_pair);
+            if (!m_localsymboltable) return false;
+            return m_localsymboltable->AddIdentifier(iden_pair);
         }
-
-        iterator		begin() { return (*m_localsymbols).begin(); }
-        const_iterator	begin() const { return (*m_localsymbols).begin(); }
-        iterator		end() { return (*m_localsymbols).end(); }
-        const_iterator	end() const { return (*m_localsymbols).end(); }
-    protected:
+        std::shared_ptr<CLexerVr> GetLocalSymbols() const { return m_localsymboltable; }
+        iterator        begin() { return (*m_localsymboltable).begin(); }
+        const_iterator  begin() const { return (*m_localsymboltable).begin(); }
+        iterator        end() { return (*m_localsymboltable).end(); }
+        const_iterator  end() const { return (*m_localsymboltable).end(); }
+//    protected:
         void SetAlias(const std::string& alias) {
             m_alias.first = alias;
             m_alias.second = 0;
@@ -353,8 +232,8 @@ namespace cchips {
     private:
         std::pair<std::string, int> m_alias;
         std::map<std::string, std::string> m_alias_array;
-        std::shared_ptr<CLexerObject> m_globalsymbols = nullptr;
-        std::shared_ptr<CLexerObject> m_localsymbols = std::make_shared<CLexerObject>();
+        std::shared_ptr<CParsing> m_globalsymboltable = nullptr;
+        std::shared_ptr<CLexerVr> m_localsymboltable = std::make_shared<CLexerVr>();
     };
 
     class CExpParsing
@@ -362,82 +241,253 @@ namespace cchips {
     public:
         enum _token {
             token_invalid = -1,
-            token_def = 0,
-            token_extern,
             token_op,
             token_iden,
             token_string,
-            token_number,
+            token_integral,
+            token_float_pointer,
         };
-        using CBaseValue = CBaseDef;
-        using ValuePair = std::pair<std::string, std::stringstream>;
+        enum _op_type {
+            unary_type = 0,
+            binary_type,
+        };
+        using CBaseValue = CMetadataTypeObject;
+        using ValuePair = std::pair<std::string, std::any>;
 
         struct _Value {
             _Value() :token(token_invalid), value(nullptr) {}
             _Value(const _Value& val) { *this = val; }
-            _Value(std::string string, _token tok) : token(tok) { value = std::make_unique<CBaseType<std::string>>(CBaseDef::type_string, CTraits<std::string>(string)); }
-            _Value(std::string string) : token(token_string) { value = std::make_unique<CBaseType<std::string>>(CBaseDef::type_string, CTraits<std::string>(string)); }
-            _Value(ULONGLONG num) : token(token_number) { value = std::make_unique<CBaseType<ULONGLONG>>(CBaseDef::type_ulonglong, CTraits<ULONGLONG>(num)); }
+            _Value(std::string string, _token tok) : token(tok) { 
+                value = make_metadata_j_ptr<std::string>(CBaseDef::type_string, {}, CObObject::op_n_equal);
+                if (value)
+                    value->SetCurValue(string);
+            }
+            _Value(std::string string) : token(token_string) { 
+                value = make_metadata_j_ptr<std::string>(CBaseDef::type_string, {}, CObObject::op_n_equal); 
+                if(value)
+                    value->SetCurValue(string);
+            }
+            _Value(ULONGLONG number) : token(token_integral) { 
+                value = make_metadata_s_ptr<ULONGLONG>(CBaseDef::type_ulonglong); 
+                if (value)
+                    value->SetCurValue(number);
+            }
+            _Value(DOUBLE float_pointer) : token(token_float_pointer) { 
+                value = make_metadata_s_ptr<DOUBLE>(CBaseDef::type_double); 
+                if (value)
+                    value->SetCurValue(float_pointer);
+            }
 
             bool isOp() const { return token == token_op; };
             bool isString() const { return token == token_string; }
-            bool isNumber() const { return token == token_number; }
+            bool isIntegral() const { return token == token_integral; }
+            bool isFloat() const { return token == token_float_pointer; }
             bool isIdentifier() const { return token == token_iden; }
+            bool isConstant() const { if (isString() || isIntegral() || isFloat()) return true; else return false; }
+            bool isValid() const { if (GetToken() == token_invalid) return false; return true; }
             _token GetToken() const { return token; }
 
-            _Value operator + (_Value& rhs) { if (isNumber()) return (GetNumber() + rhs.GetNumber()); else return (GetString() + rhs.GetString()); }
-            _Value operator * (_Value& rhs) { return (GetNumber() + rhs.GetNumber()); }
-            _Value operator - (_Value& rhs) { return (GetNumber() - rhs.GetNumber()); }
-            _Value operator / (_Value& rhs) { if (rhs.GetNumber() == 0) return 0; else return (GetNumber() / rhs.GetNumber()); }
-            _Value operator << (_Value& rhs) { return (GetNumber() << rhs.GetNumber()); }
-            _Value operator ^ (_Value& rhs) { return ((ULONGLONG)pow(GetNumber(), rhs.GetNumber())); }
-            _Value operator >> (_Value& rhs) { return (GetNumber() >> rhs.GetNumber()); }
-            _Value operator > (_Value& rhs) { return (GetNumber() > rhs.GetNumber()); }
-            _Value operator >= (_Value& rhs) { return (GetNumber() >= rhs.GetNumber()); }
-            _Value operator < (_Value& rhs) { return (GetNumber() < rhs.GetNumber()); }
-            _Value operator <= (_Value& rhs) { return (GetNumber() <= rhs.GetNumber()); }
-            _Value operator & (_Value& rhs) { return (GetNumber() & rhs.GetNumber()); }
-            _Value operator | (_Value& rhs) { return (GetNumber() | rhs.GetNumber()); }
-            _Value operator && (_Value& rhs) { return (GetNumber() && rhs.GetNumber()); }
-            _Value operator || (_Value& rhs) { return (GetNumber() || rhs.GetNumber()); }
-            _Value operator == (_Value& rhs) { if (isNumber()) return (GetNumber() == rhs.GetNumber()); else return (GetString() == rhs.GetString()); }
-            _Value operator != (_Value& rhs) { if (isNumber()) return (GetNumber() != rhs.GetNumber()); else return (GetString() != rhs.GetString()); }
-            _Value operator ! () { return !GetNumber(); }
+            _Value operator + (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return (GetIntegral() + rhs.GetIntegral());
+                else if (isFloat() && rhs.isFloat())
+                    return (GetFloat() + rhs.GetFloat());
+                else if (isString() && rhs.isString())
+                    return (GetString() + rhs.GetString()); 
+                return {};
+            }
+            _Value operator * (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return (GetIntegral() * rhs.GetIntegral());
+                else if (isFloat() && rhs.isFloat())
+                    return (GetFloat() * rhs.GetFloat());
+                return {};
+            }
+            _Value operator - (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return (GetIntegral() - rhs.GetIntegral());
+                else if (isFloat() && rhs.isFloat())
+                    return (GetFloat() - rhs.GetFloat());
+                return {};
+            }
+            _Value operator / (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral()) {
+                    if (rhs.GetIntegral() == 0)
+                        return (ULONGLONG)0;
+                    else
+                        return (GetIntegral() / rhs.GetIntegral());
+                }
+                else if (isFloat() && rhs.isFloat()) {
+                    if (rhs.GetFloat() == 0.0)
+                        return 0.0;
+                    else
+                        return (GetFloat() / rhs.GetFloat());
+                }
+                return {};
+            }
+            _Value operator << (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return (GetIntegral() << rhs.GetIntegral());
+                return {};
+            }
+            _Value operator ^ (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return ((ULONGLONG)pow(GetIntegral(), rhs.GetIntegral()));
+                return {};
+            }
+            _Value operator >> (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return (GetIntegral() >> rhs.GetIntegral());
+                return {};
+            }
+            _Value operator > (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return (ULONGLONG)(GetIntegral() > rhs.GetIntegral());
+                else if (isFloat() && rhs.isFloat())
+                    return (ULONGLONG)(GetFloat() > rhs.GetFloat());
+                else if (isString() && rhs.isString())
+                    return (ULONGLONG)(GetString() > rhs.GetString());
+                return {};
+            }
+            _Value operator >= (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return (ULONGLONG)(GetIntegral() >= rhs.GetIntegral());
+                else if (isFloat() && rhs.isFloat())
+                    return (ULONGLONG)(GetFloat() >= rhs.GetFloat());
+                else if (isString() && rhs.isString())
+                    return (ULONGLONG)(GetString() >= rhs.GetString());
+                return {};
+            }
+            _Value operator < (_Value& rhs) {
+                if (isIntegral() && rhs.isIntegral())
+                    return (ULONGLONG)(GetIntegral() < rhs.GetIntegral());
+                else if (isFloat() && rhs.isFloat())
+                    return (ULONGLONG)(GetFloat() < rhs.GetFloat());
+                else if (isString() && rhs.isString())
+                    return (ULONGLONG)(GetString() < rhs.GetString());
+                return {};
+            }
+            _Value operator <= (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return (ULONGLONG)(GetIntegral() <= rhs.GetIntegral());
+                else if (isFloat() && rhs.isFloat())
+                    return (ULONGLONG)(GetFloat() <= rhs.GetFloat());
+                else if (isString() && rhs.isString())
+                    return (ULONGLONG)(GetString() <= rhs.GetString());
+                return {};
+            }
+            _Value operator & (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return (ULONGLONG)(GetIntegral() & rhs.GetIntegral());
+                return {};
+            }
+            _Value operator | (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return (ULONGLONG)(GetIntegral() | rhs.GetIntegral());
+                return {};
+            }
+            _Value operator && (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return (ULONGLONG)(GetIntegral() && rhs.GetIntegral());
+                else if (isFloat() && rhs.isFloat())
+                    return (ULONGLONG)(GetFloat() && rhs.GetFloat());
+                return {};
+            }
+            _Value operator || (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return (ULONGLONG)(GetIntegral() || rhs.GetIntegral());
+                else if (isFloat() && rhs.isFloat())
+                    return (ULONGLONG)(GetFloat() || rhs.GetFloat());
+                return {};
+            }
+            _Value operator == (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return (ULONGLONG)(GetIntegral() == rhs.GetIntegral());
+                else if (isFloat() && rhs.isFloat())
+                    return (ULONGLONG)(GetFloat() == rhs.GetFloat());
+                else if (isString() && rhs.isString())
+                    return (ULONGLONG)(GetString() == rhs.GetString());
+                return {};
+            }
+            _Value operator != (_Value& rhs) { 
+                if (isIntegral() && rhs.isIntegral())
+                    return (ULONGLONG)(GetIntegral() != rhs.GetIntegral());
+                else if (isFloat() && rhs.isFloat())
+                    return (ULONGLONG)(GetFloat() != rhs.GetFloat());
+                else if (isString() && rhs.isString())
+                    return (ULONGLONG)(GetString() != rhs.GetString());
+                return {};
+            }
+            _Value operator ! () {
+                if (isIntegral())
+                    return (ULONGLONG)(!GetIntegral());
+                else if (isFloat())
+                    return (DOUBLE)(!GetFloat());
+                return {};
+            }
 
             const _Value& operator = (const _Value& val) {
-                token = val.GetToken();
-                if (val.isNumber())
-                    value = std::make_unique<CBaseType<ULONGLONG>>(CBaseDef::type_ulonglong, CTraits<ULONGLONG>(val.GetNumber()));
+                token = token_invalid;
+                if (val.isIntegral())
+                    value = make_metadata_s_ptr<ULONGLONG>(CBaseDef::type_ulonglong);
+                else if(val.isFloat())
+                    value = make_metadata_s_ptr<DOUBLE>(CBaseDef::type_double);
                 else
-                    value = std::make_unique<CBaseType<std::string>>(CBaseDef::type_string, CTraits<std::string>(val.GetString()));
+                    value = make_metadata_j_ptr<std::string>(CBaseDef::type_string, {}, CObObject::op_n_equal);
                 ASSERT(value);
+                value->SetCurValue(val.value->GetCurValue());
+                token = val.GetToken();
                 return *this;
             }
-            ULONGLONG GetNumber() const {
+            ULONGLONG GetIntegral() const {
                 ASSERT(value);
                 if (!value) return 0;
-                if (isOp()) return 0;
-                char* nodig = 0;
-                ULONGLONG number = strtoull(value->GetValue().str().c_str(), &nodig, 10);
-                return number;
+                if (!isIntegral()) return 0;
+                std::any anyvalue = value->GetCurValue();
+                if (anyvalue.has_value() && anyvalue.type() == typeid(ULONGLONG))
+                    return std::any_cast<ULONGLONG>(anyvalue);
+                return 0;
+            }
+            DOUBLE GetFloat() const {
+                ASSERT(value);
+                if (!value) return 0.0;
+                if (!isFloat()) return 0.0;
+                std::any anyvalue = value->GetCurValue();
+                if (anyvalue.has_value() && anyvalue.type() == typeid(DOUBLE))
+                    return std::any_cast<DOUBLE>(anyvalue);
+                return 0.0;
             }
             std::string GetString() const {
                 ASSERT(value);
-                if (!value) return 0;
-                return value->GetValue().str();
+                if (!value) return {};
+                std::any anyvalue = value->GetCurValue();
+                if (anyvalue.has_value() && anyvalue.type() == typeid(std::string))
+                    return std::any_cast<std::string>(anyvalue);
+                return {};
+            }
+            std::any GetAnyValue() const {
+                ASSERT(value);
+                if (!value) return {};
+                return value->GetCurValue();
             }
         private:
-            const CBaseValue& GetValue() const { return *value; }
+            const CBaseValue& GetCurValue() const { return *value; }
             _token token;
-            std::unique_ptr<CBaseValue> value;
+            std::shared_ptr<CBaseValue> value;
         };
 
         using _ValueMap = std::map<std::string, _Value>;
 
-        CExpParsing() = default;
+        CExpParsing() {
+            static std::once_flag exp_parsing_flag;
+            ASSERT(_pattern_exp_ptr);
+            std::call_once(exp_parsing_flag, [](std::unique_ptr<RE2>& pattern_ptr) {
+                if (pattern_ptr) pattern_ptr->ok();
+                }, _pattern_exp_ptr);
+        };
         ~CExpParsing() = default;
         static const std::string& GetTokenVarDef() { return _token_var_def; }
-        bool Parsing(const std::string& exp_str, std::shared_ptr<CLexerObject> symboltable);
+        bool Parsing(const std::string& exp_str, std::shared_ptr<CParsing> symboltable);
         bool AddTokenIdentifier(IDENPAIR& iden_pair) {
             ASSERT(iden_pair.second);
             ASSERT(iden_pair.first.length());
@@ -461,8 +511,21 @@ namespace cchips {
         const SYMBOLTABLE& GetIdenifierSymbol() const {
             return m_identifier_symbol;
         }
-        bool SetIdentifierValue(const ValuePair& iden_pair);
-        std::variant<bool, std::unique_ptr<ValuePair>> EvalExpression();
+        bool SetIdentifierValue(_ValueMap& value_map, const ValuePair& iden_pair);
+        _Value Calculate(std::string& op, _Value& rhs, _Value& lhs);
+        std::variant<ULONGLONG, std::unique_ptr<ValuePair>> EvalExpression(const _ValueMap& value_map);
+        //test
+        void Clear() {
+            m_identifier_symbol.clear();
+            m_expression_ast.clear();
+            m_expression_str.clear();
+        }
+        const std::deque<std::shared_ptr<_Value>>& GetExpressionAst() const {
+            return m_expression_ast;
+        }
+        const SYMBOLTABLE GetIdentifierSymbol() const {
+            return m_identifier_symbol;
+        }
     private:
         const std::string& GetTokenName(int token) const {
             auto& it = _token_str_def.find((_token)token);
@@ -496,9 +559,11 @@ namespace cchips {
         static const std::string _token_var_def;
         static const std::map<_token, std::string> _token_str_def;
         static const std::map<std::string, int> _op_precedence;
+        static const std::map<std::string, int> _op_type_def;
+        const static std::string _re2_pattern_exp_def;
+        static std::unique_ptr<RE2> _pattern_exp_ptr;
         SYMBOLTABLE m_identifier_symbol;
-        _ValueMap m_value_map;
-        std::deque<std::unique_ptr<_Value>> m_expression_ast;
+        std::deque<std::shared_ptr<_Value>> m_expression_ast;
         std::string m_expression_str;
     };
 
@@ -515,9 +580,40 @@ namespace cchips {
             call_stdcall,
             call_vectorcall,
         };
+        enum _class_type {
+            class_unknown = -1,
+            class_normal = 0,
+            class_wmi,
+            class_vbs,
+            class_ps,
+            class_kvm,
+            class_cshape,
+            class_max,
+        };
+        struct ClassProto {
+            ClassProto() = delete;
+            ClassProto(_class_type t, std::string_view name, std::string_view api, unsigned int idx) :type(t), class_name(name), delay_api(api), vtbl_idx(idx) { ; }
+            _class_type GetClassType() const { return type; }
+            std::string GetTypeName() const {
+                for (const auto& it : _class_predefine)
+                {
+                    if (type == it.second)
+                        return it.first;
+                }
+
+                return std::string("");
+            }
+            const std::string& GetClassNam() const { return class_name; }
+            const std::string& GetDelayApi() const { return delay_api; }
+            unsigned int GetVtblIdx() const { return vtbl_idx; }
+            _class_type type;
+            std::string class_name;
+            std::string delay_api;
+            unsigned int vtbl_idx;
+        };
         CPrototype() = delete;
-        CPrototype(_call_convention conv, const std::string& name) : m_call_conv(conv), m_proto_name(name), m_special(false), m_feature(DEFAULT_FEATURE) {}
-        CPrototype(_call_convention conv, const std::string& library, const std::string& name, const PrototypeArguments& args, bool special = false) : m_call_conv(conv), m_library(library), m_special(special), m_feature(DEFAULT_FEATURE), m_proto_name(name), m_args(args) {}
+        CPrototype(_call_convention conv, const std::string& name) : m_call_conv(conv), m_proto_name(name), m_special(false), m_feature(DEFAULT_FEATURE) { m_class_proto = nullptr; }
+        CPrototype(_call_convention conv, const std::string& library, const std::string& name, const PrototypeArguments& args, bool special = false) : m_call_conv(conv), m_library(library), m_special(special), m_feature(DEFAULT_FEATURE), m_proto_name(name), m_args(args) { m_class_proto = nullptr; }
         ~CPrototype() = default;
 
         const std::string& GetName() const { return m_proto_name; }
@@ -633,11 +729,33 @@ namespace cchips {
             ASSERT(0);
             return -1;
         }
+        const std::unique_ptr<ClassProto>& GetClassProto() const { return m_class_proto; }
         const PrototypeArgument& GetReturn() const { return m_return; }
-        void SetLibrary(const std::string& library) { m_library = library; }
-        void SetFeature(const std::string& feature) { m_feature = feature; }
+        void SetLibrary(const std::string_view& library) { m_library = library; }
+        void SetFeature(const std::string_view& feature) { m_feature = feature; }
         void SetSpecial(bool special) { m_special = special; }
+        void SetClassProto(std::unique_ptr<ClassProto> class_proto) { 
+            if (class_proto == nullptr) return;
+            if (class_proto->type > class_unknown && 
+                class_proto->type < class_max &&
+                class_proto->class_name.length())
+            {
+                m_class_proto = std::move(class_proto);
+            }
+        }
         virtual void* codegen() const = 0;
+        static _class_type GetClassType(std::string_view class_type) {
+            ASSERT(class_type.length());
+            if (!class_type.length()) return class_normal;
+            auto it = _class_predefine.find(std::string(class_type));
+            if (it != _class_predefine.end())
+                return it->second;
+            return class_normal;
+        }
+        _class_type GetClassType() const {
+            if (!m_class_proto) return class_normal;
+            return m_class_proto->type;
+        }
         static const int invalid_arg_offset = -1;
         static const int stack_aligned_bytes = sizeof(ULONG_PTR);
     private:
@@ -645,10 +763,11 @@ namespace cchips {
         std::string m_proto_name;
         std::string m_library;
         std::string m_feature;
+        std::unique_ptr<ClassProto> m_class_proto;
         PrototypeArguments m_args;
         PrototypeArgument m_return;
         bool m_special;
-
+        static const std::map<std::string, _class_type> _class_predefine;
     };
 
     class CHandle
@@ -660,33 +779,49 @@ namespace cchips {
 
     };
 
-    class CEnsure : public CParsingObject
+    class CEnsure : public CParsing
     {
     public:
         CEnsure() = delete;
-        CEnsure(std::shared_ptr<CLexerObject> table) : CParsingObject(table) { }
+        CEnsure(std::shared_ptr<CParsing> table) : CParsing(table) { }
         ~CEnsure() = default;
 
-        bool AddEnsure(const std::string& name) {
-            return ParsingIdentifiers(name);
+        bool AddEnsure(const std::string_view& name) {
+            if (!name.length()) return false;
+            std::shared_ptr<CObObject> ob_ptr = GetIdentifier(name);
+            if (!ob_ptr) return false;
+            return AddIdentifier(IDENPAIR(name, ob_ptr));
         }
     private:
     };
 
-    class CLog : public CParsingObject
+    class CLog : public CParsing
     {
     public:
         CLog() = delete;
-        CLog(std::shared_ptr<CLexerObject> table) : CParsingObject(table) { }
+        CLog(std::shared_ptr<CParsing> table) : CParsing(table) { }
         ~CLog() = default;
 
-        bool AddLogging(const std::string& name) {
-            return ParsingIdentifiers(name);
+        bool AddLogging(const std::string_view& name) {
+            if (!name.length()) return false;
+            std::shared_ptr<CObObject> ob_ptr = GetIdentifier(name);
+            if (!ob_ptr) return false;
+            if (ob_ptr->IsFlag()) {
+                std::shared_ptr<CTupleObject> tuple_ptr = std::make_shared<CTupleObject>(name);
+                if (!tuple_ptr) return false;
+                CTupleObject::_tuple_elem elem{};
+                elem.ptr = ob_ptr;
+                elem.elem_name = ob_ptr->GetName();
+                elem.flag.tuple_flg = CTupleObject::_tuple_flg::tuple_flg_str;
+                tuple_ptr->AddElement(elem);
+                ob_ptr = tuple_ptr;
+            }
+            return AddIdentifier(IDENPAIR(name, ob_ptr));
         }
     private:
     };
 
-    class CCheck : public CParsingObject
+    class CCheck : public CParsing, public std::enable_shared_from_this<CCheck>
     {
     public:
         using handle_type = enum {
@@ -696,7 +831,7 @@ namespace cchips {
 
         using HANDLEPAIR = std::pair<std::string, handle_type>;
         CCheck() = delete;
-        CCheck(std::shared_ptr<CLexerObject> table) : CParsingObject(table) { SetAlias(CExpParsing::GetTokenVarDef()); }
+        CCheck(std::shared_ptr<CParsing> table) : CParsing(table) { SetAlias(CExpParsing::GetTokenVarDef()); }
         ~CCheck() = default;
         void AddLog(const IDENPAIR& iden_pair) {
             m_logs.push_back(iden_pair);
@@ -708,7 +843,7 @@ namespace cchips {
             ASSERT(check != nullptr);
             if (check)
             {
-                if (check->Parsing(exp_str, GetLocalSymbols()))
+                if (check->Parsing(exp_str, shared_from_this()))
                 {
                     m_checks.push_back(std::move(check));
                     return true;
@@ -723,7 +858,7 @@ namespace cchips {
             ASSERT(modify != nullptr);
             if (modify)
             {
-                if (modify->Parsing(exp_str, GetLocalSymbols()))
+                if (modify->Parsing(exp_str, shared_from_this()))
                 {
                     m_modifys.push_back(std::move(modify));
                     return true;
@@ -763,13 +898,13 @@ namespace cchips {
         std::vector<std::unique_ptr<CExpParsing>> m_modifys;
     };
 
-    class CFunction : public CPrototype, public CLexerObject, public std::enable_shared_from_this<CFunction>
+    class CFunction : public CPrototype, public CParsing, public std::enable_shared_from_this<CFunction>
     {
     public:
         using func_proto = void(*)(void);
 
         CFunction() = delete;
-        CFunction(_call_convention conv, const std::string& name) : CPrototype(conv, name) {}
+        CFunction(_call_convention conv, const std::string& name) : CPrototype(conv, name), CParsing(nullptr) {}
         ~CFunction() = default;
 
         struct _CheckDefine {
@@ -778,10 +913,12 @@ namespace cchips {
             using ModifyPair = DefinePair;
             using HandlePair = DefinePair;
             using CheckLog = std::string;
+            using CCode = std::vector<std::string>;
         };
         struct _CheckPackage : _CheckDefine {
             std::vector<CheckLog> logs;
             std::vector<DefinePair> define_pairs;
+            std::vector<CCode> ccodes;
             std::vector<CheckPair> check_pair;
             std::vector <ModifyPair> modify_pair;
             std::vector<HandlePair> handle_pair;
@@ -789,18 +926,18 @@ namespace cchips {
 
         virtual bool AddArgument(const PrototypeArgument& arg) {
             if (CPrototype::AddArgument(arg))
-                return AddVarIdentifier(arg);
+                return AddIdentifier(arg);
             return false;
         }
         virtual bool AddReturn(const PrototypeArgument& Return) {
             if (CPrototype::AddReturn(Return))
-                return AddVarIdentifier(Return);
+                return AddIdentifier(Return);
             return false;
         }
         virtual void* codegen() const override { return nullptr; }
 
-        bool AddHandle(const std::string& name, bool bpre = true) {}
-        bool AddEnsure(const std::string& name) {
+        bool AddHandle(const std::string_view& name, bool bpre = true) {}
+        bool AddEnsure(const std::string_view& name) {
             ASSERT(name.length());
             if (!m_pensure)
                 m_pensure = std::make_unique<CEnsure>(shared_from_this());
@@ -809,12 +946,12 @@ namespace cchips {
                 return (*m_pensure).AddEnsure(name);
             return false;
         }
-        bool AddLogging(const std::string& name, bool bpre = true) {
+        bool AddLogging(const std::string_view& name, bool bpre = true) {
             ASSERT(name.length());
             if (bpre)
             {
                 if (!m_pprelog)
-                    m_pprelog = std::make_unique<CLog>(std::static_pointer_cast<CLexerObject>(shared_from_this()));
+                    m_pprelog = std::make_unique<CLog>(std::static_pointer_cast<CParsing>(shared_from_this()));
                 ASSERT(m_pprelog != nullptr);
                 if (m_pprelog)
                     return (*m_pprelog).AddLogging(name);
@@ -823,7 +960,7 @@ namespace cchips {
             else
             {
                 if (!m_ppostlog)
-                    m_ppostlog = std::make_unique<CLog>(shared_from_this());
+                    m_ppostlog = std::make_unique<CLog>(std::static_pointer_cast<CParsing>(shared_from_this()));
                 ASSERT(m_ppostlog != nullptr);
                 if (m_ppostlog)
                     return (*m_ppostlog).AddLogging(name);
@@ -832,12 +969,12 @@ namespace cchips {
         }
         bool AddChecks(const _CheckPackage& package, bool bpre = true);
 
-        std::shared_ptr<CLexerObject> GetEnsure() const {
+        std::shared_ptr<CLexerVr> GetEnsure() const {
             if (m_pensure)
                 return (*m_pensure).GetLocalSymbols();
             return nullptr;
         }
-        std::shared_ptr<CLexerObject> GetLogging(bool bpre = true) const {
+        std::shared_ptr<CLexerVr> GetLogging(bool bpre = true) const {
             if (bpre)
             {
                 if (m_pprelog)
@@ -850,7 +987,7 @@ namespace cchips {
             }
             return nullptr;
         }
-        const std::vector<std::unique_ptr<CCheck>>& GetChecks(bool bpre = true) const {
+        const std::vector<std::shared_ptr<CCheck>>& GetChecks(bool bpre = true) const {
             if (bpre)
                 return m_pprechecks;
             else
@@ -918,17 +1055,17 @@ namespace cchips {
         processing_status PostprocessingLog(PVOID pnode) const { return ProcessingLog(pnode, false); }
         processing_status PostprocessingChecks(PVOID pnode) { return ProcessingChecks(pnode, false); }
 
-        bool checking(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const;
-        processing_status modifying(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle);
-        bool handling(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const;
-        bool logging(PVOID pnode, const std::unique_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const;
+        bool checking(PVOID pnode, const std::shared_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const;
+        processing_status modifying(PVOID pnode, const std::shared_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle);
+        bool handling(PVOID pnode, const std::shared_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const;
+        bool logging(PVOID pnode, const std::shared_ptr<CCheck>& pcheck, const std::shared_ptr<CLogHandle>& log_handle) const;
     private:
         std::unique_ptr<CHandle> m_phandle;
         std::unique_ptr<CEnsure> m_pensure;
         std::unique_ptr<CLog> m_pprelog;
         std::unique_ptr<CLog> m_ppostlog;
-        std::vector<std::unique_ptr<CCheck>> m_pprechecks;
-        std::vector<std::unique_ptr<CCheck>> m_ppostchecks;
+        std::vector<std::shared_ptr<CCheck>> m_pprechecks;
+        std::vector<std::shared_ptr<CCheck>> m_ppostchecks;
         std::vector<func_proto> m_pre_processing;
         std::vector<func_proto> m_post_processing;
     };
@@ -943,13 +1080,13 @@ namespace cchips {
         CFunctionProtos() = default;
         ~CFunctionProtos() = default;
 
-        bool AddFunction(const std::shared_ptr<CFunction>& function) {
+        bool AddFunction(std::shared_ptr<CFunction> function) {
             ASSERT(function != nullptr);
             if (!function) return false;
             auto it = m_functionprototypes.find(function->GetName());
             if (it == m_functionprototypes.end())
             {
-                m_functionprototypes[function->GetName()] = function;
+                m_functionprototypes[function->GetName()] = std::move(function);
                 return true;
             }
             return false;
@@ -1016,7 +1153,7 @@ namespace cchips {
         FunctionProtos m_functionprototypes;
     };
 
-    class CWmiObject : public CLexerObject, public std::enable_shared_from_this<CWmiObject>
+    class CWmiObject : public CParsing, public std::enable_shared_from_this<CWmiObject>
     {
     public:
         using PrototypeData = IDENPAIR;
@@ -1024,7 +1161,8 @@ namespace cchips {
         using WmiProto = std::vector<PrototypeData>;
         using iterator = WmiProto::iterator;
         using const_iterator = WmiProto::const_iterator;
-        CWmiObject(const std::string& name) { m_name = name; }
+        CWmiObject() = delete;
+        CWmiObject(const std::string& name) : CParsing(nullptr) { m_name = name; }
         ~CWmiObject() = default;
 
         const std::string& GetName() const { return m_name; }
@@ -1035,11 +1173,11 @@ namespace cchips {
             if (!data_pair.first.length()) return false;
             if (!data_pair.second) return false;
             m_datas.push_back(data_pair);
-            return AddVarIdentifier(data_pair);
+            return AddIdentifier(data_pair);
         }
         std::shared_ptr<CFunctionProtos> GetMethods() { if (!m_methods) m_methods = std::make_shared<CFunctionProtos>(); ASSERT(m_methods != nullptr); return m_methods; }
         bool AddChecks(const CFunction::_CheckPackage& package, bool bpre = true);
-        const std::vector<std::unique_ptr<CCheck>>& GetChecks(bool bpre = true) const {
+        const std::vector<std::shared_ptr<CCheck>>& GetChecks(bool bpre = true) const {
             if (bpre)
                 return m_pprechecks;
             else
@@ -1054,8 +1192,8 @@ namespace cchips {
         std::string m_name;
         std::shared_ptr<CMetadataTypeObject> m_midl_interface;
         std::vector<PrototypeData> m_datas;
-        std::vector<std::unique_ptr<CCheck>> m_pprechecks;
-        std::vector<std::unique_ptr<CCheck>> m_ppostchecks;
+        std::vector<std::shared_ptr<CCheck>> m_pprechecks;
+        std::vector<std::shared_ptr<CCheck>> m_ppostchecks;
         std::shared_ptr<CFunctionProtos> m_methods;
     };
 

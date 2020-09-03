@@ -22,6 +22,7 @@
     "DWORD",
     "DWORD_PTR",
     "FLOAT",
+    "DOUBLE",
     "INT64",
     "UINT64",
     "LONGLONG",
@@ -36,7 +37,8 @@
     "SC_HANDLE",
     "NTSTATUS",
     "STRING",
-    "WSTRING"
+    "WSTRING",
+    "GUID"
   ],
 
   "Additional": {
@@ -63,16 +65,16 @@
 	}
   },
   
-  "Structure": {	
-	"COAUTHIDENTITY": {
-	  "User": "USHORT*",
-	  "UserLength": "ULONG",
-	  "Domain": "USHORT*",
-	  "DomainLength": "ULONG",
-	  "Password": "USHORT*",
-	  "PasswordLength": "ULONG",
-	  "Flags": "ULONG"
-	},
+  "Structure": {
+    "COAUTHIDENTITY": {
+      "User": "USHORT*",
+      "UserLength": "ULONG_PTR",
+      "Domain": "USHORT*",
+      "DomainLength": "ULONG_PTR",
+      "Password": "USHORT*",
+      "PasswordLength": "ULONG",
+      "Flags": "ULONG"
+    },
 
 	"COAUTHINFO": {
 	"dwAuthnSvc": "DWORD",

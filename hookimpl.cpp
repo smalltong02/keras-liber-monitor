@@ -27,19 +27,80 @@ processing_status WINAPI CHookImplementObject::detour_coInitializeEx(CHookImplem
     ASSERT(node->function != nullptr);
     ASSERT(node->hook_implement_object != nullptr);
     if (!node || !node->return_va || !node->log_entry || !node->hook_implement_object) return processing_skip;
-    processing_status status;
-    if ((status = node->function->CheckReturn(node)) != processing_continue)
+    if (processing_status status; (status = node->function->CheckReturn(node)) != processing_continue)
         return status;
+    //processing delay hooks.
+    std::vector<int> ord_list;
+    do {
+        std::lock_guard<std::recursive_mutex> lock_guard(g_impl_object->GetRecursiveMutex());
+        auto& delay_list = g_impl_object->GetDelayNodeList();
+        if (delay_list.find("WMI") == delay_list.end()) break;
+        ord_list = delay_list["WMI"];
+    } while (0);
 
-    static std::once_flag wmi_flag;
-    std::call_once(wmi_flag, [](const std::shared_ptr<CHookImplementObject> implement_object) {
-            if (implement_object->GetWmiObjectCounts())
-            {
-                //error_log("delay_wmi_hook_processing!");
-                implement_object->HookWmiObjectMethods(implement_object->GetFunctionCounts(), false);
-            }
-        }, node->hook_implement_object);
+    for (auto i : ord_list)
+    {
+        if (g_impl_object->GetHookNodeList()[i].bdelayed && 
+            g_impl_object->GetHookNodeList()[i].function &&
+            g_impl_object->GetHookNodeList()[i].function->GetClassProto() &&
+            g_impl_object->GetHookNodeList()[i].function->GetClassProto()->GetClassType() == CPrototype::class_wmi)
+        {
+            g_impl_object->HookApi(g_impl_object->GetHookNodeList()[i]);
+        }
+    }
+    return processing_continue;
+}
 
+processing_status WINAPI CHookImplementObject::detour_coUninitialize(detour_node* node)
+{
+    BreakPoint;
+    ASSERT(node != nullptr);
+    ASSERT(node->return_va != nullptr);
+    ASSERT(node->log_entry != nullptr);
+    ASSERT(node->function != nullptr);
+    ASSERT(node->hook_implement_object != nullptr);
+    if (!node || !node->return_va || !node->log_entry || !node->hook_implement_object) return processing_skip;
+
+    std::vector<int> ord_list;
+    do {
+        std::lock_guard<std::recursive_mutex> lock_guard(g_impl_object->GetRecursiveMutex());
+        auto& delay_list = g_impl_object->GetDelayNodeList();
+        if (delay_list.find("WMI") == delay_list.end()) break;
+        ord_list = delay_list["WMI"];
+    } while (0);
+
+    for (auto i : ord_list)
+    {
+        if (!node->hook_implement_object->GetHookNodeList()[i].bdelayed  &&
+            g_impl_object->GetHookNodeList()[i].function &&
+            g_impl_object->GetHookNodeList()[i].function->GetClassProto() &&
+            g_impl_object->GetHookNodeList()[i].function->GetClassProto()->GetClassType() == CPrototype::class_wmi)
+        {
+            g_impl_object->RemoveApi(g_impl_object->GetHookNodeList()[i]);
+        }
+    }
+    node->hook_implement_object->ClearWmiInterfaceDefine();
+}
+
+processing_status WINAPI CHookImplementObject::detour_coInitializeSecurity(detour_node* node, PSECURITY_DESCRIPTOR pSecDesc, LONG cAuthSvc, SOLE_AUTHENTICATION_SERVICE *asAuthSvc, 
+    void *pReserved1, DWORD dwAuthnLevel, DWORD dwImpLevel, void *pAuthList, DWORD dwCapabilities, void *pReserved3)
+{
+    BreakPoint;
+    ASSERT(node != nullptr);
+    ASSERT(node->return_va != nullptr);
+    ASSERT(node->log_entry != nullptr);
+    ASSERT(node->function != nullptr);
+    ASSERT(node->hook_implement_object != nullptr);
+    if (!node || !node->return_va || !node->log_entry || !node->hook_implement_object) return processing_skip;
+    std::shared_ptr<CObObject> return_ptr = node->function->GetIdentifier(SI_RETURN);
+    if (!return_ptr) return processing_continue;
+    std::any anyvalue = return_ptr->GetValue(static_cast<char*>(node->return_va));
+    if (!anyvalue.has_value() || anyvalue.type() != typeid(HRESULT))
+        return processing_continue;
+    if (HRESULT hr = std::any_cast<HRESULT>(anyvalue); hr == RPC_E_TOO_LATE) {
+        anyvalue = S_OK;
+        return_ptr->SetValue(static_cast<char*>(node->return_va), anyvalue);
+    }
     return processing_continue;
 }
 
@@ -53,11 +114,11 @@ bool process_loadLibrary(CHookImplementObject::detour_node* node, std::string& l
         //processing delay hooks.
         std::vector<int> ord_list;
         do {
+            std::lock_guard<std::recursive_mutex> lock_guard(g_impl_object->GetRecursiveMutex());
             auto& delay_list = g_impl_object->GetDelayNodeList();
-            auto x_safe_delay_list = xlock_safe_ptr(delay_list);
-            if (x_safe_delay_list->find(lib_name) == x_safe_delay_list->end()) break;
-            ord_list = (*x_safe_delay_list)[lib_name];
-            delay_list->erase(x_safe_delay_list->find(lib_name));
+            if (delay_list.find(lib_name) == delay_list.end()) break;
+            ord_list = delay_list[lib_name];
+            delay_list.erase(delay_list.find(lib_name));
         } while (0);
 
         for (auto i : ord_list)
@@ -66,29 +127,7 @@ bool process_loadLibrary(CHookImplementObject::detour_node* node, std::string& l
             {
                 if (_stricmp((g_impl_object->GetHookNodeList()[i].function)->GetLibrary().c_str(), lib_name.c_str()) == 0)
                 {
-                    MH_STATUS status;
-                    LPVOID ppTarget = nullptr;
-                    status = MH_CreateHookApiEx(A2WString((g_impl_object->GetHookNodeList()[i].function)->GetLibrary()).c_str(), (LPCSTR)(g_impl_object->GetHookNodeList()[i].function)->GetName().c_str(), g_impl_object->GetHookImplementFunction(), &(g_impl_object->GetHookNodeList()[i].orgin_api_implfunc), (LPVOID*)&g_impl_object->GetHookNodeList()[i], &ppTarget);
-                    if (status == MH_OK && ppTarget)
-                    {
-                        status = MH_EnableHook(ppTarget);
-                        if (status == MH_OK)
-                        {
-                            LOGGING((g_impl_object->GetHookNodeList()[i].function)->GetName(), "success");
-                            error_log("api hook delay create: {} success!", (g_impl_object->GetHookNodeList()[i].function)->GetName());
-                        }
-                        else
-                        {
-                            LOGGING((g_impl_object->GetHookNodeList()[i].function)->GetName(), "failed");
-                            error_log("api hook delay create: {} failed({})!", (g_impl_object->GetHookNodeList()[i].function)->GetName(), status);
-                        }
-                    }
-                    else
-                    {
-                        LOGGING((g_impl_object->GetHookNodeList()[i].function)->GetName(), "failed");
-                        error_log("api hook delay create: {} failed({})!", (g_impl_object->GetHookNodeList()[i].function)->GetName(), status);
-                    }
-                    g_impl_object->GetHookNodeList()[i].bdelayed = false;
+                    g_impl_object->HookApi(g_impl_object->GetHookNodeList()[i]);
                 }
             }
         }
@@ -97,92 +136,36 @@ bool process_loadLibrary(CHookImplementObject::detour_node* node, std::string& l
     return true;
 }
 
-processing_status WINAPI CHookImplementObject::detour_loadLibraryA(CHookImplementObject::detour_node* node, LPCSTR lpLibFileName)
+void CALLBACK CHookImplementObject::detour_ldrDllNotification(ULONG reason, const LDR_DLL_NOTIFICATION_DATA *notification, void *param)
 {
-    BreakPoint;
-    ASSERT(node != nullptr);
-    ASSERT(node->return_va != nullptr);
-    ASSERT(node->log_entry != nullptr);
-    ASSERT(node->function != nullptr);
-    if (!node || !node->return_va || !node->log_entry) return processing_skip;
-    processing_status status;
-    if ((status = node->function->CheckReturn(node)) != processing_continue)
-        return status;
-    BEGIN_LOG("delay_hooking");
-    HMODULE hmod = *reinterpret_cast<HMODULE*>(node->return_va);
-    if (hmod != nullptr && lpLibFileName)
-    {
-        std::string lib_name = lpLibFileName;
-        process_loadLibrary(node, lib_name, LOGGER);
+    if (!m_disable_hook && notification != NULL) {
+        if (reason == LDR_DLL_NOTIFICATION_REASON_LOADED) {
+            if (notification->Loaded.BaseDllName != nullptr &&
+                notification->Loaded.BaseDllName->Buffer != nullptr &&
+                notification->Loaded.BaseDllName->Length > 0)
+            {
+                std::unique_ptr<CLogHandle> log_handle = std::make_unique<CLogHandle>(DEBUG_FEATURE, CLogObject::logtype::log_debug);
+                if (!log_handle) return;
+                BEGIN_LOG("delay_hooking");
+                std::wstring lib_name = { notification->Loaded.BaseDllName->Buffer, notification->Loaded.BaseDllName->Length};
+                lib_name = lib_name.c_str();
+                detour_node node = { nullptr, nullptr, 0, nullptr, nullptr, log_handle->GetHandle() };
+                debug_log("load module: {}", lib_name);
+                process_loadLibrary(&node, W2AString(lib_name), LOGGER);
+                END_LOG(log_handle->GetHandle());
+            }
+        }
+        else if (reason == LDR_DLL_NOTIFICATION_REASON_UNLOADED) {
+            if (notification->Unloaded.BaseDllName != nullptr &&
+                notification->Unloaded.BaseDllName->Buffer != nullptr &&
+                notification->Unloaded.BaseDllName->Length > 0)
+            {
+                std::wstring lib_name = { notification->Unloaded.BaseDllName->Buffer, notification->Unloaded.BaseDllName->Length };
+                debug_log("unload module: {}", lib_name);
+            }
+        }
     }
-    END_LOG(node->log_entry);
-    return processing_continue;
-}
-
-processing_status WINAPI CHookImplementObject::detour_loadLibraryExA(CHookImplementObject::detour_node* node, LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
-{
-    BreakPoint;
-    ASSERT(node != nullptr);
-    ASSERT(node->return_va != nullptr);
-    ASSERT(node->log_entry != nullptr);
-    ASSERT(node->function != nullptr);
-    if (!node || !node->return_va || !node->log_entry) return processing_skip;
-    processing_status status;
-    if ((status = node->function->CheckReturn(node)) != processing_continue)
-        return status;
-    BEGIN_LOG("delay_hooking");
-    HMODULE hmod = *reinterpret_cast<HMODULE*>(node->return_va);
-    if (hmod != nullptr && lpLibFileName)
-    {
-        std::string lib_name = lpLibFileName;
-        process_loadLibrary(node, lib_name, LOGGER);
-    }
-    END_LOG(node->log_entry);
-    return processing_continue;
-}
-
-processing_status WINAPI CHookImplementObject::detour_loadLibraryW(CHookImplementObject::detour_node* node, LPCWSTR lpLibFileName)
-{
-    BreakPoint;
-    ASSERT(node != nullptr);
-    ASSERT(node->return_va != nullptr);
-    ASSERT(node->log_entry != nullptr);
-    ASSERT(node->function != nullptr);
-    if (!node || !node->return_va || !node->log_entry) return processing_skip;
-    processing_status status;
-    if ((status = node->function->CheckReturn(node)) != processing_continue)
-        return status;
-    BEGIN_LOG("delay_hooking");
-    HMODULE hmod = *reinterpret_cast<HMODULE*>(node->return_va);
-    if (hmod != nullptr && lpLibFileName)
-    {
-        std::string lib_name = W2AString(lpLibFileName);
-        process_loadLibrary(node, lib_name, LOGGER);
-    }
-    END_LOG(node->log_entry);
-    return processing_continue;
-}
-
-processing_status WINAPI CHookImplementObject::detour_loadLibraryExW(CHookImplementObject::detour_node* node, LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
-{
-    BreakPoint;
-    ASSERT(node != nullptr);
-    ASSERT(node->return_va != nullptr);
-    ASSERT(node->log_entry != nullptr);
-    ASSERT(node->function != nullptr);
-    if (!node || !node->return_va || !node->log_entry) return processing_skip;
-    processing_status status;
-    if ((status = node->function->CheckReturn(node)) != processing_continue)
-        return status;
-    BEGIN_LOG("delay_hooking");
-    HMODULE hmod = *reinterpret_cast<HMODULE*>(node->return_va);
-    if (hmod != nullptr && lpLibFileName)
-    {
-        std::string lib_name = W2AString(lpLibFileName);
-        process_loadLibrary(node, lib_name, LOGGER);
-    }
-    END_LOG(node->log_entry);
-    return processing_continue;
+    return;
 }
 
 processing_status WINAPI CHookImplementObject::detour_ntQueryInformationProcess(CHookImplementObject::detour_node* node, HANDLE ProcessHandle, DWORD ProcessInformationClass, LPVOID ProcessInformation, ULONG ProcessInformationLength, ULONG* ReturnLength)
@@ -195,12 +178,40 @@ processing_status WINAPI CHookImplementObject::detour_ntQueryInformationProcess(
     return processing_continue;
 }
 
+processing_status WINAPI CHookImplementObject::detour_getProcAddress(CHookImplementObject::detour_node* node, HMODULE hModule, LPCSTR  lpProcName)
+{
+    BreakPoint;
+    ASSERT(node != nullptr);
+    ASSERT(node->return_va != nullptr);
+    ASSERT(node->log_entry != nullptr);
+    if (!node || !node->return_va || !node->log_entry) return processing_skip;
+    if (hModule == nullptr) return processing_skip;
+    if (((DWORD_PTR)lpProcName) <= 0xffff) {
+        BEGIN_LOG("get_ordinal");
+        std::stringstream smod, ss;
+        smod << std::hex << "0x" << hModule;
+        ss << (DWORD_PTR)lpProcName;
+        LOGGING("hModule", smod.str());
+        LOGGING("Ordinal", ss.str());
+        END_LOG(node->log_entry);
+    }
+    else {
+        BEGIN_LOG("get_procname");
+        std::stringstream smod, ss;
+        smod << std::hex << "0x" << hModule;
+        ss << lpProcName;
+        LOGGING("hModule", smod.str());
+        LOGGING("procName", ss.str());
+        END_LOG(node->log_entry);
+    }
+    return processing_continue;
+}
+
 bool process_log_for_wmiobject(CHookImplementObject::detour_node* node, const std::shared_ptr<CWmiObject>& wmi_object, IWbemClassObject* pwbem_object, std::shared_ptr<CLogHandle>& log_handle)
 {
     HRESULT hr;
     VARIANT variant_value;
     BEGIN_LOG("wmi_log");
-    std::string value_string;
 
     for (const auto& pcheck : wmi_object->GetChecks(false))
     {
@@ -210,8 +221,10 @@ bool process_log_for_wmiobject(CHookImplementObject::detour_node* node, const st
         for (const auto& log : pcheck->GetLogs())
         {
             hr = pwbem_object->Get(CComBSTR(log.first.c_str()), 0, &variant_value, 0, 0);
-            if (SUCCEEDED(hr) && GetValueString(variant_value, value_string))
-                LOGGING(log.first, value_string);
+            if (SUCCEEDED(hr)) {
+                if (std::stringstream ss = OutputAnyValue(GetVariantValue(variant_value)); ss.str().length())
+                    LOGGING(log.first, ss.str());
+            }
         }
     }
     END_LOG(log_handle->GetHandle());
@@ -251,11 +264,13 @@ bool process_duplicate_for_wmiobject(CHookImplementObject::detour_node* node, co
                     InitializeWin32WbemClassObject(p_IWbemClassObject, wmi_object);
                     *apObjects = (IWbemClassObject*)p_IWbemClassObject;
                     *puReturned = 1;
-                    std::shared_ptr<CObObject> return_ptr = node->function->GetVarIdentifier(SI_RETURN);
+                    std::shared_ptr<CObObject> return_ptr = node->function->GetIdentifier(SI_RETURN);
                     ASSERT(return_ptr != nullptr);
                     if (return_ptr)
                     {
-                        node->function->SetValue(return_ptr, (char*)node->return_va, std::stringstream("0"));
+                        std::any anyvalue = return_ptr->GetCurValue();
+                        if(AssignAnyType(anyvalue, 0))
+                            return_ptr->SetValue((char*)node->return_va, anyvalue);
                     }
                 }
             }
@@ -275,26 +290,30 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IEnumWbemClassO
     ASSERT(node->hook_implement_object != nullptr);
     if (!node || !node->return_va || !node->log_entry) return processing_skip;
     if (!node->hook_implement_object) return processing_skip;
+    if (processing_status status; (status = node->function->CheckReturn(node)) != processing_continue)
+        return status;
     if (!apObjects || !(*apObjects)) return processing_continue;
 
     HRESULT hr;
     VARIANT variant_value;
-    std::string class_name;
+    std::stringstream class_name;
     IWbemClassObject* pWbemClassObject = *apObjects;
-    hr = pWbemClassObject->Get(CComBSTR("CreationClassName"), 0, &variant_value, 0, 0);
-    if (!SUCCEEDED(hr) || !GetValueString(variant_value, class_name)) return processing_continue;
-    BEGIN_LOG(class_name);
+    hr = pWbemClassObject->Get(CComBSTR("__CLASS"), 0, &variant_value, 0, 0);
+    if (!SUCCEEDED(hr)) return processing_continue;
+    if (class_name = OutputAnyValue(GetVariantValue(variant_value)); !class_name.str().length())
+        return processing_continue;
+    BEGIN_LOG(class_name.str());
     for (const auto& wmi_object : node->hook_implement_object->GetWmiObjects())
     {
         ASSERT(wmi_object.second != nullptr);
         if (wmi_object.second == nullptr) continue;
-        if (_stricmp(wmi_object.first.c_str(), class_name.c_str()) == 0)
+        if (_stricmp(wmi_object.first.c_str(), class_name.str().c_str()) == 0)
         {
-            if (node->function->CheckReturn(node) == processing_skip)
-            {
-                //if (!process_duplicate_for_wmiobject(node, wmi_object.second, apObjects, puReturned, LOGGER))
-                //    return processing_skip;
-            }
+            //if (node->function->CheckReturn(node) == processing_skip)
+            //{
+            //    if (!process_duplicate_for_wmiobject(node, wmi_object.second, apObjects, puReturned, LOGGER))
+            //        return processing_skip;
+            //}
             if (!process_log_for_wmiobject(node, wmi_object.second, pWbemClassObject, LOGGER))
                 return processing_skip;
             break;
@@ -307,9 +326,10 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IEnumWbemClassO
 bool process_check_for_wmiobject(CHookImplementObject::detour_node* node, const std::shared_ptr<CWmiObject>& wmi_object, const std::string& val_name, VARIANT& vt_value, std::shared_ptr<CLogHandle>& log_handle)
 {
     BEGIN_LOG("wmi_modify");
-    auto func_checking = [&](CHookImplementObject::detour_node* pnode, const std::unique_ptr<CCheck>& pcheck) ->bool {
+    auto func_checking = [&](CHookImplementObject::detour_node* pnode, const std::shared_ptr<CCheck>& pcheck) ->bool {
         bool bcheck = true;
         bool bSetValue = false;
+        CExpParsing::_ValueMap value_map;
         for (const auto& check : pcheck->GetChecks())
         {
             ASSERT(pcheck != nullptr);
@@ -318,14 +338,10 @@ bool process_check_for_wmiobject(CHookImplementObject::detour_node* node, const 
             {
                 if (_stricmp(pcheck->GetRealName(iden.first).c_str(), val_name.c_str()) == 0)
                 {
-                    std::string str_val;
-                    if (!GetValueString(vt_value, str_val)) continue;
-                    std::stringstream ss; ss << str_val;
-                    if (!ss.str().length())
-                    {
+                    std::any anyvalue = GetVariantValue(vt_value);
+                    if (!anyvalue.has_value()) 
                         return false;
-                    }
-                    if (!check->SetIdentifierValue(CExpParsing::ValuePair(iden.first, ss.str())))
+                    if (!check->SetIdentifierValue(value_map, CExpParsing::ValuePair(iden.first, anyvalue)))
                     {
                         return false;
                     }
@@ -334,7 +350,7 @@ bool process_check_for_wmiobject(CHookImplementObject::detour_node* node, const 
                     break;
                 }
             }
-            if (bSetValue && !std::get<bool>(check->EvalExpression()))
+            if (auto variant_value = check->EvalExpression(value_map); variant_value.index() == 0 && !std::get<ULONGLONG>(variant_value))
             {
                 bcheck = false;
                 break;
@@ -344,7 +360,7 @@ bool process_check_for_wmiobject(CHookImplementObject::detour_node* node, const 
         return bcheck;
     };
 
-    auto func_modifying = [&](CHookImplementObject::detour_node* pnode, const std::unique_ptr<CCheck>& pcheck) ->bool {
+    auto func_modifying = [&](CHookImplementObject::detour_node* pnode, const std::shared_ptr<CCheck>& pcheck) ->bool {
         bool bmodify = true;
         for (const auto& modify : pcheck->GetModifys())
         {
@@ -354,23 +370,36 @@ bool process_check_for_wmiobject(CHookImplementObject::detour_node* node, const 
             {
                 if (_stricmp(pcheck->GetRealName(iden.first).c_str(), val_name.c_str()) == 0)
                 {
-                    std::stringstream ss; ss << "0";
-                    if (!modify->SetIdentifierValue(CExpParsing::ValuePair(iden.first, ss.str())))
+                    std::any anyvalue = GetVariantValue(vt_value);
+                    if (!anyvalue.has_value())
+                        return false;
+                    AssignAnyType(anyvalue, 0);
+                    CExpParsing::_ValueMap value_map;
+                    if (!modify->SetIdentifierValue(value_map, CExpParsing::ValuePair(iden.first, anyvalue)))
                     {
                         return false;
                     }
                     // back propagation
-                    std::unique_ptr<CExpParsing::ValuePair> value = std::get<std::unique_ptr<CExpParsing::ValuePair>>(modify->EvalExpression());
+                    auto variant_value = modify->EvalExpression(value_map);
+                    if (variant_value.index() != 1) break;
+                    std::unique_ptr<CExpParsing::ValuePair> value = std::move(std::get<std::unique_ptr<CExpParsing::ValuePair>>(variant_value));
                     if (value == nullptr)
                         break;
                     if (_stricmp(iden.first.c_str(), value->first.c_str()) != 0)
                     {
                         ASSERT(0); continue;
                     }
-                    if (!SetValueString(value->second.str().c_str(), vt_value))
+                    std::any any_new_val = anyvalue;
+                    if (AssignAnyType(any_new_val, value->second))
+                    {
+                        if (!SetVariantValue(vt_value, any_new_val))
+                            return false;
+                        if(std::stringstream ss = OutputAnyValue(any_new_val); ss.str().length())
+                            LOGGING(pcheck->GetRealName(iden.first), ss.str());
+                        break;
+                    }
+                    else
                         return false;
-                    LOGGING(pcheck->GetRealName(iden.first), value->second.str().c_str());
-                    break;
                 }
             }
             break;
@@ -403,27 +432,27 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemClassObjec
     ASSERT(node->function != nullptr);
     ASSERT(node->hook_implement_object != nullptr);
     if (!node || !node->return_va || !node->log_entry) return processing_skip;
-    processing_status status;
-    if ((status = node->function->CheckReturn(node)) != processing_continue)
+    if (processing_status status; (status = node->function->CheckReturn(node)) != processing_continue)
         return status;
     if (!node->hook_implement_object) return processing_skip;
 
     HRESULT hr;
     VARIANT variant_value;
-    std::string class_name;
-    hr = This->Get(CComBSTR("CreationClassName"), 0, &variant_value, 0, 0);
-    if (!SUCCEEDED(hr) || !GetValueString(variant_value, class_name)) return processing_continue;
+    std::stringstream class_name;
+    hr = This->Get(CComBSTR("__CLASS"), 0, &variant_value, 0, 0);
+    if (!SUCCEEDED(hr)) return processing_continue;
+    if (class_name = OutputAnyValue(GetVariantValue(variant_value)); !class_name.str().length())
+        return processing_continue;
     if (pVal == nullptr) return processing_continue;
-    BEGIN_LOG(class_name);
-    std::string str_val;
-    if (GetValueString(*pVal, str_val))
-        LOGGING(W2AString(wszName), str_val);
+    BEGIN_LOG(class_name.str());
+    if (std::stringstream str_val = OutputAnyValue(GetVariantValue(*pVal)); str_val.str().length())
+        LOGGING(W2AString(wszName), str_val.str());
 
     for (const auto& wmi_object : node->hook_implement_object->GetWmiObjects())
     {
         ASSERT(wmi_object.second != nullptr);
         if (wmi_object.second == nullptr) continue;
-        if (_stricmp(wmi_object.first.c_str(), class_name.c_str()) == 0)
+        if (_stricmp(wmi_object.first.c_str(), class_name.str().c_str()) == 0)
         {
             if (!process_check_for_wmiobject(node, wmi_object.second, W2AString(wszName), *pVal, LOGGER))
                 return processing_skip;
@@ -450,14 +479,15 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemClassObjec
 
     HRESULT hr;
     VARIANT variant_value;
-    std::string class_name;
-    hr = This->Get(CComBSTR("CreationClassName"), 0, &variant_value, 0, 0);
-    if (!SUCCEEDED(hr) || !GetValueString(variant_value, class_name)) return processing_continue;
+    std::stringstream class_name;
+    hr = This->Get(CComBSTR("__CLASS"), 0, &variant_value, 0, 0);
+    if (!SUCCEEDED(hr)) return processing_continue;
+    if (class_name = OutputAnyValue(GetVariantValue(variant_value)); !class_name.str().length())
+        return processing_continue;
     if (pVal == nullptr) return processing_continue;
-    BEGIN_LOG(class_name);
-    std::string str_val;
-    if (GetValueString(*pVal, str_val))
-        LOGGING(W2AString(wszName), str_val);
+    BEGIN_LOG(class_name.str());
+    if (std::stringstream str_val = OutputAnyValue(GetVariantValue(*pVal)); str_val.str().length())
+        LOGGING(W2AString(wszName), str_val.str());
 
     END_LOG(node->log_entry);
     return processing_continue;
@@ -478,18 +508,16 @@ bool process_methods_for_wmiobject(CHookImplementObject::detour_node* node, cons
 
     BEGIN_LOG(method_name);
     auto forward_propagation_args_wmi = [&](std::shared_ptr<char[]>& pparams, const std::shared_ptr<CFunction>& function) {
-        auto get_argment_value_wmi = [&](const std::string& arg_name) ->std::stringstream {
-            std::stringstream ss;
+        auto get_argment_value_wmi = [&](const std::string& arg_name) ->std::any {
             hr = pInParams->Get(CComBSTR(arg_name.c_str()), 0, &variant_value, 0, 0);
             if (!SUCCEEDED(hr))
             {
                 if (hr == WBEM_E_NOT_FOUND)
                     hr = pOutParams->Get(CComBSTR(arg_name.c_str()), 0, &variant_value, 0, 0);
             }
-            if (!SUCCEEDED(hr) || !GetValueString(variant_value, value_string))
-                return ss;
-            ss << value_string;
-            return ss;
+            if (SUCCEEDED(hr))
+                return GetVariantValue(variant_value);
+            return {};
         };
 
         ASSERT(pparams != nullptr);
@@ -507,18 +535,24 @@ bool process_methods_for_wmiobject(CHookImplementObject::detour_node* node, cons
             int ordinal = function->GetArgumentOrdinal(arg.first);
             ASSERT(ordinal != -1);
             if (ordinal == -1) return false;
-            std::stringstream ss = get_argment_value_wmi(arg.first);
-            if (ss.str().length())
+            std::any anyvalue = get_argment_value_wmi(arg.first);
+            if (anyvalue.has_value())
             {
-                if (arg.second.second->IsReference())
+                if (anyvalue.type() == typeid(std::string))
                 {
-                    size_t size = (ss.str().length() + 1) * arg.second.second->GetMetadataDef()->GetBaseSize();
+                    size_t size = (std::any_cast<std::string>(anyvalue).length() + 1) * arg.second.second->GetMetadataDef()->GetObSize();
                     std::shared_ptr<char[]> p(new char[size]());
-                    for (int i = 0; i < (size - arg.second.second->GetMetadataDef()->GetBaseSize()); i++) p[i] = '#';
+                    if (!p) return false;
+                    for (int i = 0; i < (size - arg.second.second->GetMetadataDef()->GetObSize()); i++) p[i] = '#';
                     args_cache.push_back(p);
                     *(char**)(pparams.get() + (CPrototype::stack_aligned_bytes * ordinal)) = p.get();
                 }
-                if (!arg.second.second->SetValue(&pparams[CPrototype::stack_aligned_bytes * ordinal], ss))
+                else {
+                    std::any anytmp = arg.second.second->GetCurValue();
+                    if (AssignAnyType(anytmp, anyvalue))
+                        anyvalue = anytmp;
+                }
+                if (!arg.second.second->SetValue(&pparams[CPrototype::stack_aligned_bytes * ordinal], anyvalue))
                 {
                     ASSERT(0);
                     return false;
