@@ -532,8 +532,11 @@ namespace cchips {
         std::stringstream iden_ss;
         do {
             bool bstr = false;
-            while (exp_str[step] && !isspace(exp_str[step]))
+            while (exp_str[step])
             {
+                if (!bstr) {
+                    if (isspace(exp_str[step])) break;
+                }
                 if (exp_str[step] == '\'' || exp_str[step] == '"') {
                     bstr = !bstr;
                     if (!bstr) {

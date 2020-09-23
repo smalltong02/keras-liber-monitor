@@ -2,22 +2,6 @@
   "Category": "System",
   "Calling convention": "WINAPI",
 
-  "GetModuleHandleA": {
-    "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Feature": "P60"
-    },
-
-    "Parameters": {
-      "lpModuleName": "LPCSTR"
-    },
-
-    "PreLog": [
-      "lpModuleName"
-    ]
-  },
-
   "GetModuleHandleW": {
     "Signature": {
       "Library": "kernel32.dll",
@@ -31,6 +15,10 @@
 
     "PreLog": [
       "lpModuleName"
+    ],
+
+    "PostLog": [
+      "Return"
     ]
   },
 

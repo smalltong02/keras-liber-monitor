@@ -88,6 +88,7 @@ protected:
             ValueString = std::to_wstring((ULONG_PTR)Value.byref);
             return true;
         default:
+            ValueString = L"";
             break;
         }
 
@@ -130,6 +131,12 @@ TEST_F(HookWmiMethodsTest, Win32DiskDriveTest)
     IEnumWbemClassObject* pEnumClsObj = nullptr;
     IWbemClassObject* pWbemClsObj = nullptr;
 
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
     query += CComBSTR("Win32_DiskDrive");
     hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
         0, &pEnumClsObj);
@@ -145,6 +152,12 @@ TEST_F(HookWmiMethodsTest, Win32DiskDriveTest)
     VariantClear(&vtProp);
     pWbemClsObj->Release();
     pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    count_list.push_back(1);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
 TEST_F(HookWmiMethodsTest, Win32RamSlotsTest)
@@ -158,6 +171,12 @@ TEST_F(HookWmiMethodsTest, Win32RamSlotsTest)
     IEnumWbemClassObject* pEnumClsObj = nullptr;
     IWbemClassObject* pWbemClsObj = nullptr;
 
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
     query += CComBSTR("Win32_PhysicalMemoryArray");
     hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
         0, &pEnumClsObj);
@@ -168,11 +187,17 @@ TEST_F(HookWmiMethodsTest, Win32RamSlotsTest)
     hr = pWbemClsObj->Get(CComBSTR("MemoryDevices"), 0, &vtProp, 0, 0);
     ASSERT_TRUE(SUCCEEDED(hr));
     ASSERT_TRUE(GetValueString(vtProp, chRetValue));
-    // check for modify size success, size = 3TG if successful.
-    //ASSERT_TRUE(_wcsicmp(chRetValue.c_str(), L"1") == 0);
+    // check for MemoryDevices >= 1.
+    ASSERT_TRUE(_wcsicmp(chRetValue.c_str(), L"0") != 0);
     VariantClear(&vtProp);
     pWbemClsObj->Release();
     pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    count_list.push_back(1);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
 TEST_F(HookWmiMethodsTest, Win32PhysicalMemoryTest)
@@ -186,6 +211,12 @@ TEST_F(HookWmiMethodsTest, Win32PhysicalMemoryTest)
     IEnumWbemClassObject* pEnumClsObj = nullptr;
     IWbemClassObject* pWbemClsObj = nullptr;
 
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
     query += CComBSTR("Win32_PhysicalMemory");
     hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
         0, &pEnumClsObj);
@@ -201,6 +232,647 @@ TEST_F(HookWmiMethodsTest, Win32PhysicalMemoryTest)
     VariantClear(&vtProp);
     pWbemClsObj->Release();
     pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    count_list.push_back(1);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookWmiMethodsTest, CimMemoryTest)
+{
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
+    query += CComBSTR("CIM_Memory");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    ASSERT_TRUE(SUCCEEDED(hr) && uReturn > 0);
+    hr = pWbemClsObj->Get(CComBSTR("__CLASS"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Name"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Caption"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("BlockSize"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("NumberOfBlocks"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0);
+    count_list.push_back(5);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookWmiMethodsTest, Win32TemperatureProbeTest)
+{
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
+    query += CComBSTR("Win32_TemperatureProbe");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    ASSERT_TRUE(SUCCEEDED(hr) && uReturn > 0);
+    hr = pWbemClsObj->Get(CComBSTR("__CLASS"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Name"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Caption"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Accuracy"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0);
+    count_list.push_back(4);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookWmiMethodsTest, Win32BiosTest)
+{
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
+    query += CComBSTR("Win32_Bios");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    ASSERT_TRUE(SUCCEEDED(hr) && uReturn > 0);
+    hr = pWbemClsObj->Get(CComBSTR("__CLASS"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("SerialNumber"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Caption"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Manufacturer"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    ASSERT_EQ(chRetValue, L"Vbox Inc.");
+    VariantClear(&vtProp);
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0);
+    count_list.push_back(4);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookWmiMethodsTest, Win32ComputerSystemTest)
+{
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
+    query += CComBSTR("Win32_ComputerSystem");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    ASSERT_TRUE(SUCCEEDED(hr) && uReturn > 0);
+    hr = pWbemClsObj->Get(CComBSTR("__CLASS"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    //hr = pWbemClsObj->Get(CComBSTR("UserName"), 0, &vtProp, 0, 0);
+    //ASSERT_TRUE(SUCCEEDED(hr));
+    //ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    //VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Domain"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Model"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Manufacturer"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    count_list.push_back(4);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookWmiMethodsTest, Win32FanTest)
+{
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
+    query += CComBSTR("Win32_Fan");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    ASSERT_TRUE(SUCCEEDED(hr) && uReturn > 0);
+    hr = pWbemClsObj->Get(CComBSTR("__CLASS"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Caption"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("DeviceID"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Status"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("SystemName"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0);
+    count_list.push_back(5);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookWmiMethodsTest, Win32LogicalDiskTest)
+{
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
+    query += CComBSTR("Win32_LogicalDisk");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    ASSERT_TRUE(SUCCEEDED(hr) && uReturn > 0);
+    hr = pWbemClsObj->Get(CComBSTR("__CLASS"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("MediaType"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Name"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Size"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0);
+    count_list.push_back(4);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookWmiMethodsTest, Win32NetworkAdapterConfigurationTest)
+{
+    DWORD get_count = 0;
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
+    query += CComBSTR("Win32_NetworkAdapterConfiguration");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    while (SUCCEEDED(hr) && uReturn > 0) {
+        hr = pWbemClsObj->Get(CComBSTR("MACAddress"), 0, &vtProp, 0, 0);
+        if (SUCCEEDED(hr)) {
+            if (GetValueString(vtProp, chRetValue)) {
+                get_count++;
+                ASSERT_FALSE(wcsstr(chRetValue.c_str(), L"08:00:27"));
+            }
+            VariantClear(&vtProp);
+        }
+        hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    }
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0);
+    count_list.push_back(get_count);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookWmiMethodsTest, Win32PnPEntityTest)
+{
+    DWORD get_count = 0;
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
+    query += CComBSTR("Win32_PnPEntity");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    while (SUCCEEDED(hr) && uReturn > 0) {
+        hr = pWbemClsObj->Get(CComBSTR("Name"), 0, &vtProp, 0, 0);
+        if (SUCCEEDED(hr)) {
+            if(GetValueString(vtProp, chRetValue))
+                get_count++;
+            VariantClear(&vtProp);
+        }
+        hr = pWbemClsObj->Get(CComBSTR("DeviceId"), 0, &vtProp, 0, 0);
+        if (SUCCEEDED(hr)) {
+            if (GetValueString(vtProp, chRetValue)) {
+                get_count++;
+                ASSERT_FALSE(wcsstr(chRetValue.c_str(), L"PCI\\VEN_80EE&DEV_CAFE"));
+            }
+            VariantClear(&vtProp);
+        }
+        hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    }
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0);
+    count_list.push_back(get_count);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookWmiMethodsTest, Win32ProcessorTest)
+{
+    DWORD get_count = 0;
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
+    query += CComBSTR("Win32_Processor");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    while (SUCCEEDED(hr) && uReturn > 0) {
+        hr = pWbemClsObj->Get(CComBSTR("Name"), 0, &vtProp, 0, 0);
+        if (SUCCEEDED(hr)) {
+            if (GetValueString(vtProp, chRetValue))
+                get_count++;
+            VariantClear(&vtProp);
+        }
+        hr = pWbemClsObj->Get(CComBSTR("NumberOfCores"), 0, &vtProp, 0, 0);
+        if (SUCCEEDED(hr)) {
+            if (GetValueString(vtProp, chRetValue)) {
+                get_count++;
+                ASSERT_TRUE(vtProp.intVal >= 10);
+            }
+            VariantClear(&vtProp);
+        }
+        hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    }
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0);
+    count_list.push_back(get_count);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookWmiMethodsTest, Win32BaseBoardTest)
+{
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
+    query += CComBSTR("Win32_BaseBoard");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    ASSERT_TRUE(SUCCEEDED(hr) && uReturn > 0);
+    hr = pWbemClsObj->Get(CComBSTR("__PATH"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Manufacturer"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    ASSERT_FALSE(wcsstr(chRetValue.c_str(), L"vbox"));
+    VariantClear(&vtProp);
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0);
+    count_list.push_back(2);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookWmiMethodsTest, Win32CDROMDriveTest)
+{
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    query += CComBSTR("Win32_CDROMDrive");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    if(SUCCEEDED(hr) && uReturn > 0) {
+        hr = pWbemClsObj->Get(CComBSTR("__PATH"), 0, &vtProp, 0, 0);
+        ASSERT_TRUE(SUCCEEDED(hr));
+        ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+        VariantClear(&vtProp);
+        hr = pWbemClsObj->Get(CComBSTR("Name"), 0, &vtProp, 0, 0);
+        ASSERT_TRUE(SUCCEEDED(hr));
+        ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+        VariantClear(&vtProp);
+        hr = pWbemClsObj->Get(CComBSTR("Manufacturer"), 0, &vtProp, 0, 0);
+        ASSERT_TRUE(SUCCEEDED(hr));
+        ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+        ASSERT_FALSE(wcsstr(chRetValue.c_str(), L"vbox"));
+        VariantClear(&vtProp);
+        pWbemClsObj->Release();
+        pEnumClsObj->Release();
+    }
+}
+
+TEST_F(HookWmiMethodsTest, Win32LoggedOnUserTest)
+{
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
+    query += CComBSTR("Win32_LoggedOnUser");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    ASSERT_TRUE(SUCCEEDED(hr) && uReturn > 0);
+    hr = pWbemClsObj->Get(CComBSTR("__PATH"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Dependent"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Antecedent"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0);
+    count_list.push_back(2);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookWmiMethodsTest, Win32OperatingSystemTest)
+{
+    CComBSTR query("SELECT * FROM ");
+    VARIANT vtProp;
+    ULONG uReturn = 0;
+    HRESULT hr;
+    BOOL bRet = FALSE;
+    std::wstring chRetValue;
+    IEnumWbemClassObject* pEnumClsObj = nullptr;
+    IWbemClassObject* pWbemClsObj = nullptr;
+
+    //initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("W1");
+    action_list.push_back("W2");
+    action_list.push_back("W6");
+    g_server_object->AddLogCountMap(action_list);
+    query += CComBSTR("Win32_OperatingSystem");
+    hr = m_wbemSvc->ExecQuery(CComBSTR("WQL"), query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        0, &pEnumClsObj);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VariantInit(&vtProp);
+    hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
+    ASSERT_TRUE(SUCCEEDED(hr) && uReturn > 0);
+    hr = pWbemClsObj->Get(CComBSTR("__PATH"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("BuildNumber"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("Name"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    hr = pWbemClsObj->Get(CComBSTR("NumberOfProcesses"), 0, &vtProp, 0, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
+    VariantClear(&vtProp);
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0);
+    count_list.push_back(4);
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
 TEST_F(HookWmiMethodsTest, Win32ProcessTest)

@@ -21,6 +21,7 @@ std::unique_ptr<CServerObject> g_server_object = std::make_unique<CServerObject>
 #ifdef _FUNCTION_TEST
 int _tmain(int argc, _TCHAR* argv[])
 {
+    std::this_thread::sleep_for(1s);
     if (g_log_object->Initialize() && g_hook_test_object->Initialize())
     {
         //Sleep(1000*100);

@@ -217,7 +217,21 @@ namespace cchips {
             if (GetBaseDef() != CBaseDef::type_void && IsValidValue(pdata))
             {
                 T* p = reinterpret_cast<T*>(pdata);
-                return *p;
+                tls_check_struct *tls = check_get_tls();
+                if (tls) {
+                    T checked_p;
+                    tls->active = 1;
+                    if (setjmp(tls->jb) == 0) {
+                        checked_p = *p;
+                        tls->active = 0;
+                        return checked_p;
+                    }
+                    //execption occur
+                    tls->active = 0;
+                }
+                else {
+                    return *p;
+                }
             }
             return {};
         }
@@ -235,45 +249,46 @@ namespace cchips {
         bool Success(char* pdata) const override {
             if (GetBaseDef() == CBaseDef::type_void)
                 return true;
-            if (IsValidValue(pdata))
+            std::any anyvalue = GetValue(pdata);
+            if (anyvalue.has_value() && anyvalue.type() == typeid(T))
             {
-                T* p = reinterpret_cast<T*>(pdata);
+                T checked_p = std::any_cast<T>(anyvalue);
                 if (GetOp() == op_n_equal)
                 {
-                    if (*p == _value)
+                    if (checked_p == _value)
                         return false;
                     else
                         return true;
                 }
                 else if (GetOp() == op_greater)
                 {
-                    if (*p > _value)
+                    if (checked_p > _value)
                         return true;
                     else
                         return false;
                 }
                 else if (GetOp() == op_greater_e)
                 {
-                    if (*p >= _value)
+                    if (checked_p >= _value)
                         return true;
                     else
                         return false;
                 }
                 else if (GetOp() == op_less)
                 {
-                    if (*p < _value)
+                    if (checked_p < _value)
                         return true;
                     else
                         return false;
                 }
                 else if (GetOp() == op_less_e)
                 {
-                    if (*p <= _value)
+                    if (checked_p <= _value)
                         return true;
                     else
                         return false;
                 }
-                if (*p == _value)
+                if (checked_p == _value)
                     return true;
             }
             return false;
@@ -405,27 +420,73 @@ namespace cchips {
             if (reinterpret_cast<const PVOID*>(pdata) == nullptr)
                 return false;
             // the lpModuleName parameter could be NULL in API GetModuleHandle().
-            if (*reinterpret_cast<const PVOID*>(pdata) == nullptr)
-            	return false;
+            const PVOID* pp = reinterpret_cast<const PVOID*>(pdata);
+            tls_check_struct *tls = check_get_tls();
+            if (tls) {
+                PVOID checked_p;
+                tls->active = 1;
+                if (setjmp(tls->jb) == 0) {
+                    checked_p = *pp;
+                    tls->active = 0;
+                    if (checked_p == nullptr)
+                        return false;
+                }
+                //execption occur
+                tls->active = 0;
+            }
+            else {
+                if (*pp == nullptr)
+                    return false;
+            }
             return true;
         }
         virtual std::any GetCurValue() const override {
-            if (GetMetadataDef())
-                return GetMetadataDef()->GetCurValue();
-            return {};
+            if (m_pelement && GetObType() == ob_stringref) {
+                if (std::static_pointer_cast<CBaseType<CHAR>>(m_pelement->GetMetadataDef())->GetBaseDef() == CBaseDef::type_wchar)
+                {
+                    return std::wstring();
+                }
+                return std::string();
+            }
+            return (PVOID)nullptr;
         }
         virtual std::any GetValue(char* pdata) const override {
-            if (reinterpret_cast<const PVOID*>(pdata) == nullptr) return {};
-            if (*reinterpret_cast<wchar_t**>(pdata) == nullptr)
+            if (!IsValidValue(pdata))
             {
                 return {};
             }
             if (m_pelement && GetObType() == ob_stringref)
             {
                 if (std::static_pointer_cast<CBaseType<CHAR>>(m_pelement->GetMetadataDef())->GetBaseDef() == CBaseDef::type_wchar)
-                    return std::move(std::wstring(*reinterpret_cast<wchar_t**>(pdata)));
+                {
+                    std::wstring str_value;
+                    tls_check_struct *tls = check_get_tls();
+                    if (tls) {
+                        tls->active = 1;
+                        if (setjmp(tls->jb) == 0) {
+                            str_value = std::wstring(*reinterpret_cast<const wchar_t**>(pdata));
+                            tls->active = 0;
+                            return str_value;
+                        }
+                        //execption occur
+                        tls->active = 0;
+                    }
+                }
                 else
-                    return std::move(std::string(*reinterpret_cast<const char**>(pdata)));
+                {
+                    std::string str_value;
+                    tls_check_struct *tls = check_get_tls();
+                    if (tls) {
+                        tls->active = 1;
+                        if (setjmp(tls->jb) == 0) {
+                            str_value = std::string(*reinterpret_cast<const char**>(pdata));
+                            tls->active = 0;
+                            return str_value;
+                        }
+                        //execption occur
+                        tls->active = 0;
+                    }
+                }
             }
             else
                 return *reinterpret_cast<const PVOID*>(pdata);
@@ -655,24 +716,6 @@ namespace cchips {
             return {};
         }
         virtual std::any GetValue(char* pdata) const override {
-            //std::stringstream ss;
-            //if (!IsValidValue(pdata)) return ss;
-            //if (m_pstruct.size() == 0) return ss;
-            //char * p = (char *)pdata;
-            //for (const auto& elem : *this) {
-            //    if (!elem.second.second.second)
-            //    {
-            //        ss.str(""); ss.clear(); return ss;
-            //    }
-            //    if (!ss.str().length())
-            //        ss << "{ ";
-            //    else
-            //        ss << "; ";
-            //    ss << elem.first << ": " << elem.second.second.second->GetValue(p).str();
-            //    p += elem.second.second.second->GetObSize();
-            //}
-            //if (ss.str().length())
-            //    ss << " }";
             if (!m_pstruct.size()) return {};
             std::shared_ptr<CObObject> ob_ptr = GetElement(0);
             if (!ob_ptr) return {};
@@ -992,7 +1035,11 @@ namespace cchips {
         }
         virtual const std::string& GetName() const override { return m_tuplename; }
         const std::vector<_tuple_elem>& GetData() const { return m_ptuple; }
-        virtual const std::shared_ptr<CObObject> GetMetadataDef() const override { return nullptr; }
+        virtual const std::shared_ptr<CObObject> GetMetadataDef() const override { 
+            if (m_ptuple.size() == 1)
+                return m_ptuple[0].ptr;
+            return nullptr;
+        }
 
         std::variant<bool, std::any> PolyImplFunction(function_type f_type, char* pdata, const std::any anyval) const
         {

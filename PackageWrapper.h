@@ -379,10 +379,12 @@ namespace cchips {
             //    bson_append_int(&(*bson_ptr), "VerifierType", (int)m_verifier_type);
             //    bson_append_int(&(*bson_ptr), "Verifier", GetVerifier(string_buffer.GetString(), m_verifier_type));
             //}
-            bson_append_string(&(*bson_ptr), "R3Log", string_buffer.GetString());
-            bson_append_finish_array(&(*bson_ptr));
-            bson_finish(&(*bson_ptr));
-            return bson_ptr;
+            if (bson_append_string(&(*bson_ptr), "R3Log", string_buffer.GetString()) == BSON_OK) {
+                //if(bson_append_finish_array(&(*bson_ptr)) == BSON_OK)
+                    if(bson_finish(&(*bson_ptr)) == BSON_OK)
+                        return bson_ptr;
+            }
+            return nullptr;
         }
         std::unique_ptr<CRapidJsonWrapper> Unpack(const std::string& decode_buffer) {
             assert(decode_buffer.length());
@@ -429,7 +431,8 @@ namespace cchips {
                         warning("can't get bson type : %d\n", t);
                     }
                 }
-                if (!json_wrapper) return nullptr;
+                if (!json_wrapper) 
+                    return nullptr;
                 if (verifier_type != verifier_invalid && verifier != 0)
                 {
                     if (GetVerifier(ss.str().c_str(), verifier_type) == verifier)

@@ -31,6 +31,7 @@ namespace cchips {
         CBaseDef::type_char, CBaseDef::type_uchar, CBaseDef::type_wchar };
 
     void CTypeSymbolTableObject::InitializeTypeSymbolTable() {
+        tls_check_index_init();
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_void)] = make_metadata_s_ptr<ULONG>(CBaseDef::type_void);
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_byte)] = make_metadata_s_ptr<BYTE>(CBaseDef::type_byte);
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_bool)] = make_metadata_s_ptr<BOOL>(CBaseDef::type_bool);
@@ -126,7 +127,7 @@ namespace cchips {
     std::any GuidToAnyValue(const std::stringstream& ss) {
         GUID guid = { };
         if (ss.str().length()) {
-            std::string pattern_str = "^\\{([0-9A-F]{8})-([0-9A-F]{4})-([0-9A-F]{4})-([0-9A-F]{4})-([0-9A-F]{12})\\}$";
+            std::string pattern_str = "^\\{([0-9a-fA-F]{8})-([0-9a-fA-F]{4})-([0-9a-fA-F]{4})-([0-9a-fA-F]{4})-([0-9a-fA-F]{12})\\}$";
             RE2 pattern_guid(pattern_str);
             std::string data1, data2, data3, data4, data5;
             if (RE2::FullMatch(ss.str(), pattern_guid, &data1, &data2, &data3, &data4, &data5))

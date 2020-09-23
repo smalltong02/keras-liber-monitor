@@ -432,12 +432,13 @@ namespace cchips {
         ADD_POST_PROCESSING(GetProcAddress, detour_getProcAddress);
         ADD_POST_PROCESSING(CoInitializeSecurity, detour_coInitializeSecurity);
         // processing wmi hook
+        ADD_PRE_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_ExecQuery);
         ADD_POST_PROCESSING(IEnumWbemClassObject_Next, detour_IEnumWbemClassObject_Next);
         ADD_POST_PROCESSING(IWbemClassObject_Get, detour_IWbemClassObject_Get);
         ADD_POST_PROCESSING(IWbemClassObject_Put, detour_IWbemClassObject_Put);
         ADD_POST_PROCESSING(IWbemClassObject_Next, detour_IWbemClassObject_Next);
         ADD_POST_PROCESSING(IWbemServices_ExecMethod, detour_IWbemServices_ExecMethod);
-        ADD_POST_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_ExecQuery);
+        
         return true;
     }
 
@@ -450,12 +451,12 @@ namespace cchips {
         DEL_POST_PROCESSING(CoInitializeEx, detour_coInitializeEx);
         DEL_POST_PROCESSING(CoInitializeSecurity, detour_coInitializeSecurity);
         // processing wmi hook
+        DEL_PRE_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_ExecQuery);
         DEL_POST_PROCESSING(IEnumWbemClassObject_Next, detour_IEnumWbemClassObject_Next);
         DEL_POST_PROCESSING(IWbemClassObject_Get, detour_IWbemClassObject_Get);
         DEL_POST_PROCESSING(IWbemClassObject_Put, detour_IWbemClassObject_Put);
         DEL_POST_PROCESSING(IWbemClassObject_Next, detour_IWbemClassObject_Next);
         DEL_POST_PROCESSING(IWbemServices_ExecMethod, detour_IWbemServices_ExecMethod);
-        DEL_POST_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_ExecQuery);
         return true;
     }
 
@@ -501,11 +502,11 @@ namespace cchips {
                 __hook_node->hook_implement_object->GetLastError(error);
                 if(__status == processing_continue)
                     if (__bforward) __object->Postprocessing(__hook_node, __new_addr, __psize, __return, entry_count, &__log);
-                if(entry_count != -1)
-                    __object->ReleaseTlsValueForThreadIdx();
-                __hook_node->hook_implement_object->SetLastError(error);
             }
+            if (entry_count != -1)
+                __object->ReleaseTlsValueForThreadIdx();
             InterlockedDecrement(&__hook_node->shared_count);
+            __hook_node->hook_implement_object->SetLastError(error);
         }
         return __return;
     }

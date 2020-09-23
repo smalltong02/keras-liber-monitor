@@ -5,6 +5,8 @@
 #include <vector>
 #include <regex>
 #include <unordered_set>
+#include <thread>
+#include <chrono>
 #include "gtest\gtest.h"
 #include "resource.h"
 #include "HipsCfgObject.h"
@@ -13,11 +15,13 @@
 #include "commutils.h"
 #include "R3LogObject.h"
 
+using namespace std::chrono_literals;
+
 class CServerObject
 {
 public:
     CServerObject() {
-        //m_tempfp = tmpfile();
+        m_tempfp = tmpfile();
         std::function<void(const std::unique_ptr<CRapidJsonWrapper>)> callback(std::bind(&CServerObject::LogCallBack, this, std::placeholders::_1));
         m_pipe_object = std::make_unique<CLpcPipeObject>();
         if (m_pipe_object)
@@ -33,13 +37,60 @@ public:
     }
     void ClearLogsCount() { return m_pipe_object->ClearLogsCount(); }
     int GetTotalLogs() const { return m_pipe_object->GetTotalLogs(); }
-    std::unordered_map<std::string, int> GetLogCountMap() const { return m_log_count_map; }
-    std::unordered_set<std::string> GetLogSet() const { return m_log_set; }
-    void ClearLogMap() { m_log_set.clear(); m_log_count_map.clear(); }
-    void EnableServiceTest() { m_enable_service = true; }
-    void DisableServiceTest() { m_enable_service = false; }
+    std::unordered_map<std::string, int> GetLogCountMap() { 
+        std::lock_guard lock(m_log_count_mutex);
+        return m_log_count_map; 
+    }
+    void ClearLogMap() {
+        std::lock_guard lock(m_log_count_mutex);
+        m_log_count_map.clear(); 
+    }
     void EnableDebugPid() { m_enable_debugpid = true; }
     void DisableDebugPid() { m_enable_debugpid = false; }
+    void AddLogCountMap(const std::vector<std::string>& action_list) {
+        ClearLogMap();
+        std::lock_guard lock(m_log_count_mutex);
+        for (auto& elem : action_list) {
+            if (elem.length() && m_log_count_map.find(elem) == m_log_count_map.end()) {
+                m_log_count_map[elem] = 0;
+            }
+        }
+        return;
+    }
+    BOOL WaitLogCountMap(const std::vector<int>& count_list, DWORD dwMaxseconds)
+    {
+        if (!count_list.size())
+            return FALSE;
+        {
+            std::lock_guard lock(m_log_count_mutex);
+            if (count_list.size() != m_log_count_map.size())
+                return FALSE;
+        }
+        BOOL bmatch = TRUE;
+        std::chrono::milliseconds total_times = {};
+        while (true) {
+            bmatch = TRUE;
+            {
+                int count = 0;
+                std::lock_guard lock(m_log_count_mutex);
+                for (auto& elem : m_log_count_map) {
+                    if (count_list[count] > elem.second)
+                    {
+                        bmatch = FALSE;
+                        break;
+                    }
+                    count++;
+                }
+            }
+            if (bmatch) break;
+            std::this_thread::sleep_for(100ms);
+            total_times += 100ms;
+            if (total_times.count() >= dwMaxseconds*1000)
+                break;
+        }
+        return bmatch;
+    }
+    
     bool AddDebugPid(DWORD_PTR pid)
     {
         std::lock_guard lock(m_debugpid_mutex);
@@ -77,40 +128,16 @@ private:
         return true;
     }
 
-    void addToLogCountMap(std::string key) {
-        if (m_log_count_map.find(key) != m_log_count_map.end()) {
-            m_log_count_map[key]++;
-        }
-        else {
-            m_log_count_map[key] = 1;
-        }
-    }
-
-    void CheckServices(const CRapidJsonWrapper& rapid_log)
-    {
-        if (m_enable_service)
+    void CheckLogCountMap(const CRapidJsonWrapper& rapid_log) {
+        std::lock_guard lock(m_log_count_mutex);
+        if (!m_log_count_map.size()) return;
+        if (auto anyvalue(rapid_log.GetMember("Action"));
+            anyvalue.has_value() && anyvalue.type() == typeid(std::string_view))
         {
-            if (auto anyvalue(rapid_log.GetMember("Action"));
-                anyvalue.has_value() && anyvalue.type() == typeid(std::string_view))
-            {
+            for (auto& elem : m_log_count_map) {
                 std::string action_str(std::any_cast<std::string_view>(anyvalue));
-                if (!action_str.compare("S0")) {
-                    addToLogCountMap("S0");
-                }
-                else if (!action_str.compare("S1")) {
-                    addToLogCountMap("S1");
-                }
-                else if (!action_str.compare("S2")) {
-                    addToLogCountMap("S2");
-                }
-                else if (!action_str.compare("S3")) {
-                    addToLogCountMap("S3");
-                }
-                else if (!action_str.compare("S4")) {
-                    addToLogCountMap("S4");
-                }
-                else if (!action_str.compare("S5")) {
-                    addToLogCountMap("S5");
+                if (action_str.compare(elem.first) == 0) {
+                    elem.second++;
                 }
             }
         }
@@ -142,12 +169,12 @@ private:
     }
 
     void LogCallBack(const std::unique_ptr<CRapidJsonWrapper> rapid_log) {
-        ASSERT_TRUE(rapid_log);
-        if (!rapid_log) return;
+        //ASSERT_TRUE(rapid_log);
+        if (!rapid_log) 
+            return;
         if (!rapid_log->IsValid()) return;
         ASSERT_TRUE(CheckVerifier(*rapid_log));
-        //m_log_set.insert((*rapid_log).Serialize());
-        CheckServices(*rapid_log);
+        CheckLogCountMap(*rapid_log);
         CheckDebugPid(*rapid_log);
         m_logs_total_count++;
         {
@@ -156,7 +183,6 @@ private:
             std::lock_guard lock(m_log_mutex);
             if (m_tempfp)
             {
-                
                 fputs(optstring.value().c_str(), m_tempfp);
             }
             else
@@ -168,9 +194,8 @@ private:
     std::mutex m_log_mutex;
     FILE* m_tempfp = nullptr;
     std::unique_ptr<CLpcPipeObject> m_pipe_object;
+    std::recursive_mutex m_log_count_mutex;
     std::unordered_map<std::string, int> m_log_count_map;
-    std::unordered_set<std::string> m_log_set;
-    std::atomic_bool m_enable_service = false;
     std::atomic_bool m_enable_debugpid = false;
     std::mutex m_debugpid_mutex;
     std::map<DWORD_PTR, int> m_debugpid_list;

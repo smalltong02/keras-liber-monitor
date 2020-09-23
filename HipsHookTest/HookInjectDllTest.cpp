@@ -73,198 +73,198 @@ protected:
     std::unique_ptr<CDllInjectorObject> m_injector_object = nullptr;
 };
 
-#ifdef _X86_
-TEST_F(HookInjectDllTest, InjectDllTestX32toX32)
-{
-    PROCESS_INFORMATION pi = { };
-    ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x32\\al-khaser_x86.exe", pi));
-    g_server_object->AddDebugPid(pi.dwProcessId);
-    ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId));
-    ResumeThread(pi.hThread);
-    WaitForSingleObject(pi.hProcess, INFINITE);
-    // please used debug version of hipshook.dll, There will be debugging log.
-    int count = g_server_object->GetCountForDebugPid(pi.dwProcessId);
-    ASSERT_TRUE(count > 0);
-    g_server_object->DelDebugPid(pi.dwProcessId);
-}
-
-TEST_F(HookInjectDllTest, InjectDllTestX32toX64)
-{
-    if (!CInjectProcess::Is64BitOS())
-    {
-        PROCESS_INFORMATION pi = { };
-        ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x64\\ServicesTest.exe --normal", pi));
-        g_server_object->AddDebugPid(pi.dwProcessId);
-        ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId) == false);
-        ResumeThread(pi.hThread);
-        WaitForSingleObject(pi.hProcess, INFINITE);
-        g_server_object->DelDebugPid(pi.dwProcessId);
-    }
-    else
-    {
-        // test use inject32 for X32toX64
-        PROCESS_INFORMATION sample_pi = { };
-        ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x64\\ServicesTest.exe --normal", sample_pi));
-        g_server_object->AddDebugPid(sample_pi.dwProcessId);
-        PROCESS_INFORMATION inject_pi = { };
-        std::stringstream ss;
-        ss << "..\\test\\ijt\\x64\\Inject64.exe --pid " << sample_pi.dwProcessId << " --tid " << sample_pi.dwThreadId << " --dll " << m_injector_object->GetDllPath(CDllInjectorObject::dll_type_x64);
-        ASSERT_TRUE(CreateSampleProcess(ss.str(), inject_pi));
-        ResumeThread(inject_pi.hThread);
-        WaitForSingleObject(inject_pi.hProcess, INFINITE);
-        DWORD returnCode = -1;
-        ASSERT(GetExitCodeProcess(inject_pi.hProcess, &returnCode));
-        ASSERT(returnCode == 0);
-        ResumeThread(sample_pi.hThread);
-        WaitForSingleObject(sample_pi.hProcess, INFINITE);
-        // please used debug version of hipshook.dll, There will be debugging log.
-        int count = g_server_object->GetCountForDebugPid(sample_pi.dwProcessId);
-        ASSERT_TRUE(count > 0);
-        g_server_object->DelDebugPid(sample_pi.dwProcessId);
-    }
-}
-
-TEST_F(HookInjectDllTest, InjectNotepadTest)
-{
-    if (!CInjectProcess::Is64BitOS())
-    {
-        PROCESS_INFORMATION pi = { };
-        ASSERT_TRUE(CreateSampleProcess("C:\\windows\\notepad.exe", pi));
-        g_server_object->AddDebugPid(pi.dwProcessId);
-        ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId));
-        ResumeThread(pi.hThread);
-        WaitForSingleObject(pi.hProcess, 5000);
-        TerminateProcess(pi.hProcess, 0);
-        int count = g_server_object->GetCountForDebugPid(pi.dwProcessId);
-        ASSERT_TRUE(count > 0);
-        g_server_object->DelDebugPid(pi.dwProcessId);
-    }
-    else
-    {
-        PROCESS_INFORMATION sample_pi = { };
-        ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x32\\Hardware_Information_v1.exe", sample_pi));
-        g_server_object->AddDebugPid(sample_pi.dwProcessId);
-        PROCESS_INFORMATION inject_pi = { };
-        std::stringstream ss;
-        ss << "..\\test\\ijt\\x32\\Inject32.exe --pid " << sample_pi.dwProcessId << " --tid " << sample_pi.dwThreadId << " --dll " << m_injector_object->GetDllPath(CDllInjectorObject::dll_type_x64);
-        ASSERT_TRUE(CreateSampleProcess(ss.str(), inject_pi));
-        ResumeThread(inject_pi.hThread);
-        WaitForSingleObject(inject_pi.hProcess, INFINITE);
-        DWORD returnCode = -1;
-        ASSERT(GetExitCodeProcess(inject_pi.hProcess, &returnCode));
-        ASSERT(returnCode == 0);
-        ResumeThread(sample_pi.hThread);
-        WaitForSingleObject(sample_pi.hProcess, INFINITE);
-        TerminateProcess(sample_pi.hProcess, 0);
-        int count = g_server_object->GetCountForDebugPid(sample_pi.dwProcessId);
-        ASSERT_TRUE(count > 0);
-        g_server_object->DelDebugPid(sample_pi.dwProcessId);
-    }
-}
-
-TEST_F(HookInjectDllTest, InjectCmdTest)
-{
-    if (!CInjectProcess::Is64BitOS())
-    {
-        PROCESS_INFORMATION pi = { };
-        ASSERT_TRUE(CreateSampleProcess("C:\\windows\\system32\\cmd.exe", pi));
-        g_server_object->AddDebugPid(pi.dwProcessId);
-        ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId));
-        ResumeThread(pi.hThread);
-        WaitForSingleObject(pi.hProcess, 5000);
-        TerminateProcess(pi.hProcess, 0);
-        int count = g_server_object->GetCountForDebugPid(pi.dwProcessId);
-        ASSERT_TRUE(count > 0);
-        g_server_object->DelDebugPid(pi.dwProcessId);
-    }
-    else
-    {
-        PROCESS_INFORMATION sample_pi = { };
-        ASSERT_TRUE(CreateSampleProcess("C:\\windows\\system32\\cmd.exe", sample_pi));
-        g_server_object->AddDebugPid(sample_pi.dwProcessId);
-        PROCESS_INFORMATION inject_pi = { };
-        std::stringstream ss;
-        ss << "..\\test\\ijt\\x64\\Inject64.exe --pid " << sample_pi.dwProcessId << " --tid " << sample_pi.dwThreadId << " --dll " << m_injector_object->GetDllPath(CDllInjectorObject::dll_type_x64);
-        ASSERT_TRUE(CreateSampleProcess(ss.str(), inject_pi));
-        ResumeThread(inject_pi.hThread);
-        WaitForSingleObject(inject_pi.hProcess, INFINITE);
-        DWORD returnCode = -1;
-        ASSERT(GetExitCodeProcess(inject_pi.hProcess, &returnCode));
-        ASSERT(returnCode == 0);
-        ResumeThread(sample_pi.hThread);
-        WaitForSingleObject(sample_pi.hProcess, 5000);
-        TerminateProcess(sample_pi.hProcess, 0);
-        int count = g_server_object->GetCountForDebugPid(sample_pi.dwProcessId);
-        ASSERT_TRUE(count > 0);
-        g_server_object->DelDebugPid(sample_pi.dwProcessId);
-    }
-}
-#endif
-
-#ifdef _AMD64_
-TEST_F(HookInjectDllTest, InjectDllTestX64toX32)
-{
-    // test use inject32 for X32toX64
-    PROCESS_INFORMATION sample_pi = { };
-    ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x32\\ServicesTest.exe --normal", sample_pi));
-    g_server_object->AddDebugPid(sample_pi.dwProcessId);
-    PROCESS_INFORMATION inject_pi = { };
-    std::stringstream ss;
-    ss << "..\\test\\ijt\\x32\\Inject32.exe --pid " << sample_pi.dwProcessId << " --tid " << sample_pi.dwThreadId << " --dll " << m_injector_object->GetDllPath(CDllInjectorObject::dll_type_wow64);
-    ASSERT_TRUE(CreateSampleProcess(ss.str(), inject_pi));
-    ResumeThread(inject_pi.hThread);
-    WaitForSingleObject(inject_pi.hProcess, INFINITE);
-    DWORD returnCode = -1;
-    ASSERT(GetExitCodeProcess(inject_pi.hProcess, &returnCode));
-    ASSERT(returnCode == 0);
-    ResumeThread(sample_pi.hThread);
-    WaitForSingleObject(sample_pi.hProcess, INFINITE);
-    // please used debug version of hipshook.dll, There will be debugging log.
-    int count = g_server_object->GetCountForDebugPid(sample_pi.dwProcessId);
-    ASSERT_TRUE(count > 0);
-    g_server_object->DelDebugPid(sample_pi.dwProcessId);
-}
-
-TEST_F(HookInjectDllTest, InjectDllTestX64toX64)
-{
-    PROCESS_INFORMATION pi = { };
-    ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x64\\ServicesTest.exe --normal", pi));
-    g_server_object->AddDebugPid(pi.dwProcessId);
-    ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId));
-    ResumeThread(pi.hThread);
-    WaitForSingleObject(pi.hProcess, INFINITE);
-    // please used debug version of hipshook.dll, There will be debugging log.
-    int count = g_server_object->GetCountForDebugPid(pi.dwProcessId);
-    ASSERT_TRUE(count > 0);
-    g_server_object->DelDebugPid(pi.dwProcessId);
-}
-
-TEST_F(HookInjectDllTest, InjectNotepadTest)
-{
-    PROCESS_INFORMATION pi = { };
-    ASSERT_TRUE(CreateSampleProcess("C:\\windows\\notepad.exe", pi));
-    g_server_object->AddDebugPid(pi.dwProcessId);
-    ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId));
-    ResumeThread(pi.hThread);
-    WaitForSingleObject(pi.hProcess, 5000);
-    TerminateProcess(pi.hProcess, 0);
-    int count = g_server_object->GetCountForDebugPid(pi.dwProcessId);
-    ASSERT_TRUE(count > 0);
-    g_server_object->DelDebugPid(pi.dwProcessId);
-}
-
-TEST_F(HookInjectDllTest, InjectCmdTest)
-{
-    PROCESS_INFORMATION pi = { };
-    ASSERT_TRUE(CreateSampleProcess("C:\\windows\\system32\\cmd.exe", pi));
-    g_server_object->AddDebugPid(pi.dwProcessId);
-    ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId));
-    ResumeThread(pi.hThread);
-    WaitForSingleObject(pi.hProcess, 5000);
-    TerminateProcess(pi.hProcess, 0);
-    int count = g_server_object->GetCountForDebugPid(pi.dwProcessId);
-    ASSERT_TRUE(count > 0);
-    g_server_object->DelDebugPid(pi.dwProcessId);
-}
-#endif
+//#ifdef _X86_
+//TEST_F(HookInjectDllTest, InjectDllTestX32toX32)
+//{
+//    PROCESS_INFORMATION pi = { };
+//    ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x32\\ServicesTest.exe --normal", pi));
+//    g_server_object->AddDebugPid(pi.dwProcessId);
+//    ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId));
+//    ResumeThread(pi.hThread);
+//    WaitForSingleObject(pi.hProcess, INFINITE);
+//    // please used debug version of hipshook.dll, There will be debugging log.
+//    int count = g_server_object->GetCountForDebugPid(pi.dwProcessId);
+//    ASSERT_TRUE(count > 0);
+//    g_server_object->DelDebugPid(pi.dwProcessId);
+//}
+//
+//TEST_F(HookInjectDllTest, InjectDllTestX32toX64)
+//{
+//    if (!CInjectProcess::Is64BitOS())
+//    {
+//        PROCESS_INFORMATION pi = { };
+//        ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x64\\ServicesTest.exe --normal", pi));
+//        g_server_object->AddDebugPid(pi.dwProcessId);
+//        ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId) == false);
+//        ResumeThread(pi.hThread);
+//        WaitForSingleObject(pi.hProcess, INFINITE);
+//        g_server_object->DelDebugPid(pi.dwProcessId);
+//    }
+//    else
+//    {
+//        // test use inject32 for X32toX64
+//        PROCESS_INFORMATION sample_pi = { };
+//        ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x64\\ServicesTest.exe --normal", sample_pi));
+//        g_server_object->AddDebugPid(sample_pi.dwProcessId);
+//        PROCESS_INFORMATION inject_pi = { };
+//        std::stringstream ss;
+//        ss << "..\\test\\ijt\\x64\\Inject64.exe --pid " << sample_pi.dwProcessId << " --tid " << sample_pi.dwThreadId << " --dll " << m_injector_object->GetDllPath(CDllInjectorObject::dll_type_x64);
+//        ASSERT_TRUE(CreateSampleProcess(ss.str(), inject_pi));
+//        ResumeThread(inject_pi.hThread);
+//        WaitForSingleObject(inject_pi.hProcess, INFINITE);
+//        DWORD returnCode = -1;
+//        ASSERT(GetExitCodeProcess(inject_pi.hProcess, &returnCode));
+//        ASSERT(returnCode == 0);
+//        ResumeThread(sample_pi.hThread);
+//        WaitForSingleObject(sample_pi.hProcess, INFINITE);
+//        // please used debug version of hipshook.dll, There will be debugging log.
+//        int count = g_server_object->GetCountForDebugPid(sample_pi.dwProcessId);
+//        ASSERT_TRUE(count > 0);
+//        g_server_object->DelDebugPid(sample_pi.dwProcessId);
+//    }
+//}
+//
+//TEST_F(HookInjectDllTest, InjectNotepadTest)
+//{
+//    if (!CInjectProcess::Is64BitOS())
+//    {
+//        PROCESS_INFORMATION pi = { };
+//        ASSERT_TRUE(CreateSampleProcess("C:\\windows\\notepad.exe", pi));
+//        g_server_object->AddDebugPid(pi.dwProcessId);
+//        ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId));
+//        ResumeThread(pi.hThread);
+//        WaitForSingleObject(pi.hProcess, 5000);
+//        TerminateProcess(pi.hProcess, 0);
+//        int count = g_server_object->GetCountForDebugPid(pi.dwProcessId);
+//        ASSERT_TRUE(count > 0);
+//        g_server_object->DelDebugPid(pi.dwProcessId);
+//    }
+//    else
+//    {
+//        PROCESS_INFORMATION sample_pi = { };
+//        ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x32\\Hardware_Information_v1.exe", sample_pi));
+//        g_server_object->AddDebugPid(sample_pi.dwProcessId);
+//        PROCESS_INFORMATION inject_pi = { };
+//        std::stringstream ss;
+//        ss << "..\\test\\ijt\\x32\\Inject32.exe --pid " << sample_pi.dwProcessId << " --tid " << sample_pi.dwThreadId << " --dll " << m_injector_object->GetDllPath(CDllInjectorObject::dll_type_x64);
+//        ASSERT_TRUE(CreateSampleProcess(ss.str(), inject_pi));
+//        ResumeThread(inject_pi.hThread);
+//        WaitForSingleObject(inject_pi.hProcess, INFINITE);
+//        DWORD returnCode = -1;
+//        ASSERT(GetExitCodeProcess(inject_pi.hProcess, &returnCode));
+//        ASSERT(returnCode == 0);
+//        ResumeThread(sample_pi.hThread);
+//        WaitForSingleObject(sample_pi.hProcess, INFINITE);
+//        TerminateProcess(sample_pi.hProcess, 0);
+//        int count = g_server_object->GetCountForDebugPid(sample_pi.dwProcessId);
+//        ASSERT_TRUE(count > 0);
+//        g_server_object->DelDebugPid(sample_pi.dwProcessId);
+//    }
+//}
+//
+//TEST_F(HookInjectDllTest, InjectCmdTest)
+//{
+//    if (!CInjectProcess::Is64BitOS())
+//    {
+//        PROCESS_INFORMATION pi = { };
+//        ASSERT_TRUE(CreateSampleProcess("C:\\windows\\system32\\cmd.exe", pi));
+//        g_server_object->AddDebugPid(pi.dwProcessId);
+//        ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId));
+//        ResumeThread(pi.hThread);
+//        WaitForSingleObject(pi.hProcess, 5000);
+//        TerminateProcess(pi.hProcess, 0);
+//        int count = g_server_object->GetCountForDebugPid(pi.dwProcessId);
+//        ASSERT_TRUE(count > 0);
+//        g_server_object->DelDebugPid(pi.dwProcessId);
+//    }
+//    else
+//    {
+//        PROCESS_INFORMATION sample_pi = { };
+//        ASSERT_TRUE(CreateSampleProcess("C:\\windows\\system32\\cmd.exe", sample_pi));
+//        g_server_object->AddDebugPid(sample_pi.dwProcessId);
+//        PROCESS_INFORMATION inject_pi = { };
+//        std::stringstream ss;
+//        ss << "..\\test\\ijt\\x64\\Inject64.exe --pid " << sample_pi.dwProcessId << " --tid " << sample_pi.dwThreadId << " --dll " << m_injector_object->GetDllPath(CDllInjectorObject::dll_type_x64);
+//        ASSERT_TRUE(CreateSampleProcess(ss.str(), inject_pi));
+//        ResumeThread(inject_pi.hThread);
+//        WaitForSingleObject(inject_pi.hProcess, INFINITE);
+//        DWORD returnCode = -1;
+//        ASSERT(GetExitCodeProcess(inject_pi.hProcess, &returnCode));
+//        ASSERT(returnCode == 0);
+//        ResumeThread(sample_pi.hThread);
+//        WaitForSingleObject(sample_pi.hProcess, 5000);
+//        TerminateProcess(sample_pi.hProcess, 0);
+//        int count = g_server_object->GetCountForDebugPid(sample_pi.dwProcessId);
+//        ASSERT_TRUE(count > 0);
+//        g_server_object->DelDebugPid(sample_pi.dwProcessId);
+//    }
+//}
+//#endif
+//
+//#ifdef _AMD64_
+//TEST_F(HookInjectDllTest, InjectDllTestX64toX32)
+//{
+//    // test use inject32 for X32toX64
+//    PROCESS_INFORMATION sample_pi = { };
+//    ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x32\\ServicesTest.exe --normal", sample_pi));
+//    g_server_object->AddDebugPid(sample_pi.dwProcessId);
+//    PROCESS_INFORMATION inject_pi = { };
+//    std::stringstream ss;
+//    ss << "..\\test\\ijt\\x32\\Inject32.exe --pid " << sample_pi.dwProcessId << " --tid " << sample_pi.dwThreadId << " --dll " << m_injector_object->GetDllPath(CDllInjectorObject::dll_type_wow64);
+//    ASSERT_TRUE(CreateSampleProcess(ss.str(), inject_pi));
+//    ResumeThread(inject_pi.hThread);
+//    WaitForSingleObject(inject_pi.hProcess, INFINITE);
+//    DWORD returnCode = -1;
+//    ASSERT(GetExitCodeProcess(inject_pi.hProcess, &returnCode));
+//    ASSERT(returnCode == 0);
+//    ResumeThread(sample_pi.hThread);
+//    WaitForSingleObject(sample_pi.hProcess, INFINITE);
+//    // please used debug version of hipshook.dll, There will be debugging log.
+//    int count = g_server_object->GetCountForDebugPid(sample_pi.dwProcessId);
+//    ASSERT_TRUE(count > 0);
+//    g_server_object->DelDebugPid(sample_pi.dwProcessId);
+//}
+//
+//TEST_F(HookInjectDllTest, InjectDllTestX64toX64)
+//{
+//    PROCESS_INFORMATION pi = { };
+//    ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x64\\ServicesTest.exe --normal", pi));
+//    g_server_object->AddDebugPid(pi.dwProcessId);
+//    ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId));
+//    ResumeThread(pi.hThread);
+//    WaitForSingleObject(pi.hProcess, INFINITE);
+//    // please used debug version of hipshook.dll, There will be debugging log.
+//    int count = g_server_object->GetCountForDebugPid(pi.dwProcessId);
+//    ASSERT_TRUE(count > 0);
+//    g_server_object->DelDebugPid(pi.dwProcessId);
+//}
+//
+//TEST_F(HookInjectDllTest, InjectNotepadTest)
+//{
+//    PROCESS_INFORMATION pi = { };
+//    ASSERT_TRUE(CreateSampleProcess("C:\\windows\\notepad.exe", pi));
+//    g_server_object->AddDebugPid(pi.dwProcessId);
+//    ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId));
+//    ResumeThread(pi.hThread);
+//    WaitForSingleObject(pi.hProcess, 5000);
+//    TerminateProcess(pi.hProcess, 0);
+//    int count = g_server_object->GetCountForDebugPid(pi.dwProcessId);
+//    ASSERT_TRUE(count > 0);
+//    g_server_object->DelDebugPid(pi.dwProcessId);
+//}
+//
+//TEST_F(HookInjectDllTest, InjectCmdTest)
+//{
+//    PROCESS_INFORMATION pi = { };
+//    ASSERT_TRUE(CreateSampleProcess("C:\\windows\\system32\\cmd.exe", pi));
+//    g_server_object->AddDebugPid(pi.dwProcessId);
+//    ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId));
+//    ResumeThread(pi.hThread);
+//    WaitForSingleObject(pi.hProcess, 5000);
+//    TerminateProcess(pi.hProcess, 0);
+//    int count = g_server_object->GetCountForDebugPid(pi.dwProcessId);
+//    ASSERT_TRUE(count > 0);
+//    g_server_object->DelDebugPid(pi.dwProcessId);
+//}
+//#endif
 #endif

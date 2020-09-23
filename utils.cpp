@@ -273,3 +273,31 @@ DWORD NativeFetchMovEaxImmOffset(const char* func)
     }
     return 0;
 }
+
+static DWORD g_tls_check_index = TLS_OUT_OF_INDEXES;
+
+void tls_check_index_init()
+{
+    g_tls_check_index = TlsAlloc();
+}
+
+// don't free this memory until process exit.
+tls_check_struct* check_get_tls()
+{
+    if (g_tls_check_index == TLS_OUT_OF_INDEXES) return nullptr;
+    tls_check_struct* ret = (tls_check_struct*)TlsGetValue(g_tls_check_index);
+    if (ret == nullptr) {
+        ret = (tls_check_struct*)VirtualAlloc(nullptr, sizeof(tls_check_struct), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+        TlsSetValue(g_tls_check_index, ret);
+    }
+    return ret;
+}
+
+void check_return()
+{
+    tls_check_struct *tls = check_get_tls();
+
+    if (tls->active != 0) {
+        longjmp(tls->jb, 1);
+    }
+}

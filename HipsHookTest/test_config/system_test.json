@@ -34,33 +34,6 @@
     }
   },
 
-  "GetDiskFreeSpaceExA": {
-    "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "BOOL",
-      "Feature": "H10"
-    },
-
-    "Parameters": {
-      "lpDirectoryName": "LPCSTR",
-      "lpFreeBytesAvailableToCaller": "LPULARGE_INTEGER",
-      "lpTotalNumberOfBytes": "LPULARGE_INTEGER",
-      "lpTotalNumberOfFreeBytes": "LPULARGE_INTEGER"
-    },
-
-    "PostCheck": {
-      "0": {
-        "Check": {
-          "lpDirectoryName|*lpTotalNumberOfBytes": "(%var0 == 'nullptr' || %var0 =~ '^(?i)c\\:.*$') && (%var1<=64*1024*1024*1024)"
-        },
-
-        "Modify": {
-          "*lpTotalNumberOfBytes": "%var2=1000*1024*1024*1024"
-        }
-      }
-    }
-  },
-
   "GetDiskFreeSpaceExW": {
     "Signature": {
       "Library": "kernel32.dll",
@@ -74,6 +47,10 @@
       "lpTotalNumberOfBytes": "LPULARGE_INTEGER",
       "lpTotalNumberOfFreeBytes": "LPULARGE_INTEGER"
     },
+
+    "PostLog": [
+      "*lpTotalNumberOfBytes"
+    ],
 
     "PostCheck": {
       "0": {
@@ -128,22 +105,6 @@
     }
   },
 
-  "GetModuleHandleA": {
-    "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Feature": "P60"
-    },
-
-    "Parameters": {
-      "lpModuleName": "LPCSTR"
-    },
-
-    "PreLog": [
-      "lpModuleName"
-    ]
-  },
-
   "GetModuleHandleW": {
     "Signature": {
       "Library": "kernel32.dll",
@@ -157,6 +118,10 @@
 
     "PreLog": [
       "lpModuleName"
+    ],
+
+    "PostLog": [
+      "Return"
     ]
   },
 
@@ -171,11 +136,6 @@
       "hModule": "HMODULE",
       "lpProcName": "LPCSTR"
     },
-
-    "PreLog": [
-      "hModule",
-      "lpProcName"
-    ],
 
     "PostLog": [
       "Return"

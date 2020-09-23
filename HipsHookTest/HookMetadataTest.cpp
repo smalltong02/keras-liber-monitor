@@ -1035,8 +1035,8 @@ TEST_F(HookMetadataTest, CReferenceObject_Test)
     EXPECT_FALSE(meta_reference.IsValidValue(nullptr));
     EXPECT_TRUE(meta_reference.IsValidValue((char*)&meta_reference_val));
     anyvalue = meta_reference.GetCurValue();
-    EXPECT_TRUE(anyvalue.has_value() && anyvalue.type() == typeid(ULARGE_INTEGER));
-    EXPECT_EQ(std::any_cast<ULARGE_INTEGER>(anyvalue).QuadPart, 0);
+    EXPECT_TRUE(anyvalue.has_value() && anyvalue.type() == typeid(PVOID));
+    EXPECT_EQ(std::any_cast<PVOID>(anyvalue), nullptr);
     EXPECT_FALSE(meta_reference.SetCurValue(std::any(&meta_reference_val)));
     ULARGE_INTEGER ularge_integer_val = {(DWORD)20,(DWORD)-100};
     PULARGE_INTEGER p_val = &ularge_integer_val;
@@ -1065,8 +1065,8 @@ TEST_F(HookMetadataTest, CReferenceObject_Test)
     EXPECT_FALSE(wchar_reference.IsValidValue(nullptr));
     EXPECT_TRUE(wchar_reference.IsValidValue((char*)wstring_reference_val));
     anyvalue = wchar_reference.GetCurValue();
-    EXPECT_TRUE(anyvalue.has_value() && anyvalue.type() == typeid(WCHAR));
-    EXPECT_EQ(std::any_cast<WCHAR>(anyvalue), L'\0');
+    EXPECT_TRUE(anyvalue.has_value() && anyvalue.type() == typeid(std::wstring));
+    EXPECT_EQ(std::any_cast<std::wstring>(anyvalue), std::wstring());
     EXPECT_FALSE(wchar_reference.SetCurValue(std::any(wstring_reference_val)));
     WCHAR wstring_val[40] = L"https://www.github.com";
     WCHAR* p_wstring_1 = wstring_val;
@@ -1095,8 +1095,8 @@ TEST_F(HookMetadataTest, CReferenceObject_Test)
     EXPECT_FALSE(uchar_reference.IsValidValue(nullptr));
     EXPECT_TRUE(uchar_reference.IsValidValue((char*)ustring_reference_val));
     anyvalue = uchar_reference.GetCurValue();
-    EXPECT_TRUE(anyvalue.has_value() && anyvalue.type() == typeid(UCHAR));
-    EXPECT_EQ(std::any_cast<UCHAR>(anyvalue), '\0');
+    EXPECT_TRUE(anyvalue.has_value() && anyvalue.type() == typeid(std::string));
+    EXPECT_EQ(std::any_cast<std::string>(anyvalue), std::string());
     EXPECT_FALSE(uchar_reference.SetCurValue(std::any(ustring_reference_val)));
     UCHAR ustring_val[40] = "https://www.github.com";
     UCHAR* p_ustring_1 = ustring_val;

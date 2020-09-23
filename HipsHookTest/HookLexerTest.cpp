@@ -975,7 +975,10 @@ TEST_F(HookLexerTest, CExpParsing_ParsingAndEval_Test)
     variant_value = exp_parsing_object.EvalExpression(value_map);
     ASSERT_EQ(variant_value.index(), 0);
     EXPECT_EQ(std::get<ULONGLONG>(variant_value), 0);
-
+    exp_parsing_object.Clear();
+    value_map.clear();
+    exp_parsing_object.Parsing("%var1 = 'Default System BIOS'", parsing_object);
+    ASSERT_EQ(expression_ast.size(), 3);
     
     //exp_parsing_object.Parsing("(%var0 & 1) || (%var0 & 2) || (%var0 & 8)", parsing_object);
     //exp_parsing_object.Clear();

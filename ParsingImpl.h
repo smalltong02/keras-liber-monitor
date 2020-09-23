@@ -347,6 +347,18 @@ namespace cchips {
                     return (ULONGLONG)(GetFloat() > rhs.GetFloat());
                 else if (isString() && rhs.isString())
                     return (ULONGLONG)(GetString() > rhs.GetString());
+                else if (isString() && rhs.isIntegral())
+                {
+                    char* end;
+                    ULONGLONG l = strtoull(GetString().c_str(), &end, 10);
+                    return (ULONGLONG)(l > rhs.GetIntegral());
+                }
+                else if (isIntegral() && rhs.isString())
+                {
+                    char* end;
+                    ULONGLONG r = strtoull(rhs.GetString().c_str(), &end, 10);
+                    return (ULONGLONG)(GetIntegral() > r);
+                }
                 return {};
             }
             _Value operator >= (_Value& rhs) { 
@@ -356,6 +368,18 @@ namespace cchips {
                     return (ULONGLONG)(GetFloat() >= rhs.GetFloat());
                 else if (isString() && rhs.isString())
                     return (ULONGLONG)(GetString() >= rhs.GetString());
+                else if (isString() && rhs.isIntegral())
+                {
+                    char* end;
+                    ULONGLONG l = strtoull(GetString().c_str(), &end, 10);
+                    return (ULONGLONG)(l >= rhs.GetIntegral());
+                }
+                else if (isIntegral() && rhs.isString())
+                {
+                    char* end;
+                    ULONGLONG r = strtoull(rhs.GetString().c_str(), &end, 10);
+                    return (ULONGLONG)(GetIntegral() >= r);
+                }
                 return {};
             }
             _Value operator < (_Value& rhs) {
@@ -365,6 +389,18 @@ namespace cchips {
                     return (ULONGLONG)(GetFloat() < rhs.GetFloat());
                 else if (isString() && rhs.isString())
                     return (ULONGLONG)(GetString() < rhs.GetString());
+                else if (isString() && rhs.isIntegral())
+                {
+                    char* end;
+                    ULONGLONG l = strtoull(GetString().c_str(), &end, 10);
+                    return (ULONGLONG)(l < rhs.GetIntegral());
+                }
+                else if (isIntegral() && rhs.isString())
+                {
+                    char* end;
+                    ULONGLONG r = strtoull(rhs.GetString().c_str(), &end, 10);
+                    return (ULONGLONG)(GetIntegral() <= r);
+                }
                 return {};
             }
             _Value operator <= (_Value& rhs) { 
@@ -374,6 +410,18 @@ namespace cchips {
                     return (ULONGLONG)(GetFloat() <= rhs.GetFloat());
                 else if (isString() && rhs.isString())
                     return (ULONGLONG)(GetString() <= rhs.GetString());
+                else if (isString() && rhs.isIntegral())
+                {
+                    char* end;
+                    ULONGLONG l = strtoull(GetString().c_str(), &end, 10);
+                    return (ULONGLONG)(l <= rhs.GetIntegral());
+                }
+                else if (isIntegral() && rhs.isString())
+                {
+                    char* end;
+                    ULONGLONG r = strtoull(rhs.GetString().c_str(), &end, 10);
+                    return (ULONGLONG)(GetIntegral() <= r);
+                }
                 return {};
             }
             _Value operator & (_Value& rhs) { 
@@ -407,6 +455,18 @@ namespace cchips {
                     return (ULONGLONG)(GetFloat() == rhs.GetFloat());
                 else if (isString() && rhs.isString())
                     return (ULONGLONG)(GetString() == rhs.GetString());
+                else if (isString() && rhs.isIntegral())
+                {
+                    char* end;
+                    ULONGLONG l = strtoull(GetString().c_str(), &end, 10);
+                    return (ULONGLONG)(l == rhs.GetIntegral());
+                }
+                else if (isIntegral() && rhs.isString())
+                {
+                    char* end;
+                    ULONGLONG r = strtoull(rhs.GetString().c_str(), &end, 10);
+                    return (ULONGLONG)(GetIntegral() == r);
+                }
                 return {};
             }
             _Value operator != (_Value& rhs) { 
@@ -416,6 +476,18 @@ namespace cchips {
                     return (ULONGLONG)(GetFloat() != rhs.GetFloat());
                 else if (isString() && rhs.isString())
                     return (ULONGLONG)(GetString() != rhs.GetString());
+                else if (isString() && rhs.isIntegral())
+                {
+                    char* end;
+                    ULONGLONG l = strtoull(GetString().c_str(), &end, 10);
+                    return (ULONGLONG)(l != rhs.GetIntegral());
+                }
+                else if (isIntegral() && rhs.isString())
+                {
+                    char* end;
+                    ULONGLONG r = strtoull(rhs.GetString().c_str(), &end, 10);
+                    return (ULONGLONG)(GetIntegral() != r);
+                }
                 return {};
             }
             _Value operator ! () {

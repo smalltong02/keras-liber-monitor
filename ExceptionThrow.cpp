@@ -1,5 +1,6 @@
 #include "ExceptionThrow.h"
 #include "LogObject.h"
+#include "utils.h"
 #include <ehdata.h>
 
 namespace cchips {
@@ -49,6 +50,10 @@ namespace cchips {
                 }
             }
         //    //std::abort();
+        }
+        else if(ep->ExceptionRecord->ExceptionCode == STATUS_ACCESS_VIOLATION)
+        {
+            check_return();
         }
         return EXCEPTION_CONTINUE_SEARCH;
     }

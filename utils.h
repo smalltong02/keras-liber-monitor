@@ -7,6 +7,12 @@
 #include <codecvt>
 #include <variant>
 #include <any>
+#include <setjmp.h>
+
+using tls_check_struct = struct {
+    jmp_buf jb;
+    bool active;
+};
 
 bool ExtractResource(HMODULE ModuleHandle, TCHAR const * ResourceName,
     TCHAR const * ResourceId, std::vector<BYTE>& ResoureBuffer);
@@ -17,6 +23,9 @@ std::string W2AString(const std::wstring& str);
 VARTYPE ConvertObTypeToVarintType(const std::string& type_name);
 std::any GetVariantValue(const VARIANT& Value);
 bool SetVariantValue(VARIANT& Value, std::any& anyvalue);
+void tls_check_index_init();
+tls_check_struct* check_get_tls();
+void check_return();
 
 template <typename Func>
 inline void getExecutionTime(const std::string& title, Func func) {
@@ -468,6 +477,21 @@ inline bool AssignAnyType(std::any& anyvalue, Ty value) {
             anyvalue = static_cast<NTSTATUS>(value);
             return true;
         }
+        else if (anyvalue.type() == typeid(std::string))
+        {
+            std::stringstream ss;
+            ss << value;
+            anyvalue = std::string(ss.str());
+            return true;
+        }
+        else if (anyvalue.type() == typeid(std::wstring))
+        {
+            std::stringstream ss;
+            ss << value;
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+            anyvalue = converter.from_bytes(std::string(ss.str()));
+            return true;
+        }
     }
     else if constexpr (std::is_pointer_v<Ty>) {
         if (anyvalue.type() == typeid(PVOID))
@@ -490,6 +514,21 @@ inline bool AssignAnyType(std::any& anyvalue, Ty value) {
             anyvalue = reinterpret_cast<SC_HANDLE>(value);
             return true;
         }
+        else if (anyvalue.type() == typeid(std::string))
+        {
+            std::stringstream ss;
+            ss << std::hex << value;
+            anyvalue = std::string(ss.str());
+            return true;
+        }
+        else if (anyvalue.type() == typeid(std::wstring))
+        {
+            std::stringstream ss;
+            ss << std::hex << value;
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+            anyvalue = converter.from_bytes(std::string(ss.str()));
+            return true;
+        }
     }
     else if constexpr (std::is_floating_point_v<Ty>) {
         if (anyvalue.type() == typeid(FLOAT))
@@ -500,6 +539,21 @@ inline bool AssignAnyType(std::any& anyvalue, Ty value) {
         else if (anyvalue.type() == typeid(DOUBLE))
         {
             anyvalue = static_cast<DOUBLE>(value);
+            return true;
+        }
+        else if (anyvalue.type() == typeid(std::string))
+        {
+            std::stringstream ss;
+            ss << value;
+            anyvalue = std::string(ss.str());
+            return true;
+        }
+        else if (anyvalue.type() == typeid(std::wstring))
+        {
+            std::stringstream ss;
+            ss << value;
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+            anyvalue = converter.from_bytes(std::string(ss.str()));
             return true;
         }
     }
@@ -521,6 +575,22 @@ inline bool AssignAnyType(std::any& anyvalue, const char* value) {
         anyvalue = std::string(value);
         return true;
     }
+    else if (anyvalue.type() == typeid(std::wstring))
+    {
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        anyvalue = converter.from_bytes(std::string(value));
+        return true;
+    }
+    else if(anyvalue.type() == typeid(FLOAT) || anyvalue.type() == typeid(DOUBLE))
+    {
+        char* nodig = 0;
+        return AssignAnyType(anyvalue, strtod(value, &nodig));
+    }
+    else
+    {
+        char* nodig = 0;
+        return AssignAnyType(anyvalue, strtoull(value, &nodig, 10));
+    }
     return false;
 }
 template <>
@@ -529,6 +599,11 @@ inline bool AssignAnyType(std::any& anyvalue, wchar_t* value) {
     {
         anyvalue = std::wstring(static_cast<wchar_t*>(value));
         return true;
+    }
+    else
+    {
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        return AssignAnyType(anyvalue, converter.to_bytes(value).c_str());
     }
     return false;
 }
@@ -644,7 +719,7 @@ inline bool AssignAnyType(std::any& anyvalue, std::any value) {
         return AssignAnyType(anyvalue, std::any_cast<ULARGE_INTEGER>(value));
     }
     else if (value.type() == typeid(std::wstring)) {
-        return AssignAnyType(anyvalue, std::any_cast<std::wstring>(value));
+        return AssignAnyType(anyvalue, std::any_cast<std::wstring>(value).c_str());
     }
     else if (value.type() == typeid(GUID)) {
         return AssignAnyType(anyvalue, std::any_cast<GUID>(value));

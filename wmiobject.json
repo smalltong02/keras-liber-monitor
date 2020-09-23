@@ -75,7 +75,11 @@
           "Tag": "%var20 = 'Physical Memory 0'",
           "TotalWidth": "%var21 = 64",
           "TypeDetail": "%var22 = 128"
-        }
+        },
+        "Log": [
+          "__CLASS",
+          "Capacity"
+        ]
       }
     }
   },
@@ -136,7 +140,11 @@
           "Name": "%var11 = 'Physical Memory Array'",
           "Tag": "%var12 = 'Physical Memory Array 0'",
           "Use": "%var13 = 3"
-        }
+        },
+        "Log": [
+          "__CLASS",
+          "MemoryDevices"
+        ]
       }
     }
   },
@@ -144,7 +152,7 @@
   "Win32_DiskDrive": {
     "MIDL_INTERFACE": "{8502C4B2-5FBB-11D2-AAC1-006008C78BC7}",
     "Data": {
-      "CreationClassName": "BSTR",
+      "__CLASS": "BSTR",
       "Name": "BSTR",
       "Caption": "BSTR",
       "DeviceID": "BSTR",
@@ -153,16 +161,265 @@
     "PostCheck": {
       "0": {
         "Check": {
-          "Size": "%var0 <= '3298534883328'"
+          "Size": "%var0 <= 3298534883328"
         },
         "Modify": {
-          "Size": "%var1 = '3298534883328'"
+          "Size": "%var1 = 3298534883328"
         },
         "Log": [
-          "CreationClassName",
+          "__CLASS",
           "Name",
           "Caption"
         ]
+      }
+    }
+  },
+
+  "Win32_Bios": {
+    "MIDL_INTERFACE": "{8502C4E1-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "SerialNumber": "BSTR",
+      "Caption": "BSTR",
+      "Manufacturer": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "Caption": "%var0 =~ '.*(?i)vbox.*$'"
+        },
+        "Modify": {
+          "Caption": "%var1 = 'Default System BIOS'"
+        }
+      },
+
+      "1": {
+        "Check": {
+          "Manufacturer": "%var0 =~ '.*(?i)dell.*$'"
+        },
+        "Modify": {
+          "Manufacturer": "%var1 = 'Vbox Inc.'"
+        }
+      }
+    }
+  },
+
+  "Win32_ComputerSystem": {
+    "MIDL_INTERFACE": "{8502C4B0-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "UserName": "BSTR",
+      "Domain": "BSTR",
+      "Model": "BSTR",
+      "Manufacturer": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "Manufacturer": "%var0 =~ '.*(?i)vbox.*$'"
+        },
+        "Modify": {
+          "Manufacturer": "%var1 = 'Dell Inc.'"
+        },
+        "Log": [
+          "__CLASS",
+          "UserName",
+          "Domain",
+          "Model",
+          "Manufacturer"
+        ]
+      }
+    }
+  },
+
+  "Win32_NetworkAdapterConfiguration": {
+    "MIDL_INTERFACE": "{8502C515-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "MACAddress": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "MACAddress": "%var0 =~ '^(08:00:27)(([/\\s:][0-9a-fA-F]{2}){3})$'"
+        },
+        "Modify": {
+          "MACAddress": "%var1 = '2B:37:69:FB:3B:7F'"
+        }
+      }
+    }
+  },
+
+  "Win32_PnPEntity": {
+    "MIDL_INTERFACE": "{FE28FD98-C875-11d2-B352-00104BC97924}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "Name": "BSTR",
+      "DeviceId": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "DeviceId": "%var0 =~ '^PCI\\\\VEN_80EE&DEV_CAFE.*$'"
+        },
+        "Modify": {
+          "DeviceId": "%var1 = 'PCI\\\\VEN_0033&DEV_PPEF&SUBSYS_C7231028&REV_A1\\4&2555DBDC&0&0208'"
+        }
+      }
+    }
+  },
+
+  "Win32_Processor": {
+    "MIDL_INTERFACE": "{8502C4BB-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "Name": "BSTR",
+      "NumberOfCores": "UINT"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "NumberOfCores": "%var0 < 9"
+        },
+        "Modify": {
+          "NumberOfCores": "%var1 = 10"
+        }
+      }
+    }
+  },
+
+  "Win32_BaseBoard": {
+    "MIDL_INTERFACE": "{FAF76B95-798C-11D2-AAD1-006008C78BC7}",
+    "Data": {
+      "__PATH": "BSTR",
+      "Manufacturer": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "Manufacturer": "%var0 =~ '.*(?i)vbox.*$'"
+        },
+        "Modify": {
+          "Manufacturer": "%var1 = 'Dell Inc.'"
+        },
+        "Log": [
+          "__PATH",
+          "Manufacturer"
+        ]
+      }
+    }
+  },
+
+  "Win32_CDROMDrive": {
+    "MIDL_INTERFACE": "{8502C4B3-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "__PATH": "BSTR",
+      "Name": "BSTR",
+      "Manufacturer": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "Manufacturer": "%var0 =~ '.*(?i)vbox.*$'"
+        },
+        "Modify": {
+          "Manufacturer": "%var1 = 'Dell Inc.'"
+        },
+        "Log": [
+          "__CLASS",
+          "Name",
+          "Manufacturer"
+        ]
+      }
+    }
+  },
+
+  "Win32_OperatingSystem": {
+    "MIDL_INTERFACE": "{8502C4DE-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "__PATH": "BSTR",
+      "BuildNumber": "BSTR",
+      "Name": "BSTR",
+      "NumberOfProcesses": "DWORD"
+    },
+    "Methods": {
+      "Reboot": {
+        "Signature": {
+          "Library": "IWbemServices.ExecMethod",
+          "Return": "HRESULT"
+        },
+        "PreCheck": {
+          "0": {
+            "Modify": {
+              "Return": "%var1 = 0"
+            },
+            "Log": [
+              "Flags"
+            ]
+          }
+        }
+      },
+
+      "Shutdown": {
+        "Signature": {
+          "Library": "IWbemServices.ExecMethod",
+          "Return": "HRESULT"
+        },
+        "PreCheck": {
+          "0": {
+            "Modify": {
+              "Return": "%var1 = 0"
+            },
+            "Log": [
+              "Flags"
+            ]
+          }
+        }
+      },
+
+      "Win32Shutdown": {
+        "Signature": {
+          "Library": "IWbemServices.ExecMethod",
+          "Return": "HRESULT"
+        },
+        "Parameters": {
+          "Flags": "UINT",
+          "Reserved": "UINT"
+        },
+        "PreCheck": {
+          "0": {
+            "Modify": {
+              "Return": "%var1 = 0"
+            },
+            "Log": [
+              "Flags"
+            ]
+          }
+        }
+      },
+
+      "Win32ShutdownTracker": {
+        "Signature": {
+          "Library": "IWbemServices.ExecMethod",
+          "Return": "HRESULT"
+        },
+        "Parameters": {
+          "Timeout": "DWORD",
+          "Comment": "BSTR",
+          "ReasonCode": "DWORD",
+          "Flags": "DWORD"
+        },
+        "PreCheck": {
+          "0": {
+            "Modify": {
+              "Return": "%var1 = 0"
+            },
+            "Log": [
+              "ReasonCode",
+              "Flags"
+            ]
+          }
+        }
       }
     }
   },

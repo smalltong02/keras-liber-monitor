@@ -80,6 +80,7 @@ processing_status WINAPI CHookImplementObject::detour_coUninitialize(detour_node
         }
     }
     node->hook_implement_object->ClearWmiInterfaceDefine();
+    return processing_continue;
 }
 
 processing_status WINAPI CHookImplementObject::detour_coInitializeSecurity(detour_node* node, PSECURITY_DESCRIPTOR pSecDesc, LONG cAuthSvc, SOLE_AUTHENTICATION_SERVICE *asAuthSvc, 
@@ -147,7 +148,7 @@ void CALLBACK CHookImplementObject::detour_ldrDllNotification(ULONG reason, cons
                 std::unique_ptr<CLogHandle> log_handle = std::make_unique<CLogHandle>(DEBUG_FEATURE, CLogObject::logtype::log_debug);
                 if (!log_handle) return;
                 BEGIN_LOG("delay_hooking");
-                std::wstring lib_name = { notification->Loaded.BaseDllName->Buffer, notification->Loaded.BaseDllName->Length};
+                std::wstring lib_name = { notification->Loaded.BaseDllName->Buffer, notification->Loaded.BaseDllName->Length/sizeof(wchar_t)};
                 lib_name = lib_name.c_str();
                 detour_node node = { nullptr, nullptr, 0, nullptr, nullptr, log_handle->GetHandle() };
                 debug_log("load module: {}", lib_name);
@@ -184,8 +185,12 @@ processing_status WINAPI CHookImplementObject::detour_getProcAddress(CHookImplem
     ASSERT(node != nullptr);
     ASSERT(node->return_va != nullptr);
     ASSERT(node->log_entry != nullptr);
-    if (!node || !node->return_va || !node->log_entry) return processing_skip;
-    if (hModule == nullptr) return processing_skip;
+    ASSERT(node->function != nullptr);
+    ASSERT(node->hook_implement_object != nullptr);
+    if (!node || !node->return_va || !node->log_entry || !node->hook_implement_object) return processing_skip;
+    if (processing_status status; (status = node->function->CheckReturn(node)) != processing_continue)
+        return status;
+    //if (hModule == nullptr) return processing_skip;
     if (((DWORD_PTR)lpProcName) <= 0xffff) {
         BEGIN_LOG("get_ordinal");
         std::stringstream smod, ss;
@@ -338,10 +343,12 @@ bool process_check_for_wmiobject(CHookImplementObject::detour_node* node, const 
             {
                 if (_stricmp(pcheck->GetRealName(iden.first).c_str(), val_name.c_str()) == 0)
                 {
+                    if (iden.second == nullptr) return false;
+                    std::any cur_anyvalue = iden.second->GetCurValue();
                     std::any anyvalue = GetVariantValue(vt_value);
                     if (!anyvalue.has_value()) 
                         return false;
-                    if (!check->SetIdentifierValue(value_map, CExpParsing::ValuePair(iden.first, anyvalue)))
+                    if (AssignAnyType(cur_anyvalue, anyvalue) && !check->SetIdentifierValue(value_map, CExpParsing::ValuePair(iden.first, cur_anyvalue)))
                     {
                         return false;
                     }
@@ -624,5 +631,24 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_E
 processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_ExecQuery(detour_node* node, IWbemServices* This, const BSTR strQueryLanguage, const BSTR strQuery, long lFlags, IWbemContext *pCtx, IEnumWbemClassObject **ppEnum)
 {
     BreakPoint;
+    ASSERT(node != nullptr);
+    ASSERT(node->return_va != nullptr);
+    ASSERT(node->log_entry != nullptr);
+    ASSERT(node->function != nullptr);
+    ASSERT(node->hook_implement_object != nullptr);
+    if (!node || !node->return_va || !node->log_entry) return processing_skip;
+    if (!node->hook_implement_object) return processing_skip;
+    std::shared_ptr<PVOID> log_handle = node->log_entry;
+
+    if (strQueryLanguage == nullptr) return processing_continue;
+    if (strQuery == nullptr) return processing_continue;
+    BEGIN_LOG("ExecQuery");
+    if (std::stringstream str_val = OutputAnyValue(std::wstring(strQueryLanguage)); str_val.str().length())
+        LOGGING("strQueryLanguage", str_val.str());
+    if (std::stringstream str_val = OutputAnyValue(std::wstring(strQuery)); str_val.str().length())
+        LOGGING("strQuery", str_val.str());
+    if (std::stringstream str_val = OutputAnyValue(lFlags); str_val.str().length())
+        LOGGING("lFlags", str_val.str());
+    END_LOG(node->log_entry);
     return processing_continue;
 }
