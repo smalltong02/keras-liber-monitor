@@ -69,5 +69,37 @@
         }
       }
     }
+  },
+
+  "NtQueryLicenseValue": {
+    "Signature": {
+      "Library": "ntdll.dll",
+      "Return": "NTSTATUS",
+      "Feature": "P65"
+    },
+
+    "Parameters": {
+      "ValueName": "LPUNICODE_STRING",
+      "Type": "LPULONG",
+      "Data": "LPVOID",
+      "DataSize": "ULONG",
+      "ResultDataSize": "LPULONG"
+    },
+
+    "Ensure": [
+      "ValueName"
+    ],
+
+    "PreCheck": {
+      "0": {
+        "Check": {
+          "ValueName->Buffer": "%var0 =~ '^(?i)kernel-vmdetection-private$'"
+        },
+
+        "Modify": {
+          "Return": "%var1 = 3221225524"
+        }
+      }
+    }
   }
 }

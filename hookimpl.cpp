@@ -3,6 +3,7 @@
 #include "HookImplementObject.h"
 #include "utils.h"
 #include "Win32WbemClassObject.h"
+#include "Win32EnumWbemClassObject.h"
 
 using namespace cchips;
 
@@ -269,14 +270,14 @@ bool process_duplicate_for_wmiobject(CHookImplementObject::detour_node* node, co
                     InitializeWin32WbemClassObject(p_IWbemClassObject, wmi_object);
                     *apObjects = (IWbemClassObject*)p_IWbemClassObject;
                     *puReturned = 1;
-                    std::shared_ptr<CObObject> return_ptr = node->function->GetIdentifier(SI_RETURN);
-                    ASSERT(return_ptr != nullptr);
-                    if (return_ptr)
-                    {
-                        std::any anyvalue = return_ptr->GetCurValue();
-                        if(AssignAnyType(anyvalue, 0))
-                            return_ptr->SetValue((char*)node->return_va, anyvalue);
-                    }
+                    //std::shared_ptr<CObObject> return_ptr = node->function->GetIdentifier(SI_RETURN);
+                    //ASSERT(return_ptr != nullptr);
+                    //if (return_ptr)
+                    //{
+                    //    std::any anyvalue = return_ptr->GetCurValue();
+                    //    if(AssignAnyType(anyvalue, 0))
+                    //        return_ptr->SetValue((char*)node->return_va, anyvalue);
+                    //}
                 }
             }
         }
@@ -650,5 +651,67 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_E
     if (std::stringstream str_val = OutputAnyValue(lFlags); str_val.str().length())
         LOGGING("lFlags", str_val.str());
     END_LOG(node->log_entry);
+    return processing_continue;
+}
+
+processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_Post_ExecQuery(detour_node* node, IWbemServices* This, const BSTR strQueryLanguage, const BSTR strQuery, long lFlags, IWbemContext *pCtx, IEnumWbemClassObject **ppEnum)
+{
+    BreakPoint;
+    ASSERT(node != nullptr);
+    ASSERT(node->return_va != nullptr);
+    ASSERT(node->log_entry != nullptr);
+    ASSERT(node->function != nullptr);
+    ASSERT(node->hook_implement_object != nullptr);
+    if (!node || !node->return_va || !node->log_entry) return processing_skip;
+    processing_status status;
+    if ((status = node->function->CheckReturn(node)) != processing_continue)
+        return status;
+    if (!node->hook_implement_object) return processing_skip;
+    if (ppEnum == nullptr || *ppEnum == nullptr) return processing_skip;
+    std::shared_ptr<PVOID> log_handle = node->log_entry;
+
+    if (std::stringstream str_val = OutputAnyValue(std::wstring(strQuery)); str_val.str().length()) {
+        if (std::string object_str; RE2::FullMatch(str_val.str().c_str(), "^.*(?i)from (.*)$", &object_str) && object_str.length()) {
+            for (const auto& wmi_object : node->hook_implement_object->GetWmiObjects())
+            {
+                ASSERT(wmi_object.second != nullptr);
+                if (wmi_object.second == nullptr) continue;
+                if (_stricmp(wmi_object.first.c_str(), object_str.c_str()) == 0)
+                {
+                    for (const auto& pcheck : wmi_object.second->GetChecks(false))
+                    {
+                        ASSERT(pcheck != nullptr);
+                        if (pcheck == nullptr)
+                            continue;
+                        bool duplicate = false;
+                        for (const auto& handle : pcheck->GetHandles())
+                        {
+                            if (handle.second == CCheck::handle_duplicate)
+                            {
+                                duplicate = true;
+                                break;
+                            }
+                        }
+                        if (duplicate)
+                        {
+                            idIEnumWbemClassObject* p_IEnumWbemClassObject = (idIEnumWbemClassObject *)malloc(sizeof(idIEnumWbemClassObject));
+                            if (p_IEnumWbemClassObject)
+                            {
+                                p_IEnumWbemClassObject->lpVtbl = (idIEnumWbemClassObjectVtbl *)malloc(sizeof(idIEnumWbemClassObjectVtbl));
+                                if (p_IEnumWbemClassObject->lpVtbl)
+                                {
+                                    memset(p_IEnumWbemClassObject->lpVtbl, 0, sizeof(idIEnumWbemClassObjectVtbl));
+                                    InitializeWin32EnumWbemClassObject(p_IEnumWbemClassObject, *ppEnum, wmi_object.second);
+                                    *ppEnum = (IEnumWbemClassObject*)p_IEnumWbemClassObject;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
     return processing_continue;
 }

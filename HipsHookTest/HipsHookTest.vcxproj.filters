@@ -170,6 +170,7 @@
       <Filter>Others</Filter>
     </ClInclude>
     <ClInclude Include="utils.h" />
+    <ClInclude Include="tydefine.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />

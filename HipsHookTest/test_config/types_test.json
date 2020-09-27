@@ -183,6 +183,18 @@
       "dwAllocationGranularity": "DWORD",
       "wProcessorLevel": "WORD",
       "wProcessorRevision": "WORD"
+    },
+
+    "UNICODE_STRING": {
+      "Length": "USHORT",
+      "MaximumLength": "USHORT",
+      "Buffer": "LPWSTR"
+    },
+
+    "ANSI_STRING": {
+      "Length": "USHORT",
+      "MaximumLength": "USHORT",
+      "Buffer": "LPCHAR"
     }
   },
 

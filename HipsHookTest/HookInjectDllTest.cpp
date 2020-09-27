@@ -142,7 +142,7 @@ protected:
 //    else
 //    {
 //        PROCESS_INFORMATION sample_pi = { };
-//        ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x32\\Hardware_Information_v1.exe", sample_pi));
+//        ASSERT_TRUE(CreateSampleProcess("..\\test\\ijt\\x32\\al-khaser_x86.exe", sample_pi));
 //        g_server_object->AddDebugPid(sample_pi.dwProcessId);
 //        PROCESS_INFORMATION inject_pi = { };
 //        std::stringstream ss;

@@ -251,11 +251,43 @@
     "PostCheck": {
       "0": {
         "Check": {
-          "lpSystemInfo->dwNumberOfProcessors": "%var0 < 9"
+          "lpSystemInfo->dwNumberOfProcessors": "%var0 < 2"
         },
 
         "Modify": {
-          "lpSystemInfo->dwNumberOfProcessors": "%var1 = 10"
+          "lpSystemInfo->dwNumberOfProcessors": "%var1 = 2"
+        }
+      }
+    }
+  },
+
+  "NtQueryLicenseValue": {
+    "Signature": {
+      "Library": "ntdll.dll",
+      "Return": "NTSTATUS",
+      "Feature": "P65"
+    },
+
+    "Parameters": {
+      "ValueName": "LPUNICODE_STRING",
+      "Type": "LPULONG",
+      "Data": "LPVOID",
+      "DataSize": "ULONG",
+      "ResultDataSize": "LPULONG"
+    },
+
+    "Ensure": [
+      "ValueName"
+    ],
+
+    "PreCheck": {
+      "0": {
+        "Check": {
+          "ValueName->Buffer": "%var0 =~ '^(?i)kernel-vmdetection-private$'"
+        },
+
+        "Modify": {
+          "Return": "%var1 = 3221225524"
         }
       }
     }

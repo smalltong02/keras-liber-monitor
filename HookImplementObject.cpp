@@ -433,6 +433,7 @@ namespace cchips {
         ADD_POST_PROCESSING(CoInitializeSecurity, detour_coInitializeSecurity);
         // processing wmi hook
         ADD_PRE_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_ExecQuery);
+        ADD_POST_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_Post_ExecQuery);
         ADD_POST_PROCESSING(IEnumWbemClassObject_Next, detour_IEnumWbemClassObject_Next);
         ADD_POST_PROCESSING(IWbemClassObject_Get, detour_IWbemClassObject_Get);
         ADD_POST_PROCESSING(IWbemClassObject_Put, detour_IWbemClassObject_Put);
@@ -452,6 +453,7 @@ namespace cchips {
         DEL_POST_PROCESSING(CoInitializeSecurity, detour_coInitializeSecurity);
         // processing wmi hook
         DEL_PRE_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_ExecQuery);
+        DEL_POST_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_Post_ExecQuery);
         DEL_POST_PROCESSING(IEnumWbemClassObject_Next, detour_IEnumWbemClassObject_Next);
         DEL_POST_PROCESSING(IWbemClassObject_Get, detour_IWbemClassObject_Get);
         DEL_POST_PROCESSING(IWbemClassObject_Put, detour_IWbemClassObject_Put);

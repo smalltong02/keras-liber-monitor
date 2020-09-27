@@ -7,6 +7,7 @@
 #include <future>
 #include <atomic>
 #include <random>
+#include "utils.h"
 #include "commutils.h"
 #include "LogObject.h"
 #include "HipsHookTest.h"
@@ -28,6 +29,8 @@ public:
     virtual DWORD GetTickCount() = 0;
     virtual void GetSystemTime(LPSYSTEMTIME lpSystemTime) = 0;
     virtual FARPROC GetProcAddress(HMODULE hModule, LPCSTR lpProcName) = 0;
+    virtual NTSTATUS NtQueryInformationProcess(HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength) = 0;
+    virtual NTSTATUS NtQueryLicenseValue(PUNICODE_STRING ValueName, PULONG Type, PVOID Data, ULONG DataSize, PULONG ResultDataSize) = 0;
 };
 
 class ApiHookSystemMock : public ApiHookSystem
@@ -39,6 +42,8 @@ public:
     MOCK_METHOD2(ExitWindowsEx, BOOL(UINT, DWORD));
     MOCK_METHOD2(GetProcAddress, FARPROC(HMODULE, LPCSTR));
     MOCK_METHOD4(GetDiskFreeSpaceExW, BOOL(LPCWSTR, ULARGE_INTEGER*, ULARGE_INTEGER*, ULARGE_INTEGER*));
+    MOCK_METHOD5(NtQueryInformationProcess, NTSTATUS(HANDLE, PROCESSINFOCLASS, PVOID, ULONG, PULONG));
+    MOCK_METHOD5(NtQueryLicenseValue, NTSTATUS(PUNICODE_STRING, PULONG, PVOID, ULONG, PULONG));
 };
 
 class HookSystemTest : public testing::Test
@@ -54,6 +59,8 @@ protected:
             tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
             AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, (PTOKEN_PRIVILEGES)NULL, 0);
         }
+        ntqueryinformationprocess_func = reinterpret_cast<NtQueryInformationProcess_Define>(GetProcAddress(GetModuleHandle("ntdll"), "NtQueryInformationProcess"));
+        ntquerylicensevalue_func = reinterpret_cast<NtQueryLicenseValue_Define>(GetProcAddress(GetModuleHandle("ntdll"), "NtQueryLicenseValue"));
     }
     ~HookSystemTest() override {}
 
@@ -64,6 +71,9 @@ protected:
     void TearDown() override {
         ASSERT_TRUE(g_hook_test_object->DisableAllApis());
     }
+
+    NtQueryInformationProcess_Define ntqueryinformationprocess_func;
+    NtQueryLicenseValue_Define ntquerylicensevalue_func;
 };
 
 
@@ -593,6 +603,160 @@ TEST_F(HookSystemTest, GetProcAddress_PreLog_lpProcName_Test)
     EXPECT_EQ(pre_error_long_data, hooked_error_long_data);
     EXPECT_EQ(pre_bexit_ordinal, hooked_bexit_ordinal);
     EXPECT_EQ(pre_error_ordinal, hooked_error_ordinal);
+}
+
+TEST_F(HookSystemTest, NtQueryInformationProcess_PreLog_ProcessHandle_Test)
+{
+    NTSTATUS pre_bexit_invalid_handle, pre_bexit_null_handle, pre_bexit_normal_handle, pre_bexit_other_handle1, pre_bexit_other_handle2, pre_bexit_other_handle3;
+    DWORD pre_error_invalid_handle, pre_berror_null_handle, pre_error_normal_handle, pre_error_other_handle1, pre_error_other_handle2, pre_error_other_handle3;
+    NTSTATUS hooked_bexit_invalid_handle, hooked_bexit_null_handle, hooked_bexit_normal_handle, hooked_bexit_other_handle1, hooked_bexit_other_handle2, hooked_bexit_other_handle3;
+    DWORD hooked_error_invalid_handle, hooked_berror_null_handle, hooked_error_normal_handle, hooked_error_other_handle1, hooked_error_other_handle2, hooked_error_other_handle3;
+    ApiHookSystemMock hook_system_mock;
+
+    if (ntqueryinformationprocess_func) {
+        // test variable
+        PROCESS_BASIC_INFORMATION basic_info = {};
+        ULONG return_len = 0;
+        // first call test API when DisableAllApis().
+        ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+        // test when ProcessHandle is invalid
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryInformationProcess(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntqueryinformationprocess_func((HANDLE)0x123, ProcessBasicInformation, &basic_info, sizeof(basic_info), &return_len)));
+        pre_bexit_invalid_handle = hook_system_mock.NtQueryInformationProcess((HANDLE)0x123, ProcessBasicInformation, &basic_info, sizeof(basic_info), &return_len);
+        pre_error_invalid_handle = GetLastError();
+        // test when ProcessHandle is nullptr
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryInformationProcess(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntqueryinformationprocess_func(nullptr, ProcessBasicInformation, &basic_info, sizeof(basic_info), &return_len)));
+        pre_bexit_null_handle = hook_system_mock.NtQueryInformationProcess(nullptr, ProcessBasicInformation, &basic_info, sizeof(basic_info), &return_len);
+        pre_berror_null_handle = GetLastError();
+        // test when ProcessHandle is normal
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryInformationProcess(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntqueryinformationprocess_func(GetCurrentProcess(), ProcessBasicInformation, &basic_info, sizeof(basic_info), &return_len)));
+        pre_bexit_normal_handle = hook_system_mock.NtQueryInformationProcess(GetCurrentProcess(), ProcessBasicInformation, &basic_info, sizeof(basic_info), &return_len);
+        pre_error_normal_handle = GetLastError();
+        // test when other parameter invalid.
+        //SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryInformationProcess(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntqueryinformationprocess_func(GetCurrentProcess(), ProcessBasicInformation, nullptr, sizeof(basic_info), &return_len)));
+        //pre_bexit_other_handle1 = hook_system_mock.NtQueryInformationProcess(GetCurrentProcess(), ProcessBasicInformation, nullptr, sizeof(basic_info), &return_len);
+        //pre_error_other_handle1 = GetLastError();
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryInformationProcess(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntqueryinformationprocess_func(GetCurrentProcess(), ProcessBasicInformation, &basic_info, 0, &return_len)));
+        pre_bexit_other_handle2 = hook_system_mock.NtQueryInformationProcess(GetCurrentProcess(), ProcessBasicInformation, &basic_info, 0, &return_len);
+        pre_error_other_handle2 = GetLastError();
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryInformationProcess(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntqueryinformationprocess_func(GetCurrentProcess(), ProcessBasicInformation, &basic_info, sizeof(basic_info), nullptr)));
+        pre_bexit_other_handle3 = hook_system_mock.NtQueryInformationProcess(GetCurrentProcess(), ProcessBasicInformation, &basic_info, sizeof(basic_info), nullptr);
+        pre_error_other_handle3 = GetLastError();
+
+        // initialize
+        std::vector<std::string> action_list;
+        action_list.push_back("P62");
+        g_server_object->AddLogCountMap(action_list);
+        // second call test API when EnableAllApis().
+        ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+        // test when ProcessHandle is invalid
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryInformationProcess(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntqueryinformationprocess_func((HANDLE)0x123, ProcessBasicInformation, &basic_info, sizeof(basic_info), &return_len)));
+        hooked_bexit_invalid_handle = hook_system_mock.NtQueryInformationProcess((HANDLE)0x123, ProcessBasicInformation, &basic_info, sizeof(basic_info), &return_len);
+        hooked_error_invalid_handle = GetLastError();
+        // test when ProcessHandle is nullptr
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryInformationProcess(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntqueryinformationprocess_func(nullptr, ProcessBasicInformation, &basic_info, sizeof(basic_info), &return_len)));
+        hooked_bexit_null_handle = hook_system_mock.NtQueryInformationProcess(nullptr, ProcessBasicInformation, &basic_info, sizeof(basic_info), &return_len);
+        hooked_berror_null_handle = GetLastError();
+        // test when ProcessHandle is normal
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryInformationProcess(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntqueryinformationprocess_func(GetCurrentProcess(), ProcessBasicInformation, &basic_info, sizeof(basic_info), &return_len)));
+        hooked_bexit_normal_handle = hook_system_mock.NtQueryInformationProcess(GetCurrentProcess(), ProcessBasicInformation, &basic_info, sizeof(basic_info), &return_len);
+        hooked_error_normal_handle = GetLastError();
+        // test when other parameter invalid.
+        //SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryInformationProcess(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntqueryinformationprocess_func(GetCurrentProcess(), ProcessBasicInformation, nullptr, sizeof(basic_info), &return_len)));
+        //hooked_bexit_other_handle1 = hook_system_mock.NtQueryInformationProcess(GetCurrentProcess(), ProcessBasicInformation, nullptr, sizeof(basic_info), &return_len);
+        //hooked_error_other_handle1 = GetLastError();
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryInformationProcess(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntqueryinformationprocess_func(GetCurrentProcess(), ProcessBasicInformation, &basic_info, 0, &return_len)));
+        hooked_bexit_other_handle2 = hook_system_mock.NtQueryInformationProcess(GetCurrentProcess(), ProcessBasicInformation, &basic_info, 0, &return_len);
+        hooked_error_other_handle2 = GetLastError();
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryInformationProcess(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntqueryinformationprocess_func(GetCurrentProcess(), ProcessBasicInformation, &basic_info, sizeof(basic_info), nullptr)));
+        hooked_bexit_other_handle3 = hook_system_mock.NtQueryInformationProcess(GetCurrentProcess(), ProcessBasicInformation, &basic_info, sizeof(basic_info), nullptr);
+        hooked_error_other_handle3 = GetLastError();
+        // wait for all logs received.
+        std::vector<int> count_list;
+        count_list.push_back(5);
+        EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+
+        // compare return result and error code.
+        EXPECT_EQ(pre_bexit_invalid_handle, hooked_bexit_invalid_handle);
+        EXPECT_EQ(pre_error_invalid_handle, hooked_error_invalid_handle);
+        EXPECT_EQ(pre_bexit_null_handle, hooked_bexit_null_handle);
+        EXPECT_EQ(pre_berror_null_handle, hooked_berror_null_handle);
+        EXPECT_EQ(pre_bexit_normal_handle, hooked_bexit_normal_handle);
+        EXPECT_EQ(pre_error_normal_handle, hooked_error_normal_handle);
+        //EXPECT_EQ(pre_bexit_other_handle1, hooked_bexit_other_handle1);
+        //EXPECT_EQ(pre_error_other_handle1, hooked_error_other_handle1);
+        EXPECT_EQ(pre_bexit_other_handle2, hooked_bexit_other_handle2);
+        EXPECT_EQ(pre_error_other_handle2, hooked_error_other_handle2);
+        EXPECT_EQ(pre_bexit_other_handle3, hooked_bexit_other_handle3);
+        EXPECT_EQ(pre_error_other_handle3, hooked_error_other_handle3);
+    }
+}
+
+TEST_F(HookSystemTest, NtQueryLicenseValue_PreLog_ValueName_Test)
+{
+    NTSTATUS pre_bexit_invalid_name, pre_bexit_null_name, pre_bexit_normal_name, pre_bexit_other_name1, pre_bexit_other_name2, pre_bexit_other_name3;
+    DWORD pre_error_invalid_name, pre_berror_null_name, pre_error_normal_name, pre_error_other_name1, pre_error_other_name2, pre_error_other_name3;
+    NTSTATUS hooked_bexit_invalid_name, hooked_bexit_null_name, hooked_bexit_normal_name, hooked_bexit_other_name1, hooked_bexit_other_name2, hooked_bexit_other_name3;
+    DWORD hooked_error_invalid_name, hooked_berror_null_name, hooked_error_normal_name, hooked_error_other_name1, hooked_error_other_name2, hooked_error_other_name3;
+    ApiHookSystemMock hook_system_mock;
+
+    if (ntquerylicensevalue_func) {
+        // test variable
+        UNICODE_STRING LicenseValue;
+        LicenseValue.Buffer = L"Kernel-VMDetection-Private";
+        LicenseValue.MaximumLength = sizeof(L"Kernel-VMDetection-Private");
+        LicenseValue.Length = LicenseValue.MaximumLength - sizeof(wchar_t);
+        ULONG Result = 0, ReturnLength;
+        // first call test API when DisableAllApis().
+        ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+        // test when ValueName is nullptr
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryLicenseValue(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntquerylicensevalue_func(nullptr, NULL, reinterpret_cast<PVOID>(&Result), sizeof(ULONG), &ReturnLength)));
+        pre_bexit_null_name = hook_system_mock.NtQueryLicenseValue(nullptr, NULL, reinterpret_cast<PVOID>(&Result), sizeof(ULONG), &ReturnLength);
+        pre_berror_null_name = GetLastError();
+        // test when ValueName is normal
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryLicenseValue(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntquerylicensevalue_func(&LicenseValue, NULL, reinterpret_cast<PVOID>(&Result), sizeof(ULONG), &ReturnLength)));
+        pre_bexit_normal_name = hook_system_mock.NtQueryLicenseValue(&LicenseValue, NULL, reinterpret_cast<PVOID>(&Result), sizeof(ULONG), &ReturnLength);
+        pre_error_normal_name = GetLastError();
+        // test when other parameter invalid.
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryLicenseValue(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntquerylicensevalue_func(&LicenseValue, NULL, nullptr, 0, &ReturnLength)));
+        pre_bexit_other_name2 = hook_system_mock.NtQueryLicenseValue(&LicenseValue, NULL, nullptr, 0, &ReturnLength);
+        pre_error_other_name2 = GetLastError();
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryLicenseValue(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntquerylicensevalue_func(&LicenseValue, NULL, reinterpret_cast<PVOID>(&Result), sizeof(ULONG), nullptr)));
+        pre_bexit_other_name3 = hook_system_mock.NtQueryLicenseValue(&LicenseValue, NULL, reinterpret_cast<PVOID>(&Result), sizeof(ULONG), nullptr);
+        pre_error_other_name3 = GetLastError();
+
+        // initialize
+        std::vector<std::string> action_list;
+        action_list.push_back("P65");
+        g_server_object->AddLogCountMap(action_list);
+        // second call test API when EnableAllApis().
+        ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+        // test when ValueName is nullptr
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryLicenseValue(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntquerylicensevalue_func(nullptr, NULL, reinterpret_cast<PVOID>(&Result), sizeof(ULONG), &ReturnLength)));
+        hooked_bexit_null_name = hook_system_mock.NtQueryLicenseValue(nullptr, NULL, reinterpret_cast<PVOID>(&Result), sizeof(ULONG), &ReturnLength);
+        hooked_berror_null_name = GetLastError();
+        // test when ValueName is normal
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryLicenseValue(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntquerylicensevalue_func(&LicenseValue, NULL, reinterpret_cast<PVOID>(&Result), sizeof(ULONG), &ReturnLength)));
+        hooked_bexit_normal_name = hook_system_mock.NtQueryLicenseValue(&LicenseValue, NULL, reinterpret_cast<PVOID>(&Result), sizeof(ULONG), &ReturnLength);
+        hooked_error_normal_name = GetLastError();
+        // test when other parameter invalid.
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryLicenseValue(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntquerylicensevalue_func(&LicenseValue, NULL, nullptr, 0, &ReturnLength)));
+        hooked_bexit_other_name2 = hook_system_mock.NtQueryLicenseValue(&LicenseValue, NULL, nullptr, 0, &ReturnLength);
+        hooked_error_other_name2 = GetLastError();
+        SetLastError(0); EXPECT_CALL(hook_system_mock, NtQueryLicenseValue(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(ntquerylicensevalue_func(&LicenseValue, NULL, reinterpret_cast<PVOID>(&Result), sizeof(ULONG), nullptr)));
+        hooked_bexit_other_name3 = hook_system_mock.NtQueryLicenseValue(&LicenseValue, NULL, reinterpret_cast<PVOID>(&Result), sizeof(ULONG), nullptr);
+        hooked_error_other_name3 = GetLastError();
+        // wait for all logs received.
+        std::vector<int> count_list;
+        count_list.push_back(3);
+        EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+
+        //// compare return result and error code.
+        EXPECT_EQ(pre_bexit_null_name, hooked_bexit_null_name);
+        EXPECT_EQ(pre_berror_null_name, hooked_berror_null_name);
+        EXPECT_EQ(hooked_bexit_normal_name, 0xC0000034);
+        EXPECT_EQ(hooked_bexit_other_name2, 0xC0000034);
+        EXPECT_EQ(hooked_bexit_other_name3, 0xC0000034);
+    }
 }
 
 #endif

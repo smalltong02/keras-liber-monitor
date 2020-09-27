@@ -168,6 +168,9 @@
     <ClCompile Include="g-re2\util\strutil.cc">
       <Filter>g-re2\util</Filter>
     </ClCompile>
+    <ClCompile Include="Win32EnumWbemClassObject.cpp">
+      <Filter>Coms</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FlagsObject.h">
@@ -373,6 +376,9 @@
     </ClInclude>
     <ClInclude Include="ntapi.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Win32EnumWbemClassObject.h">
+      <Filter>Coms</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

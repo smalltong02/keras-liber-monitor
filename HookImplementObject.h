@@ -342,6 +342,7 @@ namespace cchips {
         static processing_status STDMETHODCALLTYPE detour_IWbemClassObject_Next(detour_node* node, IWbemClassObject* This, long lFlags, BSTR *strName, VARIANT *pVal, long *pType, long *plFlavor);
         static processing_status STDMETHODCALLTYPE detour_IWbemServices_ExecMethod(detour_node* node, IWbemServices* This, const BSTR strObjectPath, const BSTR strMethodName, long lFlags, IWbemContext *pCtx, IWbemClassObject *pInParams, IWbemClassObject **ppOutParams, IWbemCallResult **ppCallResult);
         static processing_status STDMETHODCALLTYPE detour_IWbemServices_ExecQuery(detour_node* node, IWbemServices* This, const BSTR strQueryLanguage, const BSTR strQuery, long lFlags, IWbemContext *pCtx, IEnumWbemClassObject **ppEnum);
+        static processing_status STDMETHODCALLTYPE detour_IWbemServices_Post_ExecQuery(detour_node* node, IWbemServices* This, const BSTR strQueryLanguage, const BSTR strQuery, long lFlags, IWbemContext *pCtx, IEnumWbemClassObject **ppEnum);
     private:
         MH_STATUS HookNormalApi(hook_node& node);
         MH_STATUS HookSpecialApi(hook_node& node);

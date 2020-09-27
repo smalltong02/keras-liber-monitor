@@ -381,6 +381,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugger|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="utils.cpp" />
+    <ClCompile Include="Win32EnumWbemClassObject.cpp" />
     <ClCompile Include="Win32WbemClassObject.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -451,6 +452,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="utils.h" />
+    <ClInclude Include="Win32EnumWbemClassObject.h" />
     <ClInclude Include="Win32WbemClassObject.h" />
   </ItemGroup>
   <ItemGroup>
