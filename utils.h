@@ -20,6 +20,7 @@ bool vir_strcpy_s(char* dst, size_t dst_len, const void* src);
 bool vir_wcscpy_s(wchar_t* dst, size_t dst_len, const void* src);
 std::wstring A2WString(const std::string& str);
 std::string W2AString(const std::wstring& str);
+std::string StringToLower(const std::string& str);
 VARTYPE ConvertObTypeToVarintType(const std::string& type_name);
 std::any GetVariantValue(const VARIANT& Value);
 bool SetVariantValue(VARIANT& Value, std::any& anyvalue);

@@ -140,13 +140,13 @@ namespace cchips {
             }
             else
             {
-                debug_log("api hook create: '{}' success!", (*node.function).GetName());
+                error_log("api hook create: '{}' success!", (*node.function).GetName());
             }
             return status;
         }
         else
         {
-            debug_log("api hook create: '{}' failed!", (*node.function).GetName());
+            error_log("api hook create: '{}' failed({})!", (*node.function).GetName(), status);
         }
         return status;
     }
@@ -284,10 +284,10 @@ namespace cchips {
                 // delayed hook;
                 m_hookNodeList[count].bdelayed = true;
                 if(!(*m_hookNodeList[count].function).GetClassProto() || (*m_hookNodeList[count].function).GetClassProto()->GetClassType() == CPrototype::class_normal)
-                    m_delayNodeList[(*m_hookNodeList[count].function).GetLibrary()].push_back(count);
+                    m_delayNodeList[StringToLower((*m_hookNodeList[count].function).GetLibrary())].push_back(count);
                 else
                     m_delayNodeList[(*m_hookNodeList[count].function).GetClassProto()->GetTypeName()].push_back(count);
-                debug_log("api hook: '{}' be add to delay_list!", (*func.second).GetName());
+                error_log("api hook: '{}' be add to delay_list!", (*func.second).GetName());
             }
             count++;
         });

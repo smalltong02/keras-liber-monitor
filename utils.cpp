@@ -34,6 +34,13 @@ std::string W2AString(const std::wstring& str)
     return str_a;
 }
 
+std::string StringToLower(const std::string& str)
+{
+    std::string lower_str = str;
+    transform(lower_str.begin(), lower_str.end(), lower_str.begin(), ::toupper);
+    return lower_str;
+}
+
 bool ExtractResource(HMODULE ModuleHandle, TCHAR const * ResourceName,
     TCHAR const * ResourceId, std::vector<BYTE>& ResoureBuffer)
 {

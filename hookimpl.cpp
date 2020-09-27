@@ -111,6 +111,8 @@ bool process_loadLibrary(CHookImplementObject::detour_node* node, std::string& l
     if (!lib_name.length()) return false;
     if (!node || !node->log_entry) return processing_skip;
     BEGIN_LOG(lib_name);
+    std::string lower_name = StringToLower(lib_name);
+    if (!lower_name.length()) return false;
     if (g_impl_object)
     {
         //processing delay hooks.
@@ -118,9 +120,9 @@ bool process_loadLibrary(CHookImplementObject::detour_node* node, std::string& l
         do {
             std::lock_guard<std::recursive_mutex> lock_guard(g_impl_object->GetRecursiveMutex());
             auto& delay_list = g_impl_object->GetDelayNodeList();
-            if (delay_list.find(lib_name) == delay_list.end()) break;
-            ord_list = delay_list[lib_name];
-            delay_list.erase(delay_list.find(lib_name));
+            if (delay_list.find(lower_name) == delay_list.end()) break;
+            ord_list = delay_list[lower_name];
+            delay_list.erase(delay_list.find(lower_name));
         } while (0);
 
         for (auto i : ord_list)
@@ -315,11 +317,6 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IEnumWbemClassO
         if (wmi_object.second == nullptr) continue;
         if (_stricmp(wmi_object.first.c_str(), class_name.str().c_str()) == 0)
         {
-            //if (node->function->CheckReturn(node) == processing_skip)
-            //{
-            //    if (!process_duplicate_for_wmiobject(node, wmi_object.second, apObjects, puReturned, LOGGER))
-            //        return processing_skip;
-            //}
             if (!process_log_for_wmiobject(node, wmi_object.second, pWbemClassObject, LOGGER))
                 return processing_skip;
             break;
@@ -378,7 +375,12 @@ bool process_check_for_wmiobject(CHookImplementObject::detour_node* node, const 
             {
                 if (_stricmp(pcheck->GetRealName(iden.first).c_str(), val_name.c_str()) == 0)
                 {
+                    bool binvalid_value = false;
                     std::any anyvalue = GetVariantValue(vt_value);
+                    if (!anyvalue.has_value()) {
+                        binvalid_value = true;
+                        anyvalue = iden.second->GetCurValue();
+                    }
                     if (!anyvalue.has_value())
                         return false;
                     AssignAnyType(anyvalue, 0);
@@ -400,6 +402,9 @@ bool process_check_for_wmiobject(CHookImplementObject::detour_node* node, const 
                     std::any any_new_val = anyvalue;
                     if (AssignAnyType(any_new_val, value->second))
                     {
+                        if (binvalid_value) {
+                            vt_value.vt = ConvertObTypeToVarintType(iden.second->GetName());
+                        }
                         if (!SetVariantValue(vt_value, any_new_val))
                             return false;
                         if(std::stringstream ss = OutputAnyValue(any_new_val); ss.str().length())
@@ -440,8 +445,8 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemClassObjec
     ASSERT(node->function != nullptr);
     ASSERT(node->hook_implement_object != nullptr);
     if (!node || !node->return_va || !node->log_entry) return processing_skip;
-    if (processing_status status; (status = node->function->CheckReturn(node)) != processing_continue)
-        return status;
+    //if (processing_status status; (status = node->function->CheckReturn(node)) != processing_continue)
+    //    return status;
     if (!node->hook_implement_object) return processing_skip;
 
     HRESULT hr;

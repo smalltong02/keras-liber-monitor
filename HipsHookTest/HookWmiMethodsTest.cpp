@@ -574,7 +574,7 @@ TEST_F(HookWmiMethodsTest, Win32LogicalDiskTest)
     VariantInit(&vtProp);
     hr = pEnumClsObj->Next(WBEM_INFINITE, 1, &pWbemClsObj, &uReturn);
     ASSERT_TRUE(SUCCEEDED(hr) && uReturn > 0);
-    hr = pWbemClsObj->Get(CComBSTR("__CLASS"), 0, &vtProp, 0, 0);
+    hr = pWbemClsObj->Get(CComBSTR("__PATH"), 0, &vtProp, 0, 0);
     ASSERT_TRUE(SUCCEEDED(hr));
     ASSERT_TRUE(GetValueString(vtProp, chRetValue));
     VariantClear(&vtProp);

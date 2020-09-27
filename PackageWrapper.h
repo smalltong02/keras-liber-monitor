@@ -313,7 +313,7 @@ namespace cchips {
             verifier_md5,
             verifier_sha1,
         };
-        CBsonWrapper() : m_bverifier(false), m_verifier_type(verifier_crc32), m_bduplicate_flt(true), m_log_serialnum(0) { ; }
+        CBsonWrapper() : m_bverifier(false), m_verifier_type(verifier_crc32), m_bduplicate_flt(false), m_log_serialnum(0) { ; }
         ~CBsonWrapper() = default;
 
         bool is_duplicated_log(std::unique_ptr<CChecker>& checker) {

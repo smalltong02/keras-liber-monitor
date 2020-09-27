@@ -186,15 +186,24 @@
     },
 
     "UNICODE_STRING": {
-      "Length": "USHORT",
-      "MaximumLength": "USHORT",
+      "Reserve": "ULONG_PTR",
       "Buffer": "LPWSTR"
     },
 
     "ANSI_STRING": {
-      "Length": "USHORT",
-      "MaximumLength": "USHORT",
+      "Reserve": "ULONG_PTR",
       "Buffer": "LPCHAR"
+    },
+
+    "SYSTEM_POWER_CAPABILITIES": {
+      "PowerButtonPresent": "BYTE",
+      "SleepButtonPresent": "BYTE",
+      "LidPresent": "BYTE",
+      "SystemS1": "BYTE",
+      "SystemS2": "BYTE",
+      "SystemS3": "BYTE",
+      "SystemS4": "BYTE",
+      "SystemS5": "BYTE"
     }
   },
 

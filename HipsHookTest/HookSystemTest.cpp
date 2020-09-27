@@ -7,6 +7,7 @@
 #include <future>
 #include <atomic>
 #include <random>
+#include <powerbase.h>
 #include "utils.h"
 #include "commutils.h"
 #include "LogObject.h"
@@ -31,6 +32,7 @@ public:
     virtual FARPROC GetProcAddress(HMODULE hModule, LPCSTR lpProcName) = 0;
     virtual NTSTATUS NtQueryInformationProcess(HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength) = 0;
     virtual NTSTATUS NtQueryLicenseValue(PUNICODE_STRING ValueName, PULONG Type, PVOID Data, ULONG DataSize, PULONG ResultDataSize) = 0;
+    virtual BOOLEAN GetPwrCapabilities(PSYSTEM_POWER_CAPABILITIES lpspc) = 0;
 };
 
 class ApiHookSystemMock : public ApiHookSystem
@@ -39,6 +41,7 @@ public:
     MOCK_METHOD0(GetTickCount, DWORD());
     MOCK_METHOD1(GetModuleHandleW, HMODULE(LPCWSTR));
     MOCK_METHOD1(GetSystemTime, void(LPSYSTEMTIME));
+    MOCK_METHOD1(GetPwrCapabilities, BOOLEAN(PSYSTEM_POWER_CAPABILITIES));
     MOCK_METHOD2(ExitWindowsEx, BOOL(UINT, DWORD));
     MOCK_METHOD2(GetProcAddress, FARPROC(HMODULE, LPCSTR));
     MOCK_METHOD4(GetDiskFreeSpaceExW, BOOL(LPCWSTR, ULARGE_INTEGER*, ULARGE_INTEGER*, ULARGE_INTEGER*));
@@ -757,6 +760,53 @@ TEST_F(HookSystemTest, NtQueryLicenseValue_PreLog_ValueName_Test)
         EXPECT_EQ(hooked_bexit_other_name2, 0xC0000034);
         EXPECT_EQ(hooked_bexit_other_name3, 0xC0000034);
     }
+}
+
+TEST_F(HookSystemTest, GetPwrCapabilities_Modify_lpspc_Test)
+{
+    BOOLEAN pre_bexit_null_lpspc, pre_bexit_normal_lpspc;
+    DWORD pre_berror_null_lpspc, pre_error_normal_lpspc;
+    BOOLEAN hooked_bexit_null_lpspc, hooked_bexit_normal_lpspc;
+    DWORD hooked_berror_null_lpspc, hooked_error_normal_lpspc;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    SYSTEM_POWER_CAPABILITIES spc = {};
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    // test when lpspc is nullptr
+    SetLastError(0); EXPECT_CALL(hook_system_mock, GetPwrCapabilities(testing::_)).Times(1).WillRepeatedly(testing::Return(GetPwrCapabilities(nullptr)));
+    pre_bexit_null_lpspc = hook_system_mock.GetPwrCapabilities(nullptr);
+    pre_berror_null_lpspc = GetLastError();
+    // test when lpspc is normal
+    SetLastError(0); EXPECT_CALL(hook_system_mock, GetPwrCapabilities(testing::_)).Times(1).WillRepeatedly(testing::Return(GetPwrCapabilities(&spc)));
+    pre_bexit_normal_lpspc = hook_system_mock.GetPwrCapabilities(&spc);
+    pre_error_normal_lpspc = GetLastError();
+
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P66");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    // test when lpspc is nullptr
+    SetLastError(0); EXPECT_CALL(hook_system_mock, GetPwrCapabilities(testing::_)).Times(1).WillRepeatedly(testing::Return(GetPwrCapabilities(nullptr)));
+    hooked_bexit_null_lpspc = hook_system_mock.GetPwrCapabilities(nullptr);
+    hooked_berror_null_lpspc = GetLastError();
+    // test when lpspc is normal
+    SetLastError(0); EXPECT_CALL(hook_system_mock, GetPwrCapabilities(testing::_)).Times(1).WillRepeatedly(testing::Return(GetPwrCapabilities(&spc)));
+    hooked_bexit_normal_lpspc = hook_system_mock.GetPwrCapabilities(&spc);
+    hooked_error_normal_lpspc = GetLastError();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+
+    //// compare return result and error code.
+    EXPECT_EQ(pre_bexit_null_lpspc, hooked_bexit_null_lpspc);
+    EXPECT_EQ(pre_berror_null_lpspc, hooked_berror_null_lpspc);
+    ASSERT_TRUE(hooked_bexit_normal_lpspc);
+    EXPECT_TRUE(spc.SystemS1);
 }
 
 #endif

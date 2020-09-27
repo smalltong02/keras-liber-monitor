@@ -152,7 +152,7 @@
   "Win32_DiskDrive": {
     "MIDL_INTERFACE": "{8502C4B2-5FBB-11D2-AAC1-006008C78BC7}",
     "Data": {
-      "__CLASS": "BSTR",
+      "__PATH": "BSTR",
       "Name": "BSTR",
       "Caption": "BSTR",
       "DeviceID": "BSTR",
@@ -167,9 +167,35 @@
           "Size": "%var1 = 3298534883328"
         },
         "Log": [
-          "__CLASS",
+          "__PATH",
           "Name",
           "Caption"
+        ]
+      }
+    }
+  },
+
+  "Win32_LogicalDisk": {
+    "MIDL_INTERFACE": "{8502C4B7-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "__PATH": "BSTR",
+      "Name": "BSTR",
+      "MediaType": "UINT",
+      "Size": "ULONGLONG"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "Size": "%var0 <= 107374182400"
+        },
+        "Modify": {
+          "Size": "%var1 = 107374182400"
+        },
+        "Log": [
+          "__PATH",
+          "Name",
+          "MediaType",
+          "Size"
         ]
       }
     }
@@ -296,7 +322,12 @@
       "1": {
         "Modify": {
           "ProcessorId": "%var0 = 'BECF19200906ED'"
-        }
+        },
+        "Log": [
+          "__CLASS",
+          "ProcessorId",
+          "NumberOfCores"
+        ]
       }
     }
   },

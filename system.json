@@ -101,5 +101,30 @@
         }
       }
     }
+  },
+
+  "GetPwrCapabilities": {
+    "Signature": {
+      "Library": "PowrProf.dll",
+      "Return": "BYTE",
+      "Feature": "P66"
+    },
+    "Parameters": {
+      "lpspc": "LPSYSTEM_POWER_CAPABILITIES"
+    },
+    "Ensure": [
+      "lpspc"
+    ],
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "lpspc->SystemS1": "%var0 == 0"
+        },
+
+        "Modify": {
+          "lpspc->SystemS1": "%var1 = 1"
+        }
+      }
+    }
   }
 }
