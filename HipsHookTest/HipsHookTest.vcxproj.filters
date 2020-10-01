@@ -171,6 +171,15 @@
     </ClInclude>
     <ClInclude Include="utils.h" />
     <ClInclude Include="tydefine.h" />
+    <ClInclude Include="..\pipemessage\PipeJSONServer.h">
+      <Filter>Others</Filter>
+    </ClInclude>
+    <ClInclude Include="..\pipemessage\PipeMessager.h">
+      <Filter>Others</Filter>
+    </ClInclude>
+    <ClInclude Include="..\pipemessage\PipeServer.h">
+      <Filter>Others</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />

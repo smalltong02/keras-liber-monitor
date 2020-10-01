@@ -9,6 +9,9 @@
 #include "deffeature.h"
 #include "SafePtr.h"
 #include "R3LogObject.h"
+#ifdef USING_PIPE_MESSAGE
+#include "PipeJSONClient.h"
+#endif
 
 namespace cchips {
 
@@ -111,11 +114,25 @@ namespace cchips {
         };
 
         ~CLogObject() {
+#ifdef USING_PIPE_MESSAGE
+            if (m_pipe_client)
+                m_pipe_client->Stop();
+#else
             if (m_socket_object)
                 m_socket_object->StopConnect();
+#endif
         }
 
         bool Initialize();
+#ifdef USING_PIPE_MESSAGE
+        bool AddLog(RAPID_DOC_PAIR& log_pair, bool bhead = false) {
+            if (!m_valid) return false;
+            if (m_pipe_client != nullptr) {
+                return m_pipe_client->SendMsg(std::move(log_pair.first), bhead);
+            }
+            return false;
+        }
+#else
         bool AddLog(std::shared_ptr<CLogEntry>& log, bool bhead = false) {
             if (!m_valid) return false;
             if (!log) return false;
@@ -129,12 +146,27 @@ namespace cchips {
                 m_socket_object->Activated();
             return true;
         }
+#endif
         RAPID_DOC_PAIR GetData();
-        int GetTotalLogs() const { return m_socket_object->GetTotalLogs(); }
+        int GetTotalLogs() const { 
+#ifdef USING_PIPE_MESSAGE
+            return 0;
+#else
+            return m_socket_object->GetTotalLogs(); 
+#endif
+        }
         void EnableLog() { m_valid = true; }
         void DisableLog() { m_valid = false; }
-        void EnableDupFlt() { m_socket_object->EnableDuplicateFlt(); }
-        void DisableDupFlt() { m_socket_object->DisableDuplicateFlt(); }
+        void EnableDupFlt() { 
+#ifndef USING_PIPE_MESSAGE
+            m_socket_object->EnableDuplicateFlt(); 
+#endif
+        }
+        void DisableDupFlt() { 
+#ifndef USING_PIPE_MESSAGE
+            m_socket_object->DisableDuplicateFlt(); 
+#endif
+        }
         bool IsLogsNull() { 
             std::lock_guard<std::recursive_mutex> lock_guard(m_recursive_mutex);
             return m_cache_logs.empty(); 
@@ -157,7 +189,11 @@ namespace cchips {
         }
         bool m_valid = true;
         static int m_reference_count;
+#ifdef USING_PIPE_MESSAGE
+        std::unique_ptr<PipeJSONClient> m_pipe_client = nullptr;
+#else
         std::unique_ptr<CSocketObject> m_socket_object = nullptr;
+#endif   
         std::recursive_mutex m_recursive_mutex;
         std::list<std::shared_ptr<CLogEntry>> m_cache_logs;
     };
@@ -249,7 +285,11 @@ namespace cchips {
                     pid_ss << ::GetCurrentProcessId();
                     m_handle->AddLog(LOGPAIR("Pid", pid_ss.str()));
                     m_handle->AddLog(LOGPAIR("Tid", tid_ss.str()));
+#ifdef USING_PIPE_MESSAGE
+                    g_log_object->AddLog(m_handle->Serialize(), m_bhead);
+#else
                     g_log_object->AddLog(m_handle, m_bhead);
+#endif
                 }
             }
         }

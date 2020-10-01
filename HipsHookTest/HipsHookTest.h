@@ -14,6 +14,9 @@
 #include "utils.h"
 #include "commutils.h"
 #include "R3LogObject.h"
+#ifdef USING_PIPE_MESSAGE
+#include "PipeJSONServer.h"
+#endif
 
 using namespace std::chrono_literals;
 
@@ -21,22 +24,48 @@ class CServerObject
 {
 public:
     CServerObject() {
-        m_tempfp = tmpfile();
+        //m_tempfp = tmpfile();
+#ifdef USING_PIPE_MESSAGE
+        std::function<void(const std::unique_ptr<RapidDocument>)> callback(std::bind(&CServerObject::LogCallBack, this, std::placeholders::_1));
+        m_pipe_mess_object = std::make_shared<PipeJSONServer>(L"\\\\.\\pipe\\hips_hook");
+        if (m_pipe_mess_object)
+        {
+            m_pipe_mess_object->Start(callback);
+        }
+#else
         std::function<void(const std::unique_ptr<CRapidJsonWrapper>)> callback(std::bind(&CServerObject::LogCallBack, this, std::placeholders::_1));
         m_pipe_object = std::make_unique<CLpcPipeObject>();
         if (m_pipe_object)
         {
             m_pipe_object->Listen(std::move(callback));
         }
+#endif
     }
     ~CServerObject() {
+#ifdef USING_PIPE_MESSAGE
+        if (m_pipe_mess_object)
+            m_pipe_mess_object->Stop();
+#else
         if (m_pipe_object)
             m_pipe_object->StopListen();
+#endif
         if (m_tempfp)
             fclose(m_tempfp);
     }
-    void ClearLogsCount() { return m_pipe_object->ClearLogsCount(); }
-    int GetTotalLogs() const { return m_pipe_object->GetTotalLogs(); }
+    void ClearLogsCount() { 
+#ifdef USING_PIPE_MESSAGE
+        return;
+#else
+        return m_pipe_object->ClearLogsCount(); 
+#endif
+    }
+    int GetTotalLogs() const { 
+#ifdef USING_PIPE_MESSAGE
+        return 0;
+#else
+        return m_pipe_object->GetTotalLogs(); 
+#endif
+    }
     std::unordered_map<std::string, int> GetLogCountMap() { 
         std::lock_guard lock(m_log_count_mutex);
         return m_log_count_map; 
@@ -167,7 +196,47 @@ private:
         }
         return;
     }
+#ifdef USING_PIPE_MESSAGE
+    std::string JSONToString(std::unique_ptr<RapidDocument> json) {
+        if (json == nullptr) return "";
 
+        rapidjson::StringBuffer string_buffer;
+        string_buffer.Clear();
+        rapidjson::Writer<rapidjson::StringBuffer> writer(string_buffer);
+
+        json->Accept(writer);
+        if (!string_buffer.GetSize()) return "";
+        return string_buffer.GetString();
+    }
+
+    void LogCallBack(std::unique_ptr<RapidDocument> json_log) {
+        if (!json_log)
+            return;
+        std::string rapid_string = JSONToString(std::move(json_log));
+        ASSERT_TRUE(!rapid_string.empty());
+        std::unique_ptr<CRapidJsonWrapper> rapid_log = std::make_unique<CRapidJsonWrapper>(rapid_string);
+        ASSERT_TRUE(rapid_log);
+        if (!rapid_log) return;
+        if (!rapid_log->IsValid()) return;
+        ASSERT_TRUE(CheckVerifier(*rapid_log));
+        CheckLogCountMap(*rapid_log);
+        CheckDebugPid(*rapid_log);
+        m_logs_total_count++;
+        {
+            auto optstring = rapid_log->Serialize();
+            if (!optstring) return;
+            std::lock_guard lock(m_log_mutex);
+            if (m_tempfp)
+            {
+
+                fputs(optstring.value().c_str(), m_tempfp);
+            }
+            else
+                std::cout << optstring.value() << std::endl;
+        }
+        return;
+    }
+#else
     void LogCallBack(const std::unique_ptr<CRapidJsonWrapper> rapid_log) {
         //ASSERT_TRUE(rapid_log);
         if (!rapid_log) 
@@ -190,10 +259,15 @@ private:
         }
         return;
     }
+#endif
     std::atomic_int m_logs_total_count = 0;
     std::mutex m_log_mutex;
     FILE* m_tempfp = nullptr;
+#ifdef USING_PIPE_MESSAGE
+    std::shared_ptr<PipeJSONServer> m_pipe_mess_object;
+#else
     std::unique_ptr<CLpcPipeObject> m_pipe_object;
+#endif
     std::recursive_mutex m_log_count_mutex;
     std::unordered_map<std::string, int> m_log_count_map;
     std::atomic_bool m_enable_debugpid = false;

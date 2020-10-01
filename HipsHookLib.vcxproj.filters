@@ -37,6 +37,9 @@
     <Filter Include="g-re2\util">
       <UniqueIdentifier>{f2edef9f-7978-4f87-9660-3d0ee4e3fce9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PipeMessage">
+      <UniqueIdentifier>{2d90e746-8e1e-4b44-8e2b-b97c977cb0b3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HipsHookLib.cpp">
@@ -379,6 +382,15 @@
     </ClInclude>
     <ClInclude Include="Win32EnumWbemClassObject.h">
       <Filter>Coms</Filter>
+    </ClInclude>
+    <ClInclude Include="pipemessage\PipeClient.h">
+      <Filter>PipeMessage</Filter>
+    </ClInclude>
+    <ClInclude Include="pipemessage\PipeJSONClient.h">
+      <Filter>PipeMessage</Filter>
+    </ClInclude>
+    <ClInclude Include="pipemessage\PipeMessager.h">
+      <Filter>PipeMessage</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

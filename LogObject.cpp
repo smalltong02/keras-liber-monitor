@@ -112,6 +112,13 @@ namespace cchips {
     bool CLogObject::Initialize()
     {
         std::function<RAPID_DOC_PAIR()> getdata(std::bind(&CLogObject::GetData, this));
+#ifdef USING_PIPE_MESSAGE
+        std::unique_ptr<PipeJSONClient> pipe_ptr = std::make_unique<PipeJSONClient>(L"\\\\.\\pipe\\hips_hook", PipeJSONClient::cfg_serial);
+        if (pipe_ptr && pipe_ptr->Start())
+            m_pipe_client = std::move(pipe_ptr);
+        if (m_pipe_client)
+            return true;
+#else
         std::unique_ptr<CLpcPipeObject> pipe_ptr = std::make_unique<CLpcPipeObject>();
         if (pipe_ptr->Connect(getdata))
             m_socket_object = std::move(pipe_ptr);
@@ -123,6 +130,7 @@ namespace cchips {
         }
         if(m_socket_object)
             return true;
+#endif
         return false;
     }
     RAPID_DOC_PAIR CLogObject::GetData() {
