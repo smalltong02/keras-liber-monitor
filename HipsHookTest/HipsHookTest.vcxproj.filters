@@ -88,6 +88,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="utils.cpp" />
+    <ClCompile Include="HookMetadataTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HookLexerTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HookSpecialTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
@@ -161,6 +170,16 @@
       <Filter>Others</Filter>
     </ClInclude>
     <ClInclude Include="utils.h" />
+    <ClInclude Include="tydefine.h" />
+    <ClInclude Include="..\pipemessage\PipeJSONServer.h">
+      <Filter>Others</Filter>
+    </ClInclude>
+    <ClInclude Include="..\pipemessage\PipeMessager.h">
+      <Filter>Others</Filter>
+    </ClInclude>
+    <ClInclude Include="..\pipemessage\PipeServer.h">
+      <Filter>Others</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />

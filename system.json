@@ -2,93 +2,129 @@
   "Category": "System",
   "Calling convention": "WINAPI",
 
-  "LoadLibraryA": {
+  "GetModuleHandleW": {
     "Signature": {
       "Library": "kernel32.dll",
       "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
+      "Feature": "P60"
     },
 
     "Parameters": {
-      "lpLibFileName": "LPCSTR"
+      "lpModuleName": "LPCWSTR"
     },
 
-    "Ensure": [
-      "lpLibFileName"
+    "PreLog": [
+      "lpModuleName"
     ],
 
-    "PreLog": [
-      "lpLibFileName"
+    "PostLog": [
+      "Return"
     ]
   },
 
-  "LoadLibraryW": {
+  "GetProcAddress": {
     "Signature": {
       "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
+      "Return": "FARPROC",
+      "Feature": "P61"
     },
 
     "Parameters": {
-      "lpLibFileName": "LPCWSTR"
-    },
-
-    "Ensure": [
-      "lpLibFileName"
-    ],
-
-    "PreLog": [
-      "lpLibFileName"
-    ]
+      "hModule": "HMODULE",
+      "lpProcName": "LPCSTR"
+    }
   },
 
-  "LoadLibraryExA": {
+  "NtQuerySystemInformation": {
     "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
+      "Library": "ntdll.dll",
+      "Return": "NTSTATUS",
+      "Feature": "P63"
     },
 
     "Parameters": {
-      "lpLibFileName": "LPCSTR",
-      "hFile": "HANDLE",
-      "dwFlags": "LOADFLAGS"
+      "SystemInformationClass": "SYSTEM_INFORMATION_CLASS",
+      "SystemInformation": "LPVOID",
+      "SystemInformationLength": "ULONG",
+      "ReturnLength": "LPULONG"
     },
 
-    "Ensure": [
-      "lpLibFileName"
+    "PreLog": [
+      "SystemInformationClass"
     ],
 
-    "PreLog": [
-      "lpLibFileName",
-      "dwFlags"
-    ]
+    "PostCheck": {
+      "0": {
+        "Define": {
+          "SystemInformation": "SYSTEM_BASIC_INFORMATION*"
+        },
+
+        "Check": {
+          "SystemInformationClass": "%var0 == 'SystemBasicInformation'",
+          "SystemInformation->NumberOfProcessors": "%var1 < 2"
+        },
+
+        "Modify": {
+          "SystemInformation->NumberOfProcessors": "%var2 = 2"
+        }
+      }
+    }
   },
 
-  "LoadLibraryExW": {
+  "NtQueryLicenseValue": {
     "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
+      "Library": "ntdll.dll",
+      "Return": "NTSTATUS",
+      "Feature": "P65"
     },
 
     "Parameters": {
-      "lpLibFileName": "LPCWSTR",
-      "hFile": "HANDLE",
-      "dwFlags": "LOADFLAGS"
+      "ValueName": "LPUNICODE_STRING",
+      "Type": "LPULONG",
+      "Data": "LPVOID",
+      "DataSize": "ULONG",
+      "ResultDataSize": "LPULONG"
     },
 
     "Ensure": [
-      "lpLibFileName"
+      "ValueName"
     ],
 
-    "PreLog": [
-      "lpLibFileName",
-      "dwFlags"
-    ]
+    "PreCheck": {
+      "0": {
+        "Check": {
+          "ValueName->Buffer": "%var0 =~ '^(?i)kernel-vmdetection-private$'"
+        },
+
+        "Modify": {
+          "Return": "%var1 = 3221225524"
+        }
+      }
+    }
+  },
+
+  "GetPwrCapabilities": {
+    "Signature": {
+      "Library": "PowrProf.dll",
+      "Return": "BYTE",
+      "Feature": "P66"
+    },
+    "Parameters": {
+      "lpspc": "LPSYSTEM_POWER_CAPABILITIES"
+    },
+    "Ensure": [
+      "lpspc"
+    ],
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "lpspc->SystemS1": "%var0 == 0"
+        },
+
+        "Modify": {
+          "lpspc->SystemS1": "%var1 = 1"
+        }
+      }
+    }
   }
 }

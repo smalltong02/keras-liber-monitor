@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <variant>
+#include "tydefine.h"
 
 class CStringCommonTestI
 {

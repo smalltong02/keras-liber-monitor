@@ -66,20 +66,6 @@
     ]
   },
 
-  "CoInitialize": {
-    "Signature": {
-      "Library": "ole32.dll",
-      "Return": "HRESULT",
-      "Feature": "O1"
-    },
-
-    "Parameters": {
-      "pvReserved": "LPVOID"
-    },
-
-    "Logging": true
-  },
-
   "CoInitializeEx": {
     "Signature": {
       "Library": "ole32.dll",
@@ -103,5 +89,149 @@
     },
 
     "Logging": true
+  },
+
+  "IEnumWbemClassObject_Next": {
+    "Signature": {
+      "Library": "ole32.dll",
+      "Return": "HRESULT",
+      "Feature": "W1"
+    },
+
+    "Class": {
+      "Type": "WMI",
+      "Name": "IEnumWbemClassObject",
+      "Delay": "CoInitializeEx",
+      "VtblIdx": 4
+    },
+
+    "Parameters": {
+      "This": "LPVOID",
+      "lTimeout": "LONG",
+      "uCount": "ULONG",
+      "apObjects": "LPVOID*",
+      "puReturned": "ULONG*"
+    }
+  },
+
+  "IWbemClassObject_Get": {
+    "Signature": {
+      "Library": "ole32.dll",
+      "Return": "HRESULT",
+      "Feature": "W2"
+    },
+
+    "Class": {
+      "Type": "WMI",
+      "Name": "IWbemClassObject",
+      "Delay": "CoInitializeEx",
+      "VtblIdx": 4
+    },
+
+    "Parameters": {
+      "This": "LPVOID",
+      "wszName": "LPCWSTR",
+      "lFlags": "LONG",
+      "pVal": "LPVOID",
+      "pType": "LONG*",
+      "plFlavor": "LONG*"
+    }
+  },
+
+  "IWbemClassObject_Put": {
+    "Signature": {
+      "Library": "ole32.dll",
+      "Return": "HRESULT",
+      "Feature": "W3"
+    },
+
+    "Class": {
+      "Type": "WMI",
+      "Name": "IWbemClassObject",
+      "Delay": "CoInitializeEx",
+      "VtblIdx": 5
+    },
+
+    "Parameters": {
+      "This": "LPVOID",
+      "wszName": "LPCWSTR",
+      "lFlags": "LONG",
+      "pVal": "LPVOID",
+      "pType": "LONG*"
+    }
+  },
+
+  "IWbemClassObject_Next": {
+    "Signature": {
+      "Library": "ole32.dll",
+      "Return": "HRESULT",
+      "Feature": "W4"
+    },
+
+    "Class": {
+      "Type": "WMI",
+      "Name": "IWbemClassObject",
+      "Delay": "CoInitializeEx",
+      "VtblIdx": 9
+    },
+
+    "Parameters": {
+      "This": "LPVOID",
+      "lFlags": "LONG",
+      "strName": "BSTR*",
+      "pVal": "LPVOID",
+      "pType": "LONG*",
+      "plFlavor": "LONG*"
+    }
+  },
+
+  "IWbemServices_ExecMethod": {
+    "Signature": {
+      "Library": "ole32.dll",
+      "Return": "HRESULT",
+      "Feature": "W5"
+    },
+
+    "Class": {
+      "Type": "WMI",
+      "Name": "IWbemServices",
+      "Delay": "CoInitializeEx",
+      "VtblIdx": 24
+    },
+
+    "Parameters": {
+      "This": "LPVOID",
+      "strObjectPath": "BSTR",
+      "strMethodName": "BSTR",
+      "lFlags": "LONG",
+      "pCtx": "LPVOID",
+      "pInParams": "LPVOID",
+      "ppOutParams": "LPVOID*",
+      "ppCallResult": "LPVOID*"
+    }
+  },
+
+  "IWbemServices_ExecQuery": {
+    "Signature": {
+      "Library": "ole32.dll",
+      "Return": "HRESULT",
+      "Feature": "W6"
+    },
+
+    "Class": {
+      "Type": "WMI",
+      "Name": "IWbemServices",
+      "Delay": "CoInitializeEx",
+      "VtblIdx": 20
+    },
+
+    "Parameters": {
+      "This": "LPVOID",
+      "strQueryLanguage": "BSTR",
+      "strQuery": "BSTR",
+      "lFlags": "LONG",
+      "pCtx": "LPVOID",
+      "ppEnum": "LPVOID*"
+    }
   }
 }

@@ -24,6 +24,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HipsHookLib", "HipsHookLib.
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ServicesTestApp", "HipsHookTest\ServicesTestApp\ServicesTestApp.vcxproj", "{8628094A-6482-42F5-8270-7A8DB70C0BA3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{26F9570B-F5BE-444E-A1B0-D839735C5265} = {26F9570B-F5BE-444E-A1B0-D839735C5265}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InjectApp", "InjectApp\InjectApp.vcxproj", "{E35FC0D4-658C-4F91-A609-3025BAE0A58A}"
 EndProject

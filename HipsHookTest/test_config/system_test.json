@@ -2,96 +2,6 @@
   "Category": "System",
   "Calling convention": "WINAPI",
 
-  "LoadLibraryA": {
-    "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
-    },
-
-    "Parameters": {
-      "lpLibFileName": "LPCSTR"
-    },
-
-    "Ensure": [
-      "lpLibFileName"
-    ],
-
-    "PreLog": [
-      "lpLibFileName"
-    ]
-  },
-
-  "LoadLibraryW": {
-    "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
-    },
-
-    "Parameters": {
-      "lpLibFileName": "LPCWSTR"
-    },
-
-    "Ensure": [
-      "lpLibFileName"
-    ],
-
-    "PreLog": [
-      "lpLibFileName"
-    ]
-  },
-
-  "LoadLibraryExA": {
-    "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
-    },
-
-    "Parameters": {
-      "lpLibFileName": "LPCSTR",
-      "hFile": "HANDLE",
-      "dwFlags": "LOADFLAGS"
-    },
-
-    "Ensure": [
-      "lpLibFileName"
-    ],
-
-    "PreLog": [
-      "lpLibFileName",
-      "dwFlags"
-    ]
-  },
-
-  "LoadLibraryExW": {
-    "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Special": false,
-      "Feature": "L1"
-    },
-
-    "Parameters": {
-      "lpLibFileName": "LPCWSTR",
-      "hFile": "HANDLE",
-      "dwFlags": "LOADFLAGS"
-    },
-
-    "Ensure": [
-      "lpLibFileName"
-    ],
-
-    "PreLog": [
-      "lpLibFileName",
-      "dwFlags"
-    ]
-  },
-
   "ExitWindowsEx": {
     "Signature": {
       "Library": "user32.dll",
@@ -124,34 +34,6 @@
     }
   },
 
-  "GetDiskFreeSpaceExA": {
-    "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "BOOL",
-      "Feature": "H10"
-    },
-
-    "Parameters": {
-      "lpDirectoryName": "LPCSTR",
-      "lpFreeBytesAvailableToCaller": "LPULARGE_INTEGER",
-      "lpTotalNumberOfBytes": "LPULARGE_INTEGER",
-      "lpTotalNumberOfFreeBytes": "LPULARGE_INTEGER"
-    },
-
-    "PostCheck": {
-      "0": {
-        "Check": {
-          "lpDirectoryName": "(%var0 == 'nullptr' || %var0 =~ '^C:.*')",
-          "*lpTotalNumberOfBytes": "(%var1 <= 64424509440)"
-        },
-
-        "Modify": {
-          "*lpTotalNumberOfBytes": "%var2 = 1099511627776"
-        }
-      }
-    }
-  },
-
   "GetDiskFreeSpaceExW": {
     "Signature": {
       "Library": "kernel32.dll",
@@ -166,15 +48,18 @@
       "lpTotalNumberOfFreeBytes": "LPULARGE_INTEGER"
     },
 
+    "PostLog": [
+      "*lpTotalNumberOfBytes"
+    ],
+
     "PostCheck": {
       "0": {
         "Check": {
-          "lpDirectoryName": "(%var0 == 'nullptr' || %var0 =~ '^C:.*')",
-          "*lpTotalNumberOfBytes": "(%var1 <= 64424509440)"
+          "lpDirectoryName|*lpTotalNumberOfBytes": "(%var0 == 'nullptr' || %var0 =~ '^(?i)c\\:.*$') && (%var1<=64*1024*1024*1024)"
         },
 
         "Modify": {
-          "*lpTotalNumberOfBytes": "%var2 = 1099511627776"
+          "*lpTotalNumberOfBytes": "%var2=1000*1024*1024*1024"
         }
       }
     }
@@ -220,22 +105,6 @@
     }
   },
 
-  "GetModuleHandleA": {
-    "Signature": {
-      "Library": "kernel32.dll",
-      "Return": "HMODULE",
-      "Feature": "P60"
-    },
-
-    "Parameters": {
-      "lpModuleName": "LPCSTR"
-    },
-
-    "PreLog": [
-      "lpModuleName"
-    ]
-  },
-
   "GetModuleHandleW": {
     "Signature": {
       "Library": "kernel32.dll",
@@ -249,6 +118,10 @@
 
     "PreLog": [
       "lpModuleName"
+    ],
+
+    "PostLog": [
+      "Return"
     ]
   },
 
@@ -263,11 +136,6 @@
       "hModule": "HMODULE",
       "lpProcName": "LPCSTR"
     },
-
-    "PreLog": [
-      "hModule",
-      "lpProcName"
-    ],
 
     "PostLog": [
       "Return"
@@ -360,6 +228,129 @@
 
         "Modify": {
           "SystemInformation->NumberOfProcessors": "%var2 = 2"
+        }
+      }
+    }
+  },
+
+  "GetSystemInfo": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "VOID",
+      "Feature": "P64"
+    },
+
+    "Parameters": {
+      "lpSystemInfo": "LPSYSTEM_INFO"
+    },
+
+    "Ensure": [
+      "lpSystemInfo"
+    ],
+
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "lpSystemInfo->dwNumberOfProcessors": "%var0 < 2"
+        },
+
+        "Modify": {
+          "lpSystemInfo->dwNumberOfProcessors": "%var1 = 2"
+        }
+      }
+    }
+  },
+
+  "NtQueryLicenseValue": {
+    "Signature": {
+      "Library": "ntdll.dll",
+      "Return": "NTSTATUS",
+      "Feature": "P65"
+    },
+
+    "Parameters": {
+      "ValueName": "LPUNICODE_STRING",
+      "Type": "LPULONG",
+      "Data": "LPVOID",
+      "DataSize": "ULONG",
+      "ResultDataSize": "LPULONG"
+    },
+
+    "Ensure": [
+      "ValueName"
+    ],
+
+    "PreCheck": {
+      "0": {
+        "Check": {
+          "ValueName->Buffer": "%var0 =~ '^(?i)kernel-vmdetection-private$'"
+        },
+
+        "Modify": {
+          "Return": "%var1 = 3221225524"
+        }
+      }
+    }
+  },
+
+  "GetPwrCapabilities": {
+    "Signature": {
+      "Library": "PowrProf.dll",
+      "Return": "BYTE",
+      "Feature": "P66"
+    },
+    "Parameters": {
+      "lpspc": "LPSYSTEM_POWER_CAPABILITIES"
+    },
+    "Ensure": [
+      "lpspc"
+    ],
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "lpspc->SystemS1": "%var0 == 0"
+        },
+
+        "Modify": {
+          "lpspc->SystemS1": "%var1 = 1"
+        }
+      }
+    }
+  },
+
+  "EnumProcesses": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "BOOL",
+      "Feature": "P64"
+    },
+
+    "Parameters": {
+      "lpidProcess": "DWORD*",
+      "cb": "DWORD",
+      "lpcbNeeded": "LPDWORD"
+    },
+
+    "Ensure": [
+      "lpidProcess",
+      "lpcbNeeded"
+    ],
+
+    "PostCheck": {
+      "0": {
+        "CCode": {
+          "main": [
+            "if(lpcbNeeded != 'nullptr' && *lpcbNeeded > sizeof(DWORD)) {",
+            "DWORD cProcesses = *lpcbNeeded / sizeof(DWORD)",
+            "DWORD i = 0",
+            "while(i < cProcesses) {",
+            "if(lpidProcess[i] != 0) {",
+            "LogPrint(i , lpidProcess[i])",
+            "}",
+            "i = i + 1",
+            "}",
+            "}"
+          ]
         }
       }
     }

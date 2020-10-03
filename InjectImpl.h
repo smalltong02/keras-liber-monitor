@@ -177,10 +177,10 @@ namespace cchips {
         bool InjectRemoteThread(PAPCFUNC shellcode_addr, ULONG_PTR shellcode_data) {
             if (IsValid())
             {
-                HANDLE remote_thread = CreateRemoteThread(m_h_process, NULL, 0, (LPTHREAD_START_ROUTINE)shellcode_addr, (void*)shellcode_data, 0, NULL);
+                HANDLE remote_thread = CreateRemoteThread(m_h_process, NULL, 0, (LPTHREAD_START_ROUTINE)shellcode_addr, (void*)shellcode_data, CREATE_SUSPENDED, NULL);
                 if (remote_thread == nullptr)
                     return false;
-                //ResumeThread(remote_thread);
+                ResumeThread(remote_thread);
                 /*DWORD ret = */WaitForSingleObject(remote_thread, INFINITE);
                 //if (ret == WAIT_TIMEOUT)
                 //    return false;

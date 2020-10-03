@@ -22,12 +22,12 @@
     "DWORD",
     "DWORD_PTR",
     "FLOAT",
+    "DOUBLE",
     "INT64",
     "UINT64",
     "LONGLONG",
     "ULONGLONG",
     "QWORD",
-    "DOUBLE",
     "LARGE_INTEGER",
     "ULARGE_INTEGER",
     "HANDLE",
@@ -36,8 +36,33 @@
     "SC_HANDLE",
     "NTSTATUS",
     "STRING",
-    "WSTRING"
+    "WSTRING",
+    "GUID"
   ],
+
+  "ExternDefine": {
+    "GetProcessName": {
+      "Return": "LPWSTR",
+      "Parameters": {
+        "ProcessHandle": "HANDLE"
+      }
+    },
+
+    "AddTarget": {
+      "Return": "BOOL",
+      "Parameters": {
+        "Pid": "DWORD"
+      }
+    },
+
+    "LogPrint": {
+      "Return": "VOID",
+      "Parameters": {
+        "Key": "ANYT",
+        "Value": "ANYT"
+      }
+    }
+  },
 
   "Additional": {
     "FARPROC": "LPVOID",
@@ -50,25 +75,36 @@
     "REFCLSID": "GUID",
     "REFIID": "GUID",
     "IID": "COSERVERINFO",
-    "SC_STATUS_TYPE":  "INT"
-  },
-
-  "HandleDefine": {
-    "GetProcessName": {
-      "Return": "LPWSTR",
-
-      "Parameters": {
-        "ProcessHandle": "HANDLE"
-      }
-    }
+    "SC_STATUS_TYPE": "INT",
+    "TEST_ADT1": "TEST_STRUCT1",
+    "TEST_ADT2": "EXITFLAGS*",
+    "TEST_ADT3": "LPCOAUTHINFO[100]",
+    "TEST_ADT4": "TEST_STRUCT2*"
   },
 
   "Structure": {
+
+    "TEST_STRUCT1": {
+      "Data1": "GUID*",
+      "Data2": "LPTEST_ADT2*",
+      "Data3": "OLECHAR*",
+      "Data4": "SYSTEM_BASIC_INFORMATION",
+      "Data5": "LPCOAUTHIDENTITY"
+    },
+
+    "TEST_STRUCT2": {
+      "Data1": "IID*",
+      "Data2": "LPTEST_ADT1*",
+      "Data3": "BSTR",
+      "Data4": "MULTI_QI[2]",
+      "Data5": "LOADFLAGS"
+    },
+
     "COAUTHIDENTITY": {
       "User": "USHORT*",
-      "UserLength": "ULONG",
+      "UserLength": "ULONG_PTR",
       "Domain": "USHORT*",
-      "DomainLength": "ULONG",
+      "DomainLength": "ULONG_PTR",
       "Password": "USHORT*",
       "PasswordLength": "ULONG",
       "Flags": "ULONG"
@@ -134,6 +170,40 @@
       "dwWaitHint": "DWORD",
       "dwProcessId": "DWORD",
       "dwServiceFlags": "DWORD"
+    },
+
+    "SYSTEM_INFO": {
+      "dwOemId": "DWORD",
+      "dwPageSize": "DWORD",
+      "lpMinimumApplicationAddress": "LPVOID",
+      "lpMaximumApplicationAddress": "LPVOID",
+      "dwActiveProcessorMask": "DWORD_PTR",
+      "dwNumberOfProcessors": "DWORD",
+      "dwProcessorType": "DWORD",
+      "dwAllocationGranularity": "DWORD",
+      "wProcessorLevel": "WORD",
+      "wProcessorRevision": "WORD"
+    },
+
+    "UNICODE_STRING": {
+      "Reserve": "ULONG_PTR",
+      "Buffer": "LPWSTR"
+    },
+
+    "ANSI_STRING": {
+      "Reserve": "ULONG_PTR",
+      "Buffer": "LPCHAR"
+    },
+
+    "SYSTEM_POWER_CAPABILITIES": {
+      "PowerButtonPresent": "BYTE",
+      "SleepButtonPresent": "BYTE",
+      "LidPresent": "BYTE",
+      "SystemS1": "BYTE",
+      "SystemS2": "BYTE",
+      "SystemS3": "BYTE",
+      "SystemS4": "BYTE",
+      "SystemS5": "BYTE"
     }
   },
 

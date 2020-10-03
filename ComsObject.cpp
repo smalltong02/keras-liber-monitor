@@ -5,31 +5,26 @@
 
 namespace cchips {
 
-    bool CWmisCfgObject::Initialize(const std::string& json_str)
+    bool CWmisCfgObject::Initialize(const std::string_view& json_str)
     {
         if (json_str.length() == 0) return false;
 
-        rapidjson::Document document;
-        document.Parse(json_str.c_str());
-        if (!document.IsObject() || document.IsNull())
-        {
+        CRapidJsonWrapper document(json_str);
+        if (!document.IsValid()) {
             //config data is incorrect.
             error_log("CWmisCfgObject::Initialize failed!");
             return false;
         }
+        
+        if (auto anyvalue(document.GetMember(std::vector<std::string>{SI_CATEGORY}));
+            anyvalue.has_value() && anyvalue.type() == typeid(std::string_view))
+            m_category_name = std::any_cast<std::string_view>(anyvalue);
 
-        if (document.HasMember(SI_CATEGORY) && document[SI_CATEGORY].IsString())
-            m_category_name = document[SI_CATEGORY].GetString();
-
-        for (const auto& wmi_docment : document.GetObject())
+        for (const auto& wmi_docment : document)
         {
-            if (_stricmp(wmi_docment.name.GetString(), SI_CATEGORY) == 0)
-                continue;
-            else if (_stricmp(wmi_docment.name.GetString(), SI_CALL) == 0)
-                continue;
-            else
+            if (wmi_docment.value.IsObject())
             {
-                if (!InitializeWmiObject(wmi_docment.name.GetString(), wmi_docment.value))
+                if (!InitializeWmiObject(wmi_docment.name.GetString(), document))
                 {
                     error_log("CWmisCfgObject::Initialize InitializeWmiObject({}) failed!", wmi_docment.name.GetString());
                     return false;
@@ -40,33 +35,34 @@ namespace cchips {
         return true;
     }
 
-    bool CWmisCfgObject::InitializeWmiDatas(const std::shared_ptr<CWmiObject>& wmi_object, const rapidjson::Value& Object)
+    bool CWmisCfgObject::InitializeWmiDatas(const std::shared_ptr<CWmiObject>& wmi_object, const ConstRapidObject& Object)
     {
         if (!wmi_object) return false;
         // set datas information
-        if (Object.HasMember(AD_DATA) && Object[AD_DATA].IsObject())
+        if (auto anydata(CRapidJsonWrapper::GetMember(AD_DATA, Object));
+            anydata.has_value() && anydata.type() == typeid(ConstRapidObject))
         {
-            for (auto& data_object : Object[AD_DATA].GetObject())
+            for (auto& data : std::any_cast<ConstRapidObject>(anydata))
             {
-                if (data_object.value.IsString())
+                if (data.value.IsString())
                 {
-                    std::string data_name = data_object.name.GetString();
-                    std::string data_iden = data_object.value.GetString();
-                    std::shared_ptr<CObObject> data_ptr = wmi_object->GetTyIdentifier(data_iden);
+                    std::string_view data_name = data.name.GetString();
+                    std::string_view data_iden = data.value.GetString();
+                    std::shared_ptr<CObObject> data_ptr = CLexerTy::GetInstance().GetIdentifier(data_iden);
                     if (!data_ptr)
                     {
-                        error_log("CWmisCfgObject::InitializeWmiDatas the data {}({}) is invalid type!", data_name, data_iden);
+                        error_log("CWmisCfgObject::InitializeWmiDatas the data {}({}) is invalid type!", data.name.GetString(), data.value.GetString());
                         return false;
                     }
                     if (!wmi_object->AddData(IDENPAIR(data_name, data_ptr)))
                     {
-                        error_log("CWmisCfgObject::InitializeWmiDatas the wmi object {} add data {} failed!", wmi_object->GetName(), data_name);
+                        error_log("CWmisCfgObject::InitializeWmiDatas the wmi object {} add data {} failed!", wmi_object->GetName(), data.name.GetString());
                         return false;
                     }
                 }
                 else
                 {
-                    error_log("CWmisCfgObject::InitializeWmiDatas the data {} not a string!", data_object.name.GetString());
+                    error_log("CWmisCfgObject::InitializeWmiDatas the data {} not a string!", data.name.GetString());
                     return false;
                 }
             }
@@ -74,167 +70,127 @@ namespace cchips {
         return true;
     }
 
-    bool CWmisCfgObject::InitializeCheck(const std::shared_ptr<CWmiObject>& wmi_object, const rapidjson::Value& Object)
+    bool CWmisCfgObject::InitializeCheck(const std::shared_ptr<CWmiObject>& wmi_object, const ConstRapidObject& Object)
     {
         if (!wmi_object) return false;
-
+        auto check_func = [](CFunction::_CheckPackage& package, const ConstRapidObject& Object) {
+            if (auto anydefine(CRapidJsonWrapper::GetMember(SI_DEFINE, Object));
+                anydefine.has_value() && anydefine.type() == typeid(ConstRapidObject))
+            {
+                CFunction::_CheckDefine::DefinePair define_pair;
+                for (auto& define : std::any_cast<ConstRapidObject>(anydefine))
+                {
+                    if (!define.value.IsString())
+                    {
+                        continue;
+                    }
+                    define_pair.first = define.name.GetString();
+                    define_pair.second = define.value.GetString();
+                    package.define_pairs.push_back(define_pair);
+                }
+            }
+            if (auto anylog(CRapidJsonWrapper::GetMember(SI_LOG, Object));
+                anylog.has_value() && anylog.type() == typeid(ConstRapidArray))
+            {
+                CFunction::_CheckDefine::CheckLog log;
+                for (auto& log_elem : std::any_cast<ConstRapidArray>(anylog))
+                {
+                    if (log_elem.IsString())
+                    {
+                        log = log_elem.GetString();
+                        package.logs.push_back(log);
+                    }
+                }
+            }
+            if (auto anyhandle(CRapidJsonWrapper::GetMember(SI_HANDLE, Object));
+                anyhandle.has_value() && anyhandle.type() == typeid(ConstRapidObject))
+            {
+                CFunction::_CheckDefine::HandlePair handle_pair;
+                for (auto& handle : std::any_cast<ConstRapidObject>(anyhandle))
+                {
+                    if (handle.value.IsString())
+                    {
+                        handle_pair.first = handle.name.GetString();
+                        handle_pair.second = handle.value.GetString();
+                        package.handle_pair.push_back(handle_pair);
+                    }
+                }
+            }
+            if (auto anycheck(CRapidJsonWrapper::GetMember(SI_CHECK, Object));
+                anycheck.has_value() && anycheck.type() == typeid(ConstRapidObject))
+            {
+                for (auto& check : std::any_cast<ConstRapidObject>(anycheck))
+                {
+                    package.check_pair.push_back(CFunction::_CheckDefine::CheckPair(check.name.GetString(), check.value.GetString()));
+                }
+            }
+            if (auto anymodify(CRapidJsonWrapper::GetMember(SI_MODIFY, Object));
+                anymodify.has_value() && anymodify.type() == typeid(ConstRapidObject))
+            {
+                for (auto& modify : std::any_cast<ConstRapidObject>(anymodify))
+                {
+                    package.modify_pair.push_back(CFunction::_CheckDefine::ModifyPair(modify.name.GetString(), modify.value.GetString()));
+                }
+            }
+        };
         // set precheck information
-        if (Object.HasMember(SI_PRECHECK) && Object[SI_PRECHECK].IsObject())
+        if (auto anyprecheck(CRapidJsonWrapper::GetMember(SI_PRECHECK, Object));
+            anyprecheck.has_value() && anyprecheck.type() == typeid(ConstRapidObject))
         {
-            for (auto& inspect_object : Object[SI_PRECHECK].GetObject())
+            for (auto& inspect_object : std::any_cast<ConstRapidObject>(anyprecheck))
             {
                 if (!inspect_object.value.IsObject())
                 {
                     continue;
                 }
                 CFunction::_CheckPackage package;
-                if (inspect_object.value.HasMember(SI_DEFINE) && inspect_object.value[SI_DEFINE].IsObject())
-                {
-                    CFunction::_CheckDefine::DefinePair define_pair;
-                    for (auto& check_object : inspect_object.value[SI_DEFINE].GetObject())
-                    {
-                        if (!check_object.value.IsString())
-                        {
-                            continue;
-                        }
-                        define_pair.first = check_object.name.GetString();
-                        define_pair.second = check_object.value.GetString();
-                        package.define_pairs.push_back(define_pair);
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_LOG) && inspect_object.value[SI_LOG].IsArray())
-                {
-                    CFunction::_CheckDefine::CheckLog log;
-                    for (auto& array_element : inspect_object.value[SI_LOG].GetArray())
-                    {
-                        if (array_element.IsString())
-                        {
-                            log = array_element.GetString();
-                            package.logs.push_back(log);
-                        }
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_HANDLE) && inspect_object.value[SI_HANDLE].IsObject())
-                {
-                    CFunction::_CheckDefine::HandlePair handle_pair;
-                    for (auto& handle_object : inspect_object.value[SI_HANDLE].GetObject())
-                    {
-                        if (handle_object.value.IsString())
-                        {
-                            handle_pair.first = handle_object.name.GetString();
-                            handle_pair.second = handle_object.value.GetString();
-                            package.handle_pair.push_back(handle_pair);
-                        }
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_CHECK) && inspect_object.value[SI_CHECK].IsObject())
-                {
-                    for (auto& check_object : inspect_object.value[SI_CHECK].GetObject())
-                    {
-                        package.check_pair.push_back(CFunction::_CheckDefine::CheckPair(check_object.name.GetString(), check_object.value.GetString()));
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_MODIFY) && inspect_object.value[SI_MODIFY].IsObject())
-                {
-                    for (auto& modify_object : inspect_object.value[SI_MODIFY].GetObject())
-                    {
-                        package.modify_pair.push_back(CFunction::_CheckDefine::ModifyPair(modify_object.name.GetString(), modify_object.value.GetString()));
-                    }
-                }
+                check_func(package, inspect_object.value.GetObject());
                 if (!wmi_object->AddChecks(package))
+                {
                     error_log("CWmisCfgObject::InitializeCheck: wmi object({}) add pre checks failed!", wmi_object->GetName());
+                }
             }
         }
         // set postcheck information
-        if (Object.HasMember(SI_POSTCHECK) && Object[SI_POSTCHECK].IsObject())
+        if (auto anypostcheck(CRapidJsonWrapper::GetMember(SI_POSTCHECK, Object));
+            anypostcheck.has_value() && anypostcheck.type() == typeid(ConstRapidObject))
         {
-            for (auto& inspect_object : Object[SI_POSTCHECK].GetObject())
+            for (auto& inspect_object : std::any_cast<ConstRapidObject>(anypostcheck))
             {
                 if (!inspect_object.value.IsObject())
                 {
                     continue;
                 }
                 CFunction::_CheckPackage package;
-                if (inspect_object.value.HasMember(SI_DEFINE) && inspect_object.value[SI_DEFINE].IsObject())
-                {
-                    CFunction::_CheckDefine::DefinePair define_pair;
-                    for (auto& check_object : inspect_object.value[SI_DEFINE].GetObject())
-                    {
-                        if (!check_object.value.IsString())
-                        {
-                            continue;
-                        }
-                        define_pair.first = check_object.name.GetString();
-                        define_pair.second = check_object.value.GetString();
-                        package.define_pairs.push_back(define_pair);
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_LOG) && inspect_object.value[SI_LOG].IsArray())
-                {
-                    CFunction::_CheckDefine::CheckLog log;
-                    for (auto& array_element : inspect_object.value[SI_LOG].GetArray())
-                    {
-                        if (array_element.IsString())
-                        {
-                            log = array_element.GetString();
-                            package.logs.push_back(log);
-                        }
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_HANDLE) && inspect_object.value[SI_HANDLE].IsObject())
-                {
-                    CFunction::_CheckDefine::HandlePair handle_pair;
-                    for (auto& handle_object : inspect_object.value[SI_HANDLE].GetObject())
-                    {
-                        if (handle_object.value.IsString())
-                        {
-                            handle_pair.first = handle_object.name.GetString();
-                            handle_pair.second = handle_object.value.GetString();
-                            package.handle_pair.push_back(handle_pair);
-                        }
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_CHECK) && inspect_object.value[SI_CHECK].IsObject())
-                {
-                    for (auto& check_object : inspect_object.value[SI_CHECK].GetObject())
-                    {
-                        package.check_pair.push_back(CFunction::_CheckDefine::CheckPair(check_object.name.GetString(), check_object.value.GetString()));
-                    }
-                }
-
-                if (inspect_object.value.HasMember(SI_MODIFY) && inspect_object.value[SI_MODIFY].IsObject())
-                {
-                    for (auto& modify_object : inspect_object.value[SI_MODIFY].GetObject())
-                    {
-                        package.modify_pair.push_back(CFunction::_CheckDefine::ModifyPair(modify_object.name.GetString(), modify_object.value.GetString()));
-                    }
-                }
+                check_func(package, inspect_object.value.GetObject());
                 if (!wmi_object->AddChecks(package, false))
+                {
                     error_log("CWmisCfgObject::InitializeCheck: wmi object({}) add pre checks failed!", wmi_object->GetName());
+                }
             }
         }
-
         return true;
     }
 
-    bool CWmisCfgObject::InitializeWmiMethods(const std::shared_ptr<CWmiObject>& wmi_object, const rapidjson::Value& Object)
+    bool CWmisCfgObject::InitializeWmiMethods(const std::shared_ptr<CWmiObject>& wmi_object, const ConstRapidObject& Object)
     {
         if (!wmi_object) return false;
         // set datas information
-        if (Object.HasMember(COM_METHOD) && Object[COM_METHOD].IsObject())
+        if (auto anymethod(CRapidJsonWrapper::GetMember(COM_METHOD, Object));
+            anymethod.has_value() && anymethod.type() == typeid(ConstRapidObject))
         {
-            for (auto& method_object : Object[COM_METHOD].GetObject())
+            for (auto& methods : std::any_cast<ConstRapidObject>(anymethod))
             {
-                if (!CSigsCfgObject::InitializeFunction(CFunction::call_stdcall, method_object.name.GetString(), method_object.value, wmi_object->GetMethods()))
+                if (methods.value.IsObject())
                 {
-                    error_log("CWmisCfgObject::InitializeWmiMethods InitializeMethod({}) failed!", method_object.name.GetString());
+                    if (!CSigsCfgObject::InitializeFunction(CFunction::call_stdcall, methods.name.GetString(), methods.value.GetObject(), wmi_object->GetMethods()))
+                    {
+                        error_log("CWmisCfgObject::InitializeWmiMethods InitializeMethod({}) failed!", methods.name.GetString());
+                        return false;
+                    }
+                }
+                else {
+                    error_log("CWmisCfgObject::The Object {} is not Object!", methods.name.GetString());
                     return false;
                 }
             }
@@ -242,54 +198,58 @@ namespace cchips {
         return true;
     }
 
-    bool CWmisCfgObject::InitializeWmiObject(const std::string& wmi_object_name, const rapidjson::Value& Object)
+    bool CWmisCfgObject::InitializeWmiObject(const std::string& wmi_object_name, const CRapidJsonWrapper& document)
     {
-        if (!Object.IsObject() || Object.IsNull())
+        if (auto anywmiobj(document.GetMember(wmi_object_name));
+            anywmiobj.has_value() && anywmiobj.type() == typeid(ConstRapidObject))
         {
-            error_log("CWmisCfgObject::InitializeWmiObject the {} not a object!", wmi_object_name);
-            return false;
-        }
-        // create wmi object
-        std::shared_ptr<CWmiObject> wmi_object = std::make_shared<CWmiObject>(wmi_object_name);
-        if (!wmi_object)
-        {
-            error_log("CWmisCfgObject::InitializeWmiObject create wmi_object({}) failed!", wmi_object_name);
-            return false;
-        }
-        if (Object.HasMember(COM_MIDL) && Object[COM_MIDL].IsString())
-        {
-            std::stringstream ss;
-            ss << Object[COM_MIDL].GetString();
-            if (!wmi_object->SetMidlInterface(ss))
+            // create wmi object
+            std::shared_ptr<CWmiObject> wmi_object = std::make_shared<CWmiObject>(wmi_object_name);
+            if (!wmi_object)
             {
-                error_log("CWmisCfgObject::wmi_object->SetMidlInterface failed!");
+                error_log("CWmisCfgObject::InitializeWmiObject create wmi_object({}) failed!", wmi_object_name);
                 return false;
             }
+            if (auto anymidl(CRapidJsonWrapper::GetMember(COM_MIDL, std::any_cast<ConstRapidObject>(anywmiobj)));
+                anymidl.has_value() && anymidl.type() == typeid(std::string_view))
+            {
+                std::stringstream ss;
+                ss << std::string(std::any_cast<std::string_view>(anymidl));
+                if (!wmi_object->SetMidlInterface(ss))
+                {
+                    error_log("CWmisCfgObject::wmi_object->SetMidlInterface failed!");
+                    return false;
+                }
+            }
+            if (!InitializeWmiDatas(wmi_object, std::any_cast<ConstRapidObject>(anywmiobj)))
+            {
+                error_log("CWmisCfgObject::InitializeWmiObject failed!");
+                return false;
+            }
+            if (!InitializeCheck(wmi_object, std::any_cast<ConstRapidObject>(anywmiobj)))
+            {
+                error_log("CWmisCfgObject::InitializeCheck failed!");
+                return false;
+            }
+            if (!InitializeWmiMethods(wmi_object, std::any_cast<ConstRapidObject>(anywmiobj)))
+            {
+                error_log("CWmisCfgObject::InitializeWmiObject failed!");
+                return false;
+            }
+            if (!g_impl_object || !g_impl_object->AddWmiObject(wmi_object))
+            {
+                error_log("g_impl_object->AddWmiObject({}) failed!", wmi_object->GetName());
+                return false;
+            }
+            return true;
         }
-        if (!InitializeWmiDatas(wmi_object, Object))
-        {
-            error_log("CWmisCfgObject::InitializeWmiObject failed!");
-            return false;
+        else {
+            error_log("CWmisCfgObject::InitializeWmiObject the {} not a object!", wmi_object_name);
         }
-        if (!InitializeCheck(wmi_object, Object))
-        {
-            error_log("CWmisCfgObject::InitializeCheck failed!");
-            return false;
-        }
-        if (!InitializeWmiMethods(wmi_object, Object))
-        {
-            error_log("CWmisCfgObject::InitializeWmiObject failed!");
-            return false;
-        }
-        if (!g_impl_object || !g_impl_object->AddWmiObject(wmi_object))
-        {
-            error_log("g_impl_object->AddWmiObject({}) failed!", wmi_object->GetName());
-            return false;
-        }
-        return true;
+        return false;
     }
 
-    bool CComsCfgObject::Initialize(const std::string& json_str)
+    bool CComsCfgObject::Initialize(const std::string_view& json_str)
     {
         return true;
     }

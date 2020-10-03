@@ -11,180 +11,164 @@
 
 namespace cchips {
 
-    bool CFlagsCfgObject::InitializeAdditionalType(const rapidjson::Document& document)
+    void CFlagsCfgObject::InitializeAdditionalType(const CRapidJsonWrapper& document)
     {
-        bool bret = true;
-
-        if (document.HasMember(FL_ADDITIONAL) && document[FL_ADDITIONAL].IsObject())
+        if (auto anyvalue(document.GetMember(FL_ADDITIONAL));
+            anyvalue.has_value() && anyvalue.type() == typeid(ConstRapidObject))
         {
-            CLexerObject lexer_object;
-            for (auto& additional_object : document[FL_ADDITIONAL].GetObject())
-            {
+            std::for_each(std::any_cast<ConstRapidObject>(anyvalue).begin(), std::any_cast<ConstRapidObject>(anyvalue).end(), [&](auto& additional_object) {
+
                 if (additional_object.value.IsNull())
                 {
-                    error_log("CFlagsConfigObject::Initialize the additional {}! is null!", additional_object.name.GetString());
-                    bret = false; break;
+                    error_log("CFlagsConfigObject::Initialize the additional {} is null!", additional_object.name.GetString());
                 }
-
-                std::string alias_name = additional_object.name.GetString();
-                if (additional_object.value.IsString())
-                {
-                    std::string iden_name = additional_object.value.GetString();
-                    std::shared_ptr<CObObject> ob_object = lexer_object.GetTyIdentifier(iden_name);
-
-                    if (ob_object && !ob_object->IsBaseTy() && !ob_object->IsReference())
+                else {
+                    if (std::string_view alias_name = additional_object.name.GetString(); alias_name.length() && additional_object.value.IsString())
                     {
-                        error_log("CFlagsConfigObject::Initialize the additional {}! data format incorrect!", additional_object.name.GetString());
-                        bret = false; break;
+                        std::string_view iden_name = additional_object.value.GetString();
+                        std::shared_ptr<CObObject> ob_object = CLexerTy::GetInstance().GetIdentifier(iden_name);
+                        if (ob_object)
+                            AddNewType(IDENPAIR{ alias_name, std::move(ob_object) });
+                        else
+                            AddDelayedType(DELTPAIR(alias_name, iden_name));
                     }
-
-                    if (ob_object)
-                        bret = AddNewType(IDENPAIR(alias_name, ob_object));
-                    else
-                        AddDelayedType(std::pair<std::string, std::string>(alias_name, iden_name));
                 }
-            }
+            });
         }
-        return bret;
+        return;
     }
 
-    bool CFlagsCfgObject::InitializeStructType(const rapidjson::Document& document)
+    void CFlagsCfgObject::InitializeStructType(const CRapidJsonWrapper& document)
     {
-        bool bret = true;
-
-        if (document.HasMember(FL_STRUCTURE) && document[FL_STRUCTURE].IsObject())
+        if (auto anyvalue(document.GetMember(FL_STRUCTURE));
+            anyvalue.has_value() && anyvalue.type() == typeid(ConstRapidObject))
         {
-            CLexerObject lexer_object;
-            for (auto& struct_object : document[FL_STRUCTURE].GetObject())
-            {
-                if (!struct_object.value.IsObject() || struct_object.value.IsNull())
+            std::for_each(std::any_cast<ConstRapidObject>(anyvalue).begin(), std::any_cast<ConstRapidObject>(anyvalue).end(), [&](auto& struct_object) {
+
+                if (struct_object.value.IsNull())
                 {
-                    error_log("CFlagsConfigObject::Initialize the struct {}! not a object!", struct_object.name.GetString());
-                    bret = false; break;
+                    error_log("CFlagsConfigObject::Initialize the struct {} is null!", struct_object.name.GetString());
                 }
-                bool bdelayed = false;
-                std::string struct_name = struct_object.name.GetString();
-                std::shared_ptr<CStructObject> ob_object = std::make_shared<CStructObject>(struct_name);
-                for (auto& data_object : struct_object.value.GetObject())
-                {
-                    std::string element_name = data_object.name.GetString();
-                    if (!data_object.value.IsNull())
+                else {
+                    bool bdelayed = false;
+                    bool bsuccess = true;
+                    std::string_view struct_name = struct_object.name.GetString();
+                    std::shared_ptr<CStructObject> ob_object = std::make_shared<CStructObject>(struct_name);
+                    for (auto& data_object : struct_object.value.GetObject())
                     {
-                        if (data_object.value.IsString())
+                        if (std::string_view element_name = data_object.name.GetString(); element_name.length() && !data_object.value.IsNull())
                         {
-                            std::string iden_name = data_object.value.GetString();
-                            std::shared_ptr<CObObject> iden_object = lexer_object.GetTyIdentifier(iden_name);
-                            if (!iden_object) bdelayed = true;
-                            (*ob_object).AddElement(element_name, CStructObject::ElementTypeDefine(iden_name, { CStructObject::InvalidOffset, iden_object }));
+                            if (data_object.value.IsString())
+                            {
+                                std::string_view iden_name = data_object.value.GetString();
+                                std::shared_ptr<CObObject> iden_object = CLexerTy::GetInstance().GetIdentifier(iden_name);
+                                if (!iden_object) bdelayed = true;
+                                (*ob_object).AddElement(element_name, CStructObject::ElementTypeDefine(std::string(iden_name), { CStructObject::InvalidOffset, std::move(iden_object) }));
+                            }
+                            else
+                            {
+                                error_log("CFlagsConfigObject::Initialize the element {}! not a string!", std::string(element_name));
+                                bsuccess = false; break;
+                            }
                         }
                         else
                         {
-                            error_log("CFlagsConfigObject::Initialize the element {}! not a string!", element_name);
-                            bret = false; break;
+                            error_log("CFlagsConfigObject::Initialize the element {}! is null!", data_object.name.GetString());
+                            bsuccess = false; break;
                         }
                     }
-                    else
-                    {
-                        error_log("CFlagsConfigObject::Initialize the element {}! is null!", data_object.name.GetString());
-                        bret = false; break;
+                    if (bsuccess) {
+                        if (bdelayed)
+                            AddDelayedStruct(DELSPAIR(struct_name, std::move(ob_object)));
+                        else
+                            AddNewType(DELSPAIR(struct_name, std::move(ob_object)));
                     }
                 }
-                if (!bret) break;
-                if (bdelayed)
-                    AddDelayedStruct(std::pair<std::string, std::shared_ptr<CStructObject>>(struct_name, ob_object));
-                else
-                    bret = AddNewType(std::pair<std::string, std::shared_ptr<CStructObject>>(struct_name, ob_object));
-            }
+            });
         }
-        return bret;
+        return;
     }
 
-    bool CFlagsCfgObject::InitializeFlagType(const rapidjson::Document& document)
+    void CFlagsCfgObject::InitializeFlagType(const CRapidJsonWrapper& document)
     {
-        bool bret = true;
-
-        if (document.HasMember(FL_FLAGS) && document[FL_FLAGS].IsObject())
+        if (auto anyvalue(document.GetMember(FL_FLAGS));
+            anyvalue.has_value() && anyvalue.type() == typeid(ConstRapidObject))
         {
-            CLexerObject lexer_object;
-            for (auto& flag_object : document[FL_FLAGS].GetObject())
-            {
-                std::string flag_name = flag_object.name.GetString();
+            std::for_each(std::any_cast<ConstRapidObject>(anyvalue).begin(), std::any_cast<ConstRapidObject>(anyvalue).end(), [&](auto& flag_object) {
+
+                std::string_view flag_name = flag_object.name.GetString();
                 std::shared_ptr<CFlagObject> ob_object = std::make_shared<CFlagObject>(flag_name);
-                if (!flag_object.value.HasMember(FLS_DATA) || !flag_object.value.HasMember(FLS_OP) || !flag_object.value.HasMember(FLS_VALUE))
-                {
-                    error_log("CFlagsConfigObject::Initialize the flags {} is a invalid flags!", flag_name);
-                    bret = false; break;
-                }
-
-                if (!flag_object.value[FLS_DATA].IsString() || !flag_object.value[FLS_OP].IsString() || !flag_object.value[FLS_VALUE].IsObject())
-                {
-                    error_log("CFlagsConfigObject::Initialize the flags {} data format incorrect!", flag_name);
-                    bret = false; break;
-                }
-                int flag_op = ob_object->GetFlagOp(std::string(flag_object.value[FLS_OP].GetString()));
-                if (flag_op == CFlagObject::flag_invalid)
-                {
-                    error_log("CFlagsConfigObject::Initialize the flags {} flag_op incorrect!", flag_name);
-                    bret = false; break;
-                }
-                std::shared_ptr<CObObject> data_object = lexer_object.GetTyIdentifier(flag_object.value[FLS_DATA].GetString());
-                if (!data_object)
-                {
-                    error_log("CFlagsConfigObject::Initialize the flags {} data_object incorrect!", flag_name);
-                    bret = false; break;
-                }
-
-                std::unique_ptr<std::map<std::string, int>> flag_values = std::make_unique<std::map<std::string, int>>();
-                if (flag_values)
-                {
-                    for (auto& value_object : flag_object.value[FLS_VALUE].GetObject())
-                        (*flag_values)[value_object.name.GetString()] = value_object.value.GetUint();
-                    if (flag_values->size() == 0)
+                if (!ob_object) return;
+                std::string name_str(flag_name);
+                auto anydata(document.GetMember(std::vector<std::string> {FL_FLAGS, name_str, FLS_DATA}));
+                auto anyop(document.GetMember(std::vector<std::string> {FL_FLAGS, name_str, FLS_OP}));
+                auto anystrflg(document.GetMember(std::vector<std::string> {FL_FLAGS, name_str, FLS_VALUE}));
+                if ([&]() ->bool{
+                    if (!anydata.has_value() || !anyop.has_value() || !anystrflg.has_value())
                     {
-                        error_log("CFlagsConfigObject::Initialize the flags {} flag_values null!", flag_name);
-                        bret = false; break;
+                        error_log("CFlagsConfigObject::Initialize the flags {} is a invalid flags!", std::string(flag_name));
+                        return false;
                     }
-                    if (!ob_object->AddFlags(data_object, flag_op, flag_values))
+                    if( anydata.type() != typeid(std::string_view) ||
+                        anyop.type() != typeid(std::string_view) ||
+                        anystrflg.type() != typeid(ConstRapidObject) )
                     {
-                        error_log("CFlagsConfigObject::Initialize the flags {} AddFlags failed!", flag_name);
-                        bret = false; break;
+                        error_log("CFlagsConfigObject::Initialize the flags {} data format incorrect!", std::string(flag_name));
+                        return false;
                     }
-                    bret = AddNewType(std::pair<std::string, std::shared_ptr<CFlagObject>>(flag_name, ob_object));
+                    return true;
+                    }())
+                {
+                    if (CFlagObject::_flag_operation flag_op; (flag_op = ob_object->GetFlagOp(std::string(std::any_cast<std::string_view>(anyop)))) == CFlagObject::flag_invalid)
+                    {
+                        error_log("CFlagsConfigObject::Initialize the flags {} flag_op incorrect!", std::string(flag_name));
+                    }
+                    else {
+                        if (std::shared_ptr<CObObject> data_object; (data_object = CLexerTy::GetInstance().GetIdentifier(std::string(std::any_cast<std::string_view>(anydata)))) == nullptr)
+                        {
+                            error_log("CFlagsConfigObject::Initialize the flags {} data_object incorrect!", std::string(flag_name));
+                        }
+                        else {
+                            if (std::unique_ptr<std::map<std::string, unsigned int>> flag_values = std::make_unique<std::map<std::string, unsigned int>>(); flag_values)
+                            {
+                                for (auto& value_object : std::any_cast<ConstRapidObject>(anystrflg))
+                                    (*flag_values)[value_object.name.GetString()] = value_object.value.GetUint();
+                                if (flag_values->size() == 0)
+                                {
+                                    error_log("CFlagsConfigObject::Initialize the flags {} flag_values null!", std::string(flag_name));
+                                }
+                                else {
+                                    if (!ob_object->AddFlags(std::move(data_object), flag_op, std::move(flag_values)))
+                                    {
+                                        error_log("CFlagsConfigObject::Initialize the flags {} AddFlags failed!", std::string(flag_name));
+                                    }
+                                    else {
+                                        AddNewType(IDENPAIR{ flag_name, std::move(ob_object) });
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-            }
+            });
         }
-        return bret;
+        return;
     }
 
-    bool CFlagsCfgObject::Initialize(const std::string& json_str)
+    bool CFlagsCfgObject::Initialize(const std::string_view& json_str)
     {
         if (json_str.length() == 0) return false;
 
-        rapidjson::Document document;
-        document.Parse(json_str.c_str());
-        if (!document.IsObject() || document.IsNull())
-        {
+        CRapidJsonWrapper document(json_str);
+        if (!document.IsValid()) {
             //config data is incorrect.
             error_log("CFlagsConfigObject::Initialize failed!");
             return false;
         }
 
-        if (!InitializeAdditionalType(document))
-        {
-            error_log("InitializeAdditionalType failed!");
-            return false;
-        }
-        if (!InitializeStructType(document))
-        {
-            error_log("InitializeStructType failed!");
-            return false;
-        }
-        if (!InitializeFlagType(document))
-        {
-            error_log("InitializeFlagType failed!");
-            return false;
-        }
-
+        InitializeAdditionalType(document);
+        InitializeStructType(document);
+        InitializeFlagType(document);
         // processing delayed types
         ProcessingDelayTypes();
         m_bValid = true;
@@ -193,11 +177,10 @@ namespace cchips {
 
     bool CFlagsCfgObject::AddNewType(const IDENPAIR& delay_pair) const
     {
-        CLexerObject lexer_object;
-        return lexer_object.AddTyIdentifier(delay_pair);
+        return CLexerTy::GetInstance().AddIdentifier(delay_pair);
     }
 
-    bool CFlagsCfgObject::AddDelayedType(const std::pair<std::string, std::string>& delay_pair)
+    bool CFlagsCfgObject::AddDelayedType(const DELTPAIR& delay_pair)
     {
         auto it = m_delayed_type_list.find(delay_pair.first);
         if (it != m_delayed_type_list.end())
@@ -209,7 +192,7 @@ namespace cchips {
         return true;
     }
 
-    bool CFlagsCfgObject::AddDelayedStruct(const std::pair<std::string, std::shared_ptr<CStructObject>>& delay_pair)
+    bool CFlagsCfgObject::AddDelayedStruct(const DELSPAIR& delay_pair)
     {
         auto it = m_delayed_struct_list.find(delay_pair.first);
         if (it != m_delayed_struct_list.end())
@@ -223,64 +206,77 @@ namespace cchips {
 
     bool CFlagsCfgObject::ProcessingDelayType(const std::string& name)
     {
-        CLexerObject lexer_object;
-        auto it = m_delayed_type_list.find(lexer_object.GetWordRoot(name));
+        const auto it = m_delayed_type_list.find(CLexerTy::GetWordRoot(name));
         if (it == m_delayed_type_list.end()) return false;
+        return ProcessingDelayType(*it);
+    }
 
-        std::shared_ptr<CObObject> ob_object = lexer_object.GetTyIdentifier((*it).second);
+    bool CFlagsCfgObject::ProcessingDelayType(const DELTPAIR& delt_pair)
+    {
+        std::shared_ptr<CObObject> ob_object = CLexerTy::GetInstance().GetIdentifier(delt_pair.second);
         if (ob_object)
-            return AddNewType(IDENPAIR((*it).first, ob_object));
+            return AddNewType(IDENPAIR{ delt_pair.first, ob_object });
         else
         {
-            if (!ProcessingDelayTypes((*it).second))
+            if (!ProcessingDelayTypes(delt_pair.second))
             {
-                error_log("ProcessingDelayType: delay type {} can not handle!", (*it).first);
+                error_log("ProcessingDelayType: delay type {} can not handle!", delt_pair.first);
                 return false;
             }
-            ob_object = lexer_object.GetTyIdentifier((*it).second);
+            ob_object = CLexerTy::GetInstance().GetIdentifier(delt_pair.second);
             if (!ob_object)
             {
-                error_log("ProcessingDelayType: delay type {} can not handle!", (*it).first);
+                error_log("ProcessingDelayType: delay type {} can not handle!", delt_pair.first);
                 return false;
             }
-            return AddNewType(IDENPAIR((*it).first, ob_object));
+            return AddNewType(IDENPAIR{ delt_pair.first, ob_object });
         }
         return false;
     }
 
     bool CFlagsCfgObject::ProcessingDelayStruct(const std::string& name)
     {
-        CLexerObject lexer_object;
-        auto it = m_delayed_struct_list.find(lexer_object.GetWordRoot(name));
+        const auto it = m_delayed_struct_list.find(CLexerTy::GetWordRoot(name));
         if (it == m_delayed_struct_list.end()) return false;
+        return ProcessingDelayStruct(*it);
+    }
 
-        for (auto delay_elem : (*(it->second)))
+    bool CFlagsCfgObject::ProcessingDelayStruct(const DELSPAIR& dels_pair)
+    {
+        std::map<int, std::pair<std::string, CStructObject::ElementTypeDefine>> cache_map;
+        for (auto delay_elem : (*(dels_pair.second)))
         {
-            if (!delay_elem.second.second.second)
+            cache_map[delay_elem.second.second.first] = std::pair<std::string, CStructObject::ElementTypeDefine>(std::move(delay_elem.first), std::move(delay_elem.second));
+        }
+
+        std::string_view struct_name = dels_pair.second->GetName();
+        std::shared_ptr<CStructObject> ob_object = std::make_shared<CStructObject>(struct_name);
+        for (const auto& struc_elem : cache_map)
+        {
+            std::shared_ptr<CObObject> iden_object = nullptr;
+            if (struc_elem.second.second.second.second)
+                iden_object = struc_elem.second.second.second.second;
+            else
             {
-                std::shared_ptr<CObObject> ob_object = lexer_object.GetTyIdentifier(delay_elem.second.first);
-                if (ob_object)
+                iden_object = CLexerTy::GetInstance().GetIdentifier(struc_elem.second.second.first);
+                if (!iden_object)
                 {
-                    (*it->second).AddElement(delay_elem.first, CStructObject::ElementTypeDefine(delay_elem.second.first, { CStructObject::InvalidOffset,ob_object }));
-                }
-                else
-                {
-                    if (!ProcessingDelayTypes(delay_elem.second.first))
+                    if (!ProcessingDelayTypes(struc_elem.second.second.first))
                     {
-                        error_log("ProcessingDelayStruct: delay struct({}) element({}) can not handle!", it->first, delay_elem.second.first);
+                        error_log("ProcessingDelayStruct: delay struct({}) element({}) can not handle!", dels_pair.first, struc_elem.second.first);
                         return false;
                     }
-                    ob_object = lexer_object.GetTyIdentifier(delay_elem.second.first);
-                    if (!ob_object)
+                    iden_object = CLexerTy::GetInstance().GetIdentifier(struc_elem.second.second.first);
+                    if (!iden_object)
                     {
-                        error_log("ProcessingDelayStruct: delay struct({}) element({}) can not handle!", it->first, delay_elem.second.first);
+                        error_log("ProcessingDelayStruct: delay struct({}) element({}) can not handle!", dels_pair.first, struc_elem.second.first);
                         return false;
                     }
-                    (*it->second).AddElement(delay_elem.first, CStructObject::ElementTypeDefine(delay_elem.second.first, { CStructObject::InvalidOffset,ob_object }));
                 }
             }
+            (*ob_object).AddElement(struc_elem.second.first, CStructObject::ElementTypeDefine(std::string(struc_elem.second.second.first), { CStructObject::InvalidOffset, std::move(iden_object) }));
         }
-        return AddNewType(std::pair<std::string, std::shared_ptr<CStructObject>>(it->first, it->second));
+        return AddNewType(IDENPAIR{ dels_pair.first, ob_object });
     }
 
     bool CFlagsCfgObject::ProcessingDelayTypes(const std::string& name)
@@ -292,15 +288,20 @@ namespace cchips {
 
     void CFlagsCfgObject::ProcessingDelayType()
     {
-        for (auto& delay_elem : m_delayed_type_list)
-            ProcessingDelayTypes(delay_elem.first);
+        std::for_each(m_delayed_type_list.begin(), m_delayed_type_list.end(), [&](const auto& pair) {
+            
+            if (ProcessingDelayType(pair))
+                return;
+            ProcessingDelayStruct(pair.first);
+            });
         m_delayed_type_list.clear();
     }
 
     void CFlagsCfgObject::ProcessingDelayStruct()
     {
-        for (auto& delay_elem : m_delayed_struct_list)
-            ProcessingDelayTypes(delay_elem.first);
+        std::for_each(m_delayed_struct_list.begin(), m_delayed_struct_list.end(), [&](auto& pair) {
+            ProcessingDelayStruct(pair);
+            });
         m_delayed_struct_list.clear();
     }
 

@@ -287,6 +287,18 @@ namespace sf {
         void lock() { for (volatile size_t i = 0; !try_lock(); ++i) if (i % 100000 == 0) std::this_thread::yield(); }
         void unlock() { lock_flag.clear(std::memory_order_release); }
     };
+
+    struct spinlock_e_t {
+        spinlock_e_t() = delete;
+        spinlock_e_t(const spinlock_e_t&) = delete;
+        spinlock_e_t(std::atomic_flag& flag) : lock_flag(flag) { lock(); }
+        ~spinlock_e_t() { unlock(); }
+    private:
+        bool try_lock() { return !lock_flag.test_and_set(std::memory_order_acquire); }
+        void lock() { for (volatile size_t i = 0; !try_lock(); ++i) if (i % 100000 == 0) std::this_thread::yield(); }
+        void unlock() { lock_flag.clear(std::memory_order_release); }
+        std::atomic_flag& lock_flag;
+    };
     // ---------------------------------------------------------------
 
     class recursive_spinlock_t {
@@ -521,7 +533,9 @@ namespace sf {
             // forbidden upgrade S-lock to X-lock - this is an excellent opportunity to get deadlock
             int const register_index = get_or_set_index();
             if (register_index >= 0)
+            {
                 ASSERT(shared_locks_array[register_index].value.load(std::memory_order_acquire) == 1);
+            }
 
             if (owner_thread_id.load(std::memory_order_acquire) != get_fast_this_thread_id()) {
                 size_t i = 0;

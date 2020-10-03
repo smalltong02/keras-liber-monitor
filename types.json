@@ -22,6 +22,7 @@
     "DWORD",
     "DWORD_PTR",
     "FLOAT",
+    "DOUBLE",
     "INT64",
     "UINT64",
     "LONGLONG",
@@ -36,7 +37,8 @@
     "SC_HANDLE",
     "NTSTATUS",
     "STRING",
-    "WSTRING"
+    "WSTRING",
+    "GUID"
   ],
 
   "Additional": {
@@ -62,58 +64,58 @@
 	  }
 	}
   },
-  
-  "Structure": {	
-	"COAUTHIDENTITY": {
-	  "User": "USHORT*",
-	  "UserLength": "ULONG",
-	  "Domain": "USHORT*",
-	  "DomainLength": "ULONG",
-	  "Password": "USHORT*",
-	  "PasswordLength": "ULONG",
-	  "Flags": "ULONG"
-	},
 
-	"COAUTHINFO": {
-	"dwAuthnSvc": "DWORD",
-    "dwAuthzSvc": "DWORD",
-    "pwszServerPrincName": "LPWSTR",
-    "dwAuthnLevel": "DWORD",
-    "dwImpersonationLevel": "DWORD",
-    "pAuthIdentityData": "COAUTHIDENTITY*",
-    "dwCapabilities": "DWORD"
-	},
-	
-	"COSERVERINFO": {
-	  "dwReserved1": "DWORD",
-	  "pwszName": "LPWSTR",
-	  "pAuthInfo": "COAUTHINFO*",
-	  "dwReserved2": "DWORD"
-	},
-	
-	"MULTI_QI": {
-	  "pIID": "IID*",
+  "Structure": {
+    "COAUTHIDENTITY": {
+      "User": "USHORT*",
+      "UserLength": "ULONG_PTR",
+      "Domain": "USHORT*",
+      "DomainLength": "ULONG_PTR",
+      "Password": "USHORT*",
+      "PasswordLength": "ULONG",
+      "Flags": "ULONG"
+    },
+
+    "COAUTHINFO": {
+      "dwAuthnSvc": "DWORD",
+      "dwAuthzSvc": "DWORD",
+      "pwszServerPrincName": "LPWSTR",
+      "dwAuthnLevel": "DWORD",
+      "dwImpersonationLevel": "DWORD",
+      "pAuthIdentityData": "COAUTHIDENTITY*",
+      "dwCapabilities": "DWORD"
+    },
+
+    "COSERVERINFO": {
+      "dwReserved1": "DWORD",
+      "pwszName": "LPWSTR",
+      "pAuthInfo": "COAUTHINFO*",
+      "dwReserved2": "DWORD"
+    },
+
+    "MULTI_QI": {
+      "pIID": "IID*",
       "pItf": "LPVOID",
       "hr": "HRESULT"
-	},
-	
-	"SYSTEM_BASIC_INFORMATION": {
-	  "Reserved1": "BYTE[24]",
+    },
+
+    "SYSTEM_BASIC_INFORMATION": {
+      "Reserved1": "BYTE[24]",
       "Reserved2": "LPVOID[4]",
       "NumberOfProcessors": "CHAR"
-	},
+    },
 
-	"SERVICE_STATUS": {
-	  "dwServiceType": "DWORD",
-	  "dwCurrentState": "DWORD",
-	  "dwControlsAccepted": "DWORD",
-	  "dwWin32ExitCode": "DWORD",
-	  "dwServiceSpecificExitCode": "DWORD",
+    "SERVICE_STATUS": {
+      "dwServiceType": "DWORD",
+      "dwCurrentState": "DWORD",
+      "dwControlsAccepted": "DWORD",
+      "dwWin32ExitCode": "DWORD",
+      "dwServiceSpecificExitCode": "DWORD",
       "dwCheckPoint": "DWORD",
-	  "dwWaitHint": "DWORD"
-	},
+      "dwWaitHint": "DWORD"
+    },
 
-	"SERVICE_STATUS_PROCESS": {
+    "SERVICE_STATUS_PROCESS": {
       "dwServiceType": "DWORD",
       "dwCurrentState": "DWORD",
       "dwControlsAccepted": "DWORD",
@@ -123,6 +125,27 @@
       "dwWaitHint": "DWORD",
       "dwProcessId": "DWORD",
       "dwServiceFlags": "DWORD"
+    },
+
+    "UNICODE_STRING": {
+      "Reserve": "ULONG_PTR",
+      "Buffer": "LPWSTR"
+    },
+
+    "ANSI_STRING": {
+      "Reserve": "ULONG_PTR",
+      "Buffer": "LPCHAR"
+    },
+
+    "SYSTEM_POWER_CAPABILITIES": {
+      "PowerButtonPresent": "BYTE",
+      "SleepButtonPresent": "BYTE",
+      "LidPresent": "BYTE",
+      "SystemS1": "BYTE",
+      "SystemS2": "BYTE",
+      "SystemS3": "BYTE",
+      "SystemS4": "BYTE",
+      "SystemS5": "BYTE"
     }
   },
   

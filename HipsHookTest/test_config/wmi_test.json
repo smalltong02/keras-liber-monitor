@@ -75,7 +75,11 @@
           "Tag": "%var20 = 'Physical Memory 0'",
           "TotalWidth": "%var21 = 64",
           "TypeDetail": "%var22 = 128"
-        }
+        },
+        "Log": [
+          "__CLASS",
+          "Capacity"
+        ]
       }
     }
   },
@@ -136,7 +140,11 @@
           "Name": "%var11 = 'Physical Memory Array'",
           "Tag": "%var12 = 'Physical Memory Array 0'",
           "Use": "%var13 = 3"
-        }
+        },
+        "Log": [
+          "__CLASS",
+          "MemoryDevices"
+        ]
       }
     }
   },
@@ -144,7 +152,7 @@
   "Win32_DiskDrive": {
     "MIDL_INTERFACE": "{8502C4B2-5FBB-11D2-AAC1-006008C78BC7}",
     "Data": {
-      "CreationClassName": "BSTR",
+      "__PATH": "BSTR",
       "Name": "BSTR",
       "Caption": "BSTR",
       "DeviceID": "BSTR",
@@ -159,10 +167,573 @@
           "Size": "%var1 = 3298534883328"
         },
         "Log": [
-          "CreationClassName",
+          "__PATH",
           "Name",
           "Caption"
         ]
+      }
+    }
+  },
+
+  "Win32_LogicalDisk": {
+    "MIDL_INTERFACE": "{8502C4B7-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "__PATH": "BSTR",
+      "Name": "BSTR",
+      "MediaType": "UINT",
+      "Size": "ULONGLONG"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "Size": "%var0 <= 107374182400"
+        },
+        "Modify": {
+          "Size": "%var1 = 107374182400"
+        },
+        "Log": [
+          "__PATH",
+          "Name",
+          "MediaType",
+          "Size"
+        ]
+      }
+    }
+  },
+
+  "Win32_Bios": {
+    "MIDL_INTERFACE": "{8502C4E1-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "SerialNumber": "BSTR",
+      "Caption": "BSTR",
+      "Manufacturer": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "Caption": "%var0 =~ '.*(?i)vbox.*$'"
+        },
+        "Modify": {
+          "Caption": "%var1 = 'Default System BIOS'"
+        }
+      },
+
+      "1": {
+        "Check": {
+          "Manufacturer": "%var0 =~ '.*(?i)vbox.*$'"
+        },
+        "Modify": {
+          "Manufacturer": "%var1 = 'Dell Inc.'"
+        }
+      }
+    }
+  },
+
+  "Win32_ComputerSystem": {
+    "MIDL_INTERFACE": "{8502C4B0-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "UserName": "BSTR",
+      "Domain": "BSTR",
+      "Model": "BSTR",
+      "Manufacturer": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "Manufacturer": "%var0 =~ '.*(?i)vbox.*$'"
+        },
+        "Modify": {
+          "Manufacturer": "%var1 = 'Dell Inc.'"
+        },
+        "Log": [
+          "__CLASS",
+          "UserName",
+          "Domain",
+          "Model",
+          "Manufacturer"
+        ]
+      },
+      "1": {
+        "Check": {
+          "UserName": "%var0 =~ '^.*(?i)abc$' || %var0 =~ '^.*123$'"
+        },
+        "Modify": {
+          "UserName": "%var1 = 'DESKTOP-DELL\\TonyLeung'"
+        }
+      }
+    }
+  },
+
+  "Win32_NetworkAdapterConfiguration": {
+    "MIDL_INTERFACE": "{8502C515-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "MACAddress": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "MACAddress": "%var0 =~ '^(08:00:27)(([/\\s:][0-9a-fA-F]{2}){3})$'"
+        },
+        "Modify": {
+          "MACAddress": "%var1 = '2B:37:69:FB:3B:7F'"
+        }
+      }
+    }
+  },
+
+  "Win32_PnPEntity": {
+    "MIDL_INTERFACE": "{FE28FD98-C875-11d2-B352-00104BC97924}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "Name": "BSTR",
+      "DeviceId": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "DeviceId": "%var0 =~ '^PCI\\\\VEN_80EE&DEV_CAFE.*$'"
+        },
+        "Modify": {
+          "DeviceId": "%var1 = 'PCI\\\\VEN_0033&DEV_PPEF&SUBSYS_C7231028&REV_A1\\4&2555DBDC&0&0208'"
+        }
+      }
+    }
+  },
+
+  "Win32_Processor": {
+    "MIDL_INTERFACE": "{8502C4BB-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "ProcessorId": "BSTR",
+      "NumberOfCores": "UINT"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "NumberOfCores": "%var0 < 2"
+        },
+        "Modify": {
+          "NumberOfCores": "%var1 = 2"
+        }
+      },
+      "1": {
+        "Modify": {
+          "ProcessorId": "%var0 = 'BECF19200906ED'"
+        },
+        "Log": [
+          "__CLASS",
+          "ProcessorId",
+          "NumberOfCores"
+        ]
+      }
+    }
+  },
+
+  "Win32_BaseBoard": {
+    "MIDL_INTERFACE": "{FAF76B95-798C-11D2-AAD1-006008C78BC7}",
+    "Data": {
+      "__PATH": "BSTR",
+      "Manufacturer": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "Manufacturer": "%var0 =~ '.*(?i)vbox.*$'"
+        },
+        "Modify": {
+          "Manufacturer": "%var1 = 'Dell Inc.'"
+        },
+        "Log": [
+          "__PATH",
+          "Manufacturer"
+        ]
+      }
+    }
+  },
+
+  "Win32_CDROMDrive": {
+    "MIDL_INTERFACE": "{8502C4B3-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "__GENUS": "UINT",
+      "__PATH": "BSTR",
+      "__CLASS": "BSTR",
+      "Name": "BSTR",
+      "Manufacturer": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "Win32_CDROMDrive": "Duplicate"
+        },
+        "Check": {
+          "Manufacturer": "%var0 =~ '.*(?i)vbox.*$'"
+        },
+        "Modify": {
+          "__GENUS": "%var1 = 2",
+          "__PATH": "%var2 = '\\\\Administrator\\ROOT\\cimv2:Win32_CDROMDrive'",
+          "__CLASS": "%var3 = 'Win32_CDROMDrive'",
+          "Manufacturer": "%var4 = 'Dell Inc.'"
+        },
+        "Log": [
+          "__CLASS",
+          "Name",
+          "Manufacturer"
+        ]
+      }
+    }
+  },
+
+  "MSAcpi_ThermalZoneTemperature": {
+    "MIDL_INTERFACE": "{11111111-1111-1111-1111-111111111111}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "MSAcpi_ThermalZoneTemperature": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "Win32_Fan": {
+    "MIDL_INTERFACE": "{464FFAB5-946F-11D2-AAE2-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "Win32_Fan": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "Win32_CacheMemory": {
+    "MIDL_INTERFACE": "{FAF76B97-798C-11D2-AAD1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "Win32_CacheMemory": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "Win32_MemoryDevice": {
+    "MIDL_INTERFACE": "{FAF76B9B-798C-11D2-AAD1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "Win32_MemoryDevice": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "Win32_MemoryArray": {
+    "MIDL_INTERFACE": "{FAF76B9A-798C-11D2-AAD1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "Win32_MemoryArray": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "Win32_VoltageProbe": {
+    "MIDL_INTERFACE": "{464FFAB8-946F-11d2-AAE2-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "Win32_VoltageProbe": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "Win32_PortConnector": {
+    "MIDL_INTERFACE": "{FAF76B92-798C-11D2-AAD1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "Win32_PortConnector": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "Win32_SMBIOSMemory": {
+    "MIDL_INTERFACE": "{FECB095B-F0FA-11d2-8617-0000F8102E5F}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "Win32_SMBIOSMemory": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "Win32_PerfFormattedData_Counters_ThermalZoneInformation": {
+    "MIDL_INTERFACE": "{11111111-1111-1111-1111-111111111111}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "Win32_PerfFormattedData_Counters_ThermalZoneInformation": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "CIM_Memory": {
+    "MIDL_INTERFACE": "{FAF76B64-798C-11D2-AAD1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "CIM_Memory": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "CIM_NumericSensor": {
+    "MIDL_INTERFACE": "{9565979C-7D80-11D2-AAD3-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "CIM_NumericSensor": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "CIM_PhysicalConnector": {
+    "MIDL_INTERFACE": "{FAF76B84-798C-11D2-AAD1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "CIM_PhysicalConnector": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "CIM_Sensor": {
+    "MIDL_INTERFACE": "{9565979B-7D80-11D2-AAD3-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "CIM_Sensor": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "CIM_Slot": {
+    "MIDL_INTERFACE": "{FAF76B86-798C-11D2-AAD1-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "CIM_Slot": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "CIM_TemperatureSensor": {
+    "MIDL_INTERFACE": "{9565979D-7D80-11D2-AAD3-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "CIM_TemperatureSensor": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "CIM_VoltageSensor": {
+    "MIDL_INTERFACE": "{A998F9B4-E3D4-11d2-8601-0000F8102E5F}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "CIM_VoltageSensor": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "AntiVirusProduct": {
+    "MIDL_INTERFACE": "{11111111-1111-1111-1111-111111111111}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "displayName": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "displayName": "%var0 =~ '.*(?i)windows defender.*$'"
+        },
+        "Modify": {
+          "displayName": "%var1 = 'xxxx'"
+        },
+        "Log": [
+          "__CLASS",
+          "displayName"
+        ]
+      }
+    }
+  },
+
+  "Win32_OperatingSystem": {
+    "MIDL_INTERFACE": "{8502C4DE-5FBB-11D2-AAC1-006008C78BC7}",
+    "Data": {
+      "__PATH": "BSTR",
+      "BuildNumber": "BSTR",
+      "Name": "BSTR",
+      "NumberOfProcesses": "DWORD"
+    },
+    "Methods": {
+      "Reboot": {
+        "Signature": {
+          "Library": "IWbemServices.ExecMethod",
+          "Return": "HRESULT"
+        },
+        "PreCheck": {
+          "0": {
+            "Modify": {
+              "Return": "%var1 = 0"
+            },
+            "Log": [
+              "Flags"
+            ]
+          }
+        }
+      },
+
+      "Shutdown": {
+        "Signature": {
+          "Library": "IWbemServices.ExecMethod",
+          "Return": "HRESULT"
+        },
+        "PreCheck": {
+          "0": {
+            "Modify": {
+              "Return": "%var1 = 0"
+            },
+            "Log": [
+              "Flags"
+            ]
+          }
+        }
+      },
+
+      "Win32Shutdown": {
+        "Signature": {
+          "Library": "IWbemServices.ExecMethod",
+          "Return": "HRESULT"
+        },
+        "Parameters": {
+          "Flags": "UINT",
+          "Reserved": "UINT"
+        },
+        "PreCheck": {
+          "0": {
+            "Modify": {
+              "Return": "%var1 = 0"
+            },
+            "Log": [
+              "Flags"
+            ]
+          }
+        }
+      },
+
+      "Win32ShutdownTracker": {
+        "Signature": {
+          "Library": "IWbemServices.ExecMethod",
+          "Return": "HRESULT"
+        },
+        "Parameters": {
+          "Timeout": "DWORD",
+          "Comment": "BSTR",
+          "ReasonCode": "DWORD",
+          "Flags": "DWORD"
+        },
+        "PreCheck": {
+          "0": {
+            "Modify": {
+              "Return": "%var1 = 0"
+            },
+            "Log": [
+              "ReasonCode",
+              "Flags"
+            ]
+          }
+        }
       }
     }
   },

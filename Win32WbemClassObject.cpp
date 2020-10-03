@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "Win32WbemClassObject.h"
 
+using namespace cchips;
 GUID IID_idIWbemClassObject = {
     0xdc12a681,
     0x737f,
@@ -54,12 +55,15 @@ HRESULT STDMETHODCALLTYPE WbemClassObjectGet(
     /* [unique][in][out] */ long *pType,
     /* [unique][in][out] */ long *plFlavor)
 {
-    HRESULT hr = S_OK;
+    HRESULT hr = S_FALSE;
 
     ASSERT(This->lpVtbl->m_wmi_object);
     ASSERT(pVal != nullptr);
     if (wszName == nullptr) return hr;
     if (pVal == nullptr) return hr;
+    std::unique_ptr<cchips::CLogHandle> log_handle = std::make_unique<cchips::CLogHandle>("W2", CLogObject::logtype::log_event);
+    if (!log_handle) return hr;
+    BEGIN_LOG("Duplicate_IWbemClassObject_Get");
     for (const auto& pcheck : This->lpVtbl->m_wmi_object->GetChecks(false))
     {
         ASSERT(pcheck != nullptr);
@@ -73,28 +77,38 @@ HRESULT STDMETHODCALLTYPE WbemClassObjectGet(
             {
                 if (_stricmp(pcheck->GetRealName(iden.first).c_str(), W2AString(wszName).c_str()) == 0)
                 {
-                    VARTYPE type = VT_EMPTY;
-                    if (iden.second)
+                    VARTYPE type = ConvertObTypeToVarintType(iden.second->GetName());
+                    pVal->vt = VT_EMPTY;
+                    CExpParsing::_ValueMap value_map;
+                    std::any cur_anyvalue = iden.second->GetCurValue();
+                    if (!modify->SetIdentifierValue(value_map, CExpParsing::ValuePair(iden.first, cur_anyvalue)))
                     {
-                        type = ConvertObTypeToVarintType(iden.second->GetName());
-                    }
-                    std::stringstream ss; ss << "0";
-                    if (!modify->SetIdentifierValue(cchips::CExpParsing::ValuePair(iden.first, ss.str())))
-                    {
-                        return false;
+                        return hr;
                     }
                     // back propagation
-                    std::unique_ptr<cchips::CExpParsing::ValuePair> value = std::get<std::unique_ptr<cchips::CExpParsing::ValuePair>>(modify->EvalExpression());
+                    auto variant_value = modify->EvalExpression(value_map);
+                    if (variant_value.index() != 1) break;
+                    std::unique_ptr<CExpParsing::ValuePair> value = std::move(std::get<std::unique_ptr<CExpParsing::ValuePair>>(variant_value));
                     if (value == nullptr)
                         break;
                     if (_stricmp(iden.first.c_str(), value->first.c_str()) != 0)
                     {
                         ASSERT(0); continue;
                     }
-                    if (pVal->vt == VT_EMPTY) pVal->vt = type;
-                    if (!SetValueString(value->second.str().c_str(), *pVal))
-                        return false;
-                    break;
+                    std::any any_new_val = cur_anyvalue;
+                    if (AssignAnyType(any_new_val, value->second))
+                    {
+                        pVal->vt = type;
+                        if (!SetVariantValue(*pVal, any_new_val)) {
+                            pVal->vt = VT_EMPTY;
+                            return hr;
+                        }
+                        if (std::stringstream ss = OutputAnyValue(any_new_val); ss.str().length())
+                            LOGGING(pcheck->GetRealName(iden.first), ss.str());
+                        END_LOG(log_handle->GetHandle());
+                        return S_OK;
+                    }
+                    return hr;
                 }
             }
         }

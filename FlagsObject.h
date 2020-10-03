@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 #include <map>
-#include "rapidjson\document.h"
 #include "MetadataTypeImpl.h"
+#include "PackageWrapper.h"
 
 namespace cchips {
 
@@ -29,28 +29,32 @@ namespace cchips {
     class CFlagsCfgObject
     {
     public:
-        typedef std::map<std::string, std::string> DelayTp;
-        typedef std::map<std::string, std::shared_ptr<CStructObject>> StructTp;
+        using DelayTp = std::map<std::string, std::string>;
+        using StructTp = std::map<std::string, std::shared_ptr<CStructObject>>;
+        using DELTPAIR = std::pair<std::string, std::string>;
+        using DELSPAIR = std::pair<std::string, std::shared_ptr<CStructObject>>;
 
         CFlagsCfgObject() : m_bValid(false) { }
         CFlagsCfgObject(std::string name) : m_bValid(false), m_name(name) { }
         ~CFlagsCfgObject() = default;
 
         void SetFlagsName(const std::string& name) { m_name = name; }
-        bool InitializeAdditionalType(const rapidjson::Document& document);
-        bool InitializeStructType(const rapidjson::Document& document);
-        bool InitializeFlagType(const rapidjson::Document& document);
-        bool Initialize(const std::string& json_str);
+        void InitializeAdditionalType(const CRapidJsonWrapper& document);
+        void InitializeStructType(const CRapidJsonWrapper& document);
+        void InitializeFlagType(const CRapidJsonWrapper& document);
+        bool Initialize(const std::string_view& json_str);
 
     private:
         bool AddNewType(const IDENPAIR& delay_pair) const;
-        bool AddDelayedType(const std::pair<std::string, std::string>& delay_pair);
-        bool AddDelayedStruct(const std::pair<std::string, std::shared_ptr<CStructObject>>& delay_pair);
+        bool AddDelayedType(const DELTPAIR& delay_pair);
+        bool AddDelayedStruct(const DELSPAIR& delay_pair);
         void ProcessingDelayTypes();
         void ProcessingDelayType();
         void ProcessingDelayStruct();
         bool ProcessingDelayTypes(const std::string& name);
+        bool ProcessingDelayType(const DELTPAIR& pair);
         bool ProcessingDelayType(const std::string& name);
+        bool ProcessingDelayStruct(const DELSPAIR& pair);
         bool ProcessingDelayStruct(const std::string& name);
 
         bool m_bValid;

@@ -33,25 +33,31 @@ namespace cchips {
     {
     public:
         // save base header information
-        typedef struct _HipsInfo {
+        using _cfg_mode = enum {
+            mode_normal = 0,
+            mode_verifier = 1,
+        };
+        using _hips_info = struct {
             std::string Name;
             std::string Version;
             std::string CreateDate;
             std::string Description;
-        }HipsInfo, *PHipsInfo;
+        };
 
-        CHipsCfgObject() : m_bValid(false) { }
+        CHipsCfgObject(_cfg_mode mode = mode_normal) : m_bValid(false), m_cfg_mode(mode) { }
         ~CHipsCfgObject() = default;
 
-        bool InitializeFlagsObjects(const HMODULE handle, const rapidjson::Document& document); // initialize flags array.
-        bool InitializeSignsObjects(const HMODULE handle, const rapidjson::Document& document); // initialize sigs array.
-        bool InitializeWmisObjects(const HMODULE handle, const rapidjson::Document& document); // initialize wmis array.
-        bool InitializeComsObjects(const HMODULE handle, const rapidjson::Document& document); // initialize coms array.
-        bool Initialize(const std::string& json_str);
+        bool InitializeFlagsObjects(const HMODULE handle, const CRapidJsonWrapper& document); // initialize flags array.
+        bool InitializeSignsObjects(const HMODULE handle, const CRapidJsonWrapper& document); // initialize sigs array.
+        bool InitializeWmisObjects(const HMODULE handle, const CRapidJsonWrapper& document); // initialize wmis array.
+        bool InitializeComsObjects(const HMODULE handle, const CRapidJsonWrapper& document); // initialize coms array.
+        bool Initialize(const std::string_view& json_str);
+        void SetCfgMode(_cfg_mode mode = mode_verifier) { m_cfg_mode = mode; }
         static const int InvalidOrdinal = -1;
     private:
         bool m_bValid;
-        HipsInfo m_Info;
+        _cfg_mode m_cfg_mode;
+        _hips_info m_Info;
         std::vector<std::unique_ptr<CSigsCfgObject>> m_SigsObjects;
         std::vector<std::unique_ptr<CComsCfgObject>> m_ComsObjects;
         std::vector<std::unique_ptr<CWmisCfgObject>> m_WmisObjects;

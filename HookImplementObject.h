@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <string>
 #include <vector>
+#include <execution>
 #include "HipsCfgObject.h"
 #include "SigsObject.h"
 #include "MinHook.h"
@@ -12,6 +13,7 @@
 #include "asmfunction.h"
 #include "ExceptionThrow.h"
 #include "drivermgr.h"
+#include "ntapi.h"
 
 namespace cchips {
 
@@ -181,20 +183,18 @@ namespace cchips {
             m_bValid(false), m_benable(false), m_configObject(nullptr), m_drivermgr(nullptr), m_bwmi_success(false) {
         }//for hook wmi methods
         ~CHookImplementObject() {
-            //if (m_threadTlsIdx != TLS_OUT_OF_INDEXES)
-            //    TlsFree(m_threadTlsIdx);
-            //if (m_bValid)
-            //{
-            //    DisableAllApis();
-            //    UnhookProcessing();
-            //    MH_Uninitialize();
-            //    CoUninitialize();
-            //}
+            if (m_bValid)
+            {
+                DisableAllApis();
+                UnhookProcessing();
+                MH_Uninitialize();
+            }
             //waiting all __hook_node->shared_count == 0
         }
-        using CoInitializeEx_Define = HRESULT(__stdcall*)(LPVOID pvReserved, DWORD dwCoInit);
-        using CoCreateInstance_Define = HRESULT (__stdcall*)(REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext, REFIID riid, LPVOID *ppv);
-        using CoSetProxyBlanket_Define = HRESULT(__stdcall*) (IUnknown *pProxy, DWORD dwAuthnSvc, DWORD dwAuthzSvc, OLECHAR *pServerPrincName, DWORD dwAuthnLevel, DWORD dwImpLevel, RPC_AUTH_IDENTITY_HANDLE pAuthInfo, DWORD dwCapabilities);
+        using LdrRegisterDllNotification_Define = NTSTATUS (WINAPI*)(ULONG Flags, LDR_DLL_NOTIFICATION_FUNCTION LdrDllNotificationFunction, VOID *Context, VOID **Cookie);
+        using CoCreateInstance_Define = HRESULT (WINAPI*)(REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext, REFIID riid, LPVOID *ppv);
+        using CoInitializeSecurity_Define = HRESULT(WINAPI*)(PSECURITY_DESCRIPTOR pSecDesc, LONG cAuthSvc, SOLE_AUTHENTICATION_SERVICE *asAuthSvc, void *pReserved1, DWORD dwAuthnLevel, DWORD dwImpLevel, void *pAuthList, DWORD dwCapabilities, void *pReserved3);
+        using CoSetProxyBlanket_Define = HRESULT(WINAPI*) (IUnknown *pProxy, DWORD dwAuthnSvc, DWORD dwAuthzSvc, OLECHAR *pServerPrincName, DWORD dwAuthnLevel, DWORD dwImpLevel, RPC_AUTH_IDENTITY_HANDLE pAuthInfo, DWORD dwCapabilities);
         using IEnumWbemClassObject_Next_Define = HRESULT(*)(IEnumWbemClassObject* This, long lTimeout, ULONG uCount, IWbemClassObject **apObjects, ULONG *puReturned);
         using IWbemClassObject_Get_Define = HRESULT(*)(IWbemClassObject* This, LPCWSTR wszName, long lFlags, VARIANT *pVal, long *pType, long *plFlavor);
         using IWbemClassObject_Put_Define = HRESULT(*)(IWbemClassObject* This, LPCWSTR wszName, long lFlags, VARIANT *pVal, long Type);
@@ -217,21 +217,16 @@ namespace cchips {
             std::shared_ptr<CFunction> function;
             std::shared_ptr<CHookImplementObject> hook_implement_object;
             void* orgin_api_implfunc;
+            void* ppTarget;
         };
 
         using ole32_api_define = struct {
-            CoInitializeEx_Define coinitializeex_func;
             CoCreateInstance_Define cocreateinstance_func;
+            CoInitializeSecurity_Define coinitializesecurity_func;
             CoSetProxyBlanket_Define cosetproxyblanket_func;
         };
-
-        using wmi_methods_define = struct {
-            IEnumWbemClassObject_Next_Define enumwbem_next_func;
-            IWbemClassObject_Get_Define wbem_get_func;
-            IWbemClassObject_Put_Define wbem_put_func;
-            IWbemClassObject_Next_Define wbem_next_func;
-            IWbemServices_ExecMethod_Define wbem_execmethod_func;
-            IWbemServices_ExecQuery_Define wbem_execquery_func;
+        using notification_api_define = struct {
+            LdrRegisterDllNotification_Define ldrregisterdllnotification_func;
         };
 
         using error_offset_define = struct {
@@ -245,39 +240,42 @@ namespace cchips {
         };
 
         bool InitializeErrorOffset();
-        bool Initialize(std::shared_ptr<CHipsCfgObject>& configObject);
+        bool Initialize(std::shared_ptr<CHipsCfgObject> configObject);
         static processing_status Preprocessing(CHookImplementObject::hook_node* node_elem, PVOID param_addr, int& params_size, ULONG_PTR& func_return, DWORD entry_count, CLogHandle** __log);
         static processing_status Postprocessing(CHookImplementObject::hook_node* node_elem, PVOID param_addr, int& params_size, ULONG_PTR& func_return, DWORD entry_count, CLogHandle** __log);
 #ifdef _AMD64_
         static bool ForwardPropagationArgs(ULONG_PTR* new_addr, CHookImplementObject::REGISTERS* backup_regs, std::shared_ptr<CFunction> function, void* addr);
 #endif
         void AddFilterThread(std::thread::id thread_id) { 
-            auto x_safe_filter_id = xlock_safe_ptr(m_filterids);
-            if (x_safe_filter_id->find(thread_id) != x_safe_filter_id->end())
+            std::lock_guard<std::recursive_mutex> lock_guard(m_filterids_mutex);
+            if (m_filterids.find(thread_id) != m_filterids.end())
                 return;
-            (*x_safe_filter_id)[thread_id] = filter_threadid;
+            m_filterids[thread_id] = filter_threadid;
             return;
         }
         void DelFilterThread(std::thread::id thread_id) {
-            auto x_safe_filter_id = xlock_safe_ptr(m_filterids);
-            if (x_safe_filter_id->find(thread_id) != x_safe_filter_id->end())
+            std::lock_guard<std::recursive_mutex> lock_guard(m_filterids_mutex);
+            if (m_filterids.find(thread_id) != m_filterids.end())
             {
-                if ((*x_safe_filter_id)[thread_id] == filter_threadid)
-                    x_safe_filter_id->erase(thread_id);
+                if (m_filterids[thread_id] == filter_threadid)
+                    m_filterids.erase(thread_id);
             }
             return;
         }
         bool IsFilterThread(std::thread::id thread_id) {
-            auto s_safe_filter_id = slock_safe_ptr(m_filterids);
-            if (s_safe_filter_id->find(thread_id) != s_safe_filter_id->end())
+            std::lock_guard<std::recursive_mutex> lock_guard(m_filterids_mutex);
+            if (m_filterids.find(thread_id) != m_filterids.end())
                 return true;
             return false;
         }
         const std::unique_ptr< CDriverMgr>& GetDriverMgr() const { return m_drivermgr; }
+        MH_STATUS HookApi(hook_node& node);
+        void RemoveApi(hook_node& node);
         bool HookAllApis();
         bool EnableAllApis() {
             if (!m_benable)
             {
+                m_disable_hook = false;
                 if (MH_EnableHook(MH_ALL_HOOKS) == MH_OK)
                     m_benable = true;
             }
@@ -286,30 +284,30 @@ namespace cchips {
         bool DisableAllApis() {
             if (m_benable)
             {
+                m_disable_hook = true;
                 if (MH_DisableHook(MH_ALL_HOOKS) == MH_OK)
                     m_benable = false;
             }
             return !m_benable;
         }
+        bool IsDisableHook() const { return m_disable_hook.load(); }
         auto& GetHookNodeList() { return m_hookNodeList; }
         auto& GetDelayNodeList() { return m_delayNodeList; }
+        auto& GetRecursiveMutex() { return m_recursive_mutex; }
         const LPVOID GetHookImplementFunction() const { return m_hookImplementFunction; }
         const bool IsTopCallInThread() const {
-            ULONG_PTR Index = reinterpret_cast<ULONG_PTR>(TlsGetValue(m_threadTlsIdx));
-            if (Index == 0)
+            if (m_threadTlsCount == 0)
                 return true;
             else
                 return false;
         }
         const ULONG_PTR GetTlsValueForThreadIdx() const {
-            ULONG_PTR Index = reinterpret_cast<ULONG_PTR>(TlsGetValue(m_threadTlsIdx));
-            TlsSetValue(m_threadTlsIdx, reinterpret_cast<LPVOID>(Index + 1));
-            return Index;
+            return m_threadTlsCount++;
         }
         const ULONG_PTR ReleaseTlsValueForThreadIdx() const {
-            ULONG_PTR Index = reinterpret_cast<ULONG_PTR>(TlsGetValue(m_threadTlsIdx));
-            if (Index > 0) TlsSetValue(m_threadTlsIdx, reinterpret_cast<LPVOID>(Index - 1));
-            return Index;
+            if(m_threadTlsCount > 0)
+                return m_threadTlsCount--;
+            return 0;
         }
         void GetLastError(last_error_define& error) { 
             error.last_error = 0;
@@ -328,48 +326,58 @@ namespace cchips {
         bool HookProcessing();
         bool UnhookProcessing();
         bool GetbWmiProcessing() { return m_bwmi_success; }
+        void ClearWmiInterfaceDefine() { m_wmi_interface_define.clear(); }
 
+        static void CALLBACK detour_ldrDllNotification(ULONG reason, const LDR_DLL_NOTIFICATION_DATA *notification, void *param);
         // define static detour function on here.
-        static processing_status WINAPI detour_loadLibraryA(detour_node* node, LPCSTR lpLibFileName);
-        static processing_status WINAPI detour_loadLibraryW(detour_node* node, LPCWSTR lpLibFileName);
-        static processing_status WINAPI detour_loadLibraryExA(detour_node* node, LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
-        static processing_status WINAPI detour_loadLibraryExW(detour_node* node, LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
         static processing_status WINAPI detour_ntQueryInformationProcess(detour_node* node, HANDLE ProcessHandle, DWORD ProcessInformationClass, LPVOID ProcessInformation, ULONG ProcessInformationLength, ULONG* ReturnLength);
         static processing_status WINAPI detour_coInitializeEx(detour_node* node, LPVOID pvReserved, DWORD dwCoInit);
-
+        static processing_status WINAPI detour_coInitializeSecurity(detour_node* node, PSECURITY_DESCRIPTOR pSecDesc, LONG cAuthSvc, SOLE_AUTHENTICATION_SERVICE *asAuthSvc, void *pReserved1, DWORD dwAuthnLevel, DWORD dwImpLevel, void *pAuthList, DWORD dwCapabilities, void *pReserved3);
+        static processing_status WINAPI detour_coUninitialize(detour_node* node);
+        static processing_status WINAPI detour_getProcAddress(detour_node* node, HMODULE hModule, LPCSTR  lpProcName);
         // define static detour for wmi object
-        bool HookWmiObjectMethods(int count, bool bInit = true);
         static processing_status STDMETHODCALLTYPE detour_IEnumWbemClassObject_Next(detour_node* node, IEnumWbemClassObject* This, long lTimeout, ULONG uCount, IWbemClassObject **apObjects, ULONG *puReturned);
         static processing_status STDMETHODCALLTYPE detour_IWbemClassObject_Get(detour_node* node, IWbemClassObject* This, LPCWSTR wszName, long lFlags, VARIANT *pVal, long *pType, long *plFlavor);
         static processing_status STDMETHODCALLTYPE detour_IWbemClassObject_Put(detour_node* node, IWbemClassObject* This, LPCWSTR wszName, long lFlags, VARIANT *pVal, long Type);
         static processing_status STDMETHODCALLTYPE detour_IWbemClassObject_Next(detour_node* node, IWbemClassObject* This, long lFlags, BSTR *strName, VARIANT *pVal, long *pType, long *plFlavor);
         static processing_status STDMETHODCALLTYPE detour_IWbemServices_ExecMethod(detour_node* node, IWbemServices* This, const BSTR strObjectPath, const BSTR strMethodName, long lFlags, IWbemContext *pCtx, IWbemClassObject *pInParams, IWbemClassObject **ppOutParams, IWbemCallResult **ppCallResult);
         static processing_status STDMETHODCALLTYPE detour_IWbemServices_ExecQuery(detour_node* node, IWbemServices* This, const BSTR strQueryLanguage, const BSTR strQuery, long lFlags, IWbemContext *pCtx, IEnumWbemClassObject **ppEnum);
+        static processing_status STDMETHODCALLTYPE detour_IWbemServices_Post_ExecQuery(detour_node* node, IWbemServices* This, const BSTR strQueryLanguage, const BSTR strQuery, long lFlags, IWbemContext *pCtx, IEnumWbemClassObject **ppEnum);
     private:
-        const static int IEnumWbemClassObject_Next_Vtbl_Index = 4;
-        const static int IWbemServices_ExecQuery_Vtbl_Index = 20;
-        const static int IWbemServices_ExecMethod_Vtbl_Index = 24;
-        const static int IWbemClassObject_Get_Vtbl_Index = 4;
-        const static int IWbemClassObject_Put_Vtbl_Index = 5;
-        const static int IWbemClassObject_Next_Vtbl_Index = 9;
-        int GetWmiMethodsDefineSize() { return (sizeof(wmi_methods_define) / sizeof(PVOID)); }
-        bool InitializeWmiMethodsDefine(bool bInit = true);
+        MH_STATUS HookNormalApi(hook_node& node);
+        MH_STATUS HookSpecialApi(hook_node& node);
+        void RemoveNormalApi(hook_node& node);
+        void RemoveSpecialApi(hook_node& node);
+        bool InitializeWmiMethodsDefine(bool bdelayed = true);
+        bool InitializeNotificationDefine() {
+            if (m_notification_api_define.ldrregisterdllnotification_func) {
+                PVOID Cookie = nullptr;
+                NTSTATUS status = m_notification_api_define.ldrregisterdllnotification_func(0, detour_ldrDllNotification, nullptr, &Cookie);
+                if (status >= 0)
+                    return true;
+            }
+            return false;
+        }
 
-        std::atomic_bool m_bValid;
+        bool m_bValid;
         std::atomic_bool m_benable;
-        std::atomic_bool m_bwmi_success;
+        static std::atomic_bool m_disable_hook;
+        std::atomic_flag m_bwmi_processing = ATOMIC_FLAG_INIT;
+        bool m_bwmi_success;
         static const LPVOID m_hookImplementFunction;
         // the tls index for implement the function of re-entry calling check in the same thread
-        static const DWORD m_threadTlsIdx;
+        static thread_local ULONG_PTR m_threadTlsCount;
         std::shared_ptr<CHipsCfgObject> m_configObject;
         std::vector<hook_node> m_hookNodeList;
-        wmi_methods_define m_wmi_methods_define = {};
+        std::map<std::string, ULONG_PTR*> m_wmi_interface_define;
         ole32_api_define m_ole32_api_define = {};
-        sf::contfree_safe_ptr<std::map<std::string, std::vector<int>>> m_delayNodeList;
-        sf::contfree_safe_ptr<std::map<std::thread::id, _filter_type>> m_filterids;
+        notification_api_define m_notification_api_define = {};
+        std::recursive_mutex m_recursive_mutex;
+        std::map<std::string, std::vector<int>> m_delayNodeList;
+        std::recursive_mutex m_filterids_mutex;
+        std::map<std::thread::id, _filter_type> m_filterids;
         static const std::unique_ptr<CExceptionObject> m_exceptionObject;
         std::unique_ptr< CDriverMgr> m_drivermgr;
-        std::mutex m_init_wmi_mutex;
         error_offset_define m_error_offset = {};
     };
 
