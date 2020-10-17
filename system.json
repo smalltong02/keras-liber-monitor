@@ -90,6 +90,10 @@
       "ValueName"
     ],
 
+    "PreLog": [
+      "ValueName->Buffer"
+    ],
+
     "PreCheck": {
       "0": {
         "Check": {
