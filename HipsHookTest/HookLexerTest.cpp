@@ -212,12 +212,12 @@ TEST_F(HookLexerTest, CLexerTy_AddIdentifier_Test)
 {
     std::shared_ptr<CObObject> ob_ptr = CTypeSymbolTableObject::GetInstance().GetTypeSymbolReference("HANDLE");
     ASSERT_TRUE(ob_ptr != nullptr);
-    std::shared_ptr<CObObject> hwnd_ptr = std::make_shared<CMetadataTypeObject>("HWND", ob_ptr);
+    std::shared_ptr<CObObject> hwnd_ptr = std::make_shared<CMetadataTypeObject>("HWND1", ob_ptr);
     ASSERT_TRUE(hwnd_ptr != nullptr);
-    ASSERT_TRUE(CLexerTy::GetInstance().AddIdentifier(IDENPAIR("HWND", hwnd_ptr)));
-    auto hwnd_ref = CLexerTy::GetInstance().GetIdentifier("HWND");
+    ASSERT_TRUE(CLexerTy::GetInstance().AddIdentifier(IDENPAIR("HWND1", hwnd_ptr)));
+    auto hwnd_ref = CLexerTy::GetInstance().GetIdentifier("HWND1");
     EXPECT_NE(hwnd_ref, nullptr);
-    EXPECT_EQ(hwnd_ref->GetName(), "HWND");
+    EXPECT_EQ(hwnd_ref->GetName(), "HWND1");
     EXPECT_EQ(hwnd_ref->GetObSize(), sizeof(HANDLE));
     EXPECT_EQ(hwnd_ref->GetObType(), CObObject::ob_basetype);
 }

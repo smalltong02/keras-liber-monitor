@@ -316,6 +316,7 @@
     </ClCompile>
     <ClCompile Include="drivermgr.cpp" />
     <ClCompile Include="ExceptionThrow.cpp" />
+    <ClCompile Include="exploitimpl.cpp" />
     <ClCompile Include="FlagsObject.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugger|Win32'">NotUsing</PrecompiledHeader>
@@ -371,6 +372,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugger|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="PassManager.cpp" />
     <ClCompile Include="R3LogObject.cpp" />
     <ClCompile Include="SigsObject.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
@@ -380,6 +382,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugger|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="UniversalObject.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="Win32EnumWbemClassObject.cpp" />
     <ClCompile Include="Win32WbemClassObject.cpp" />
@@ -410,6 +413,7 @@
     <ClInclude Include="deffeature.h" />
     <ClInclude Include="drivermgr.h" />
     <ClInclude Include="ExceptionThrow.h" />
+    <ClInclude Include="exploitmpl.h" />
     <ClInclude Include="FlagsObject.h" />
     <ClInclude Include="g-re2\re2\bitmap256.h" />
     <ClInclude Include="g-re2\re2\filtered_re2.h" />
@@ -443,6 +447,8 @@
     <ClInclude Include="MetadataTypeImpl.h" />
     <ClInclude Include="ntapi.h" />
     <ClInclude Include="ParsingImpl.h" />
+    <ClInclude Include="PassManager.h" />
+    <ClInclude Include="PassStructure.h" />
     <ClInclude Include="pipemessage\PipeClient.h" />
     <ClInclude Include="pipemessage\PipeJSONClient.h" />
     <ClInclude Include="pipemessage\PipeMessager.h" />
@@ -454,6 +460,7 @@
     <ClInclude Include="SpecialLog.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="UniversalObject.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="Win32EnumWbemClassObject.h" />
     <ClInclude Include="Win32WbemClassObject.h" />

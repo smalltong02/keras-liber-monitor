@@ -18,7 +18,7 @@ namespace cchips {
     class CLogEntry;
     class CLogObject;
     extern std::unique_ptr<CLogObject> g_log_object;
-
+    
     class CLpcLocalObject : public CSocketObject
     {
     public:

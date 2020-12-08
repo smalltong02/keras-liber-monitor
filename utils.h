@@ -9,6 +9,12 @@
 #include <any>
 #include <setjmp.h>
 
+#define ASM_CALL_RELATIVE   0xE8
+#define ASM_JMP_RELATIVE    0xE9
+#define ASM_CALL_ABSOLUTE   0x15FF
+#define ASM_JMP_ABSOLUTE    0x25FF
+#define ASM_CALL_REGISTRY   0xFF
+
 using tls_check_struct = struct {
     jmp_buf jb;
     bool active;
@@ -27,6 +33,9 @@ bool SetVariantValue(VARIANT& Value, std::any& anyvalue);
 void tls_check_index_init();
 tls_check_struct* check_get_tls();
 void check_return();
+void WalkFrameCurrentChain(std::vector<PVOID>& frame_chain);
+VOID GetStackRange(ULONG_PTR* base, ULONG_PTR* limit);
+int GetCallOpSize(const void* addr);
 
 template <typename Func>
 inline void getExecutionTime(const std::string& title, Func func) {
@@ -744,10 +753,12 @@ inline In split_algorithm(In it, In end_it, Out out_it, T split_val,
 
 #ifdef _X86_
 #define TLS_TEB 0x18
+#define TLS_TIB 0x2C
 #define TLS_PEB 0x30
 #endif
 #ifdef _AMD64_
 #define TLS_TEB 0x30
+#define TLS_TIB 0x58
 #define TLS_PEB 0x60
 #endif
 

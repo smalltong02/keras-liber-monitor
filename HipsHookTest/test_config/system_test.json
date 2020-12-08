@@ -322,7 +322,7 @@
     "Signature": {
       "Library": "Kernel32.dll",
       "Return": "BOOL",
-      "Feature": "P64"
+      "Feature": "P67"
     },
 
     "Parameters": {
@@ -353,6 +353,485 @@
           ]
         }
       }
+    }
+  },
+
+  "VirtualAlloc": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "LPVOID",
+      "Feature": "P68"
+    },
+
+    "Parameters": {
+      "lpAddress": "LPVOID",
+      "dwSize": "ULONG_PTR",
+      "flAllocationType": "ALLOCTYPE",
+      "flProtect": "PROTECTTYPE"
+    }
+  },
+
+  "VirtualAllocEx": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "LPVOID",
+      "Feature": "P69"
+    },
+
+    "Parameters": {
+      "hProcess": "HANDLE",
+      "lpAddress": "LPVOID",
+      "dwSize": "ULONG_PTR",
+      "flAllocationType": "ALLOCTYPE",
+      "flProtect": "PROTECTTYPE"
+    }
+  },
+
+  "VirtualProtectEx": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "BOOL",
+      "Feature": "P70"
+    },
+
+    "Parameters": {
+      "hProcess": "HANDLE",
+      "lpAddress": "LPVOID",
+      "dwSize": "ULONG_PTR",
+      "flNewProtect": "PROTECTTYPE",
+      "lpflOldProtect": "LPPROTECTTYPE"
+    }
+  },
+
+  "DialogBoxIndirectParamA": {
+    "Signature": {
+      "Library": "User32.dll",
+      "Return": "LPVOID",
+      "Feature": "P71"
+    },
+
+    "Parameters": {
+      "hInstance": "HINSTANCE",
+      "hDialogTemplate": "LPVOID",
+      "hWndParent": "HANDLE",
+      "lpDialogFunc": "LPVOID",
+      "dwInitParam": "LPVOID"
+    }
+  },
+
+  "DialogBoxIndirectParamW": {
+    "Signature": {
+      "Library": "User32.dll",
+      "Return": "LPVOID",
+      "Feature": "P71"
+    },
+
+    "Parameters": {
+      "hInstance": "HINSTANCE",
+      "hDialogTemplate": "LPVOID",
+      "hWndParent": "HANDLE",
+      "lpDialogFunc": "LPVOID",
+      "dwInitParam": "LONG_PTR"
+    }
+  },
+
+  "DialogBoxParamA": {
+    "Signature": {
+      "Library": "User32.dll",
+      "Return": "LPVOID",
+      "Feature": "P72"
+    },
+
+    "Parameters": {
+      "hInstance": "HINSTANCE",
+      "lpTemplateName": "LPCSTR",
+      "hWndParent": "HANDLE",
+      "lpDialogFunc": "LPVOID",
+      "dwInitParam": "LPVOID"
+    }
+  },
+
+  "DialogBoxParamW": {
+    "Signature": {
+      "Library": "User32.dll",
+      "Return": "LPVOID",
+      "Feature": "P72"
+    },
+
+    "Parameters": {
+      "hInstance": "HINSTANCE",
+      "lpTemplateName": "LPCWSTR",
+      "hWndParent": "HANDLE",
+      "lpDialogFunc": "LPVOID",
+      "dwInitParam": "LPVOID"
+    }
+  },
+
+  "CreateProcessA": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "BOOL",
+      "Feature": "P73"
+    },
+
+    "Parameters": {
+      "lpApplicationName": "LPCSTR",
+      "lpCommandLine": "LPSTR",
+      "lpProcessAttributes": "LPVOID",
+      "lpThreadAttributes": "LPVOID",
+      "bInheritHandles": "BOOL",
+      "dwCreationFlags": "DWORD",
+      "lpEnvironment": "LPVOID",
+      "lpCurrentDirectory": "LPCSTR",
+      "lpStartupInfo": "LPVOID",
+      "lpProcessInformation": "LPVOID"
+    }
+  },
+
+  "CreateProcessW": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "BOOL",
+      "Feature": "P74"
+    },
+
+    "Parameters": {
+      "lpApplicationName": "LPCWSTR",
+      "lpCommandLine": "LPWSTR",
+      "lpProcessAttributes": "LPVOID",
+      "lpThreadAttributes": "LPVOID",
+      "bInheritHandles": "BOOL",
+      "dwCreationFlags": "DWORD",
+      "lpEnvironment": "LPVOID",
+      "lpCurrentDirectory": "LPCWSTR",
+      "lpStartupInfo": "LPVOID",
+      "lpProcessInformation": "LPVOID"
+    }
+  },
+
+  "CreateProcessInternalW": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "BOOL",
+      "Feature": "P75"
+    },
+
+    "Parameters": {
+      "hToken": "HANDLE",
+      "lpApplicationName": "LPCWSTR",
+      "lpCommandLine": "LPWSTR",
+      "lpProcessAttributes": "LPVOID",
+      "lpThreadAttributes": "LPVOID",
+      "bInheritHandles": "BOOL",
+      "dwCreationFlags": "DWORD",
+      "lpEnvironment": "LPVOID",
+      "lpCurrentDirectory": "LPCWSTR",
+      "lpStartupInfo": "LPVOID",
+      "lpProcessInformation": "LPVOID",
+      "hNewToken": "LPHANDLE"
+    }
+  },
+
+  "CreateFileA": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "BOOL",
+      "Feature": "P76"
+    },
+
+    "Parameters": {
+      "lpFileName": "LPCSTR",
+      "dwDesiredAccess": "DWORD",
+      "dwShareMode": "DWORD",
+      "lpSecurityAttributes": "LPVOID",
+      "dwCreationDisposition": "DWORD",
+      "dwFlagsAndAttributes": "DWORD",
+      "hTemplateFile": "HANDLE"
+    }
+  },
+
+  "CreateFileW": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "BOOL",
+      "Feature": "P76"
+    },
+
+    "Parameters": {
+      "lpFileName": "LPCWSTR",
+      "dwDesiredAccess": "DWORD",
+      "dwShareMode": "DWORD",
+      "lpSecurityAttributes": "LPVOID",
+      "dwCreationDisposition": "DWORD",
+      "dwFlagsAndAttributes": "DWORD",
+      "hTemplateFile": "HANDLE"
+    }
+  },
+
+  "CopyFileA": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "BOOL",
+      "Feature": "P77"
+    },
+
+    "Parameters": {
+      "lpExistingFileName": "LPCSTR",
+      "lpNewFileName": "LPCSTR",
+      "bFailIfExists": "BOOL"
+    }
+  },
+
+  "CopyFileW": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "BOOL",
+      "Feature": "P77"
+    },
+
+    "Parameters": {
+      "lpExistingFileName": "LPCWSTR",
+      "lpNewFileName": "LPCWSTR",
+      "bFailIfExists": "BOOL"
+    }
+  },
+
+  "ShellExecuteA": {
+    "Signature": {
+      "Library": "Shell32.dll",
+      "Return": "HINSTANCE",
+      "Feature": "P78"
+    },
+
+    "Parameters": {
+      "hwnd": "HWND",
+      "lpOperation": "LPCSTR",
+      "lpFile": "LPCSTR",
+      "lpParameters": "LPCSTR",
+      "lpDirectory": "LPCSTR",
+      "nShowCmd": "INT"
+    }
+  },
+
+  "ShellExecuteW": {
+    "Signature": {
+      "Library": "Shell32.dll",
+      "Return": "HINSTANCE",
+      "Feature": "P78"
+    },
+
+    "Parameters": {
+      "hwnd": "HWND",
+      "lpOperation": "LPCWSTR",
+      "lpFile": "LPCWSTR",
+      "lpParameters": "LPCWSTR",
+      "lpDirectory": "LPCWSTR",
+      "nShowCmd": "INT"
+    }
+  },
+
+  "URLDownloadToFileA": {
+    "Signature": {
+      "Library": "Urlmon.dll",
+      "Return": "HRESULT",
+      "Feature": "P79"
+    },
+
+    "Parameters": {
+      "pCaller": "LPVOID",
+      "szURL": "LPCSTR",
+      "szFileName": "LPCSTR",
+      "dwReserved": "DWORD",
+      "lpfnCB": "LPVOID"
+    }
+  },
+
+  "URLDownloadToFileW": {
+    "Signature": {
+      "Library": "Urlmon.dll",
+      "Return": "HRESULT",
+      "Feature": "P79"
+    },
+
+    "Parameters": {
+      "pCaller": "LPVOID",
+      "szURL": "LPCWSTR",
+      "szFileName": "LPCWSTR",
+      "dwReserved": "DWORD",
+      "lpfnCB": "LPVOID"
+    }
+  },
+
+  "URLDownloadToCacheFileA": {
+    "Signature": {
+      "Library": "Urlmon.dll",
+      "Return": "HRESULT",
+      "Feature": "P80"
+    },
+
+    "Parameters": {
+      "lpUnkcaller": "LPVOID",
+      "szURL": "LPCSTR",
+      "szFileName": "LPCSTR",
+      "cchFileName": "DWORD",
+      "dwReserved": "DWORD",
+      "pBSC": "LPVOID"
+    }
+  },
+
+  "URLDownloadToCacheFileW": {
+    "Signature": {
+      "Library": "Urlmon.dll",
+      "Return": "HRESULT",
+      "Feature": "P80"
+    },
+
+    "Parameters": {
+      "lpUnkcaller": "LPVOID",
+      "szURL": "LPCSTR",
+      "szFileName": "LPCWSTR",
+      "cchFileName": "DWORD",
+      "dwReserved": "DWORD",
+      "pBSC": "LPVOID"
+    }
+  },
+
+  "WinExec": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "UINT",
+      "Feature": "P81"
+    },
+
+    "Parameters": {
+      "lpCmdLine": "LPCSTR",
+      "uCmdShow": "UINT"
+    }
+  },
+
+  "LoadLibraryA": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "HMODULE",
+      "Feature": "P82"
+    },
+
+    "Parameters": {
+      "lpLibFileName": "LPCSTR"
+    }
+  },
+
+  "LoadLibraryW": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "HMODULE",
+      "Feature": "P82"
+    },
+
+    "Parameters": {
+      "lpLibFileName": "LPCWSTR"
+    }
+  },
+
+  "LoadLibraryExA": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "HMODULE",
+      "Feature": "P83"
+    },
+
+    "Parameters": {
+      "lpLibFileName": "LPCSTR",
+      "hFile": "HANDLE",
+      "dwFlags": "DWORD"
+    }
+  },
+
+  "LoadLibraryExW": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "HMODULE",
+      "Feature": "P83"
+    },
+
+    "Parameters": {
+      "lpLibFileName": "LPCWSTR",
+      "hFile": "HANDLE",
+      "dwFlags": "DWORD"
+    }
+  },
+
+  "NtMapViewOfSection": {
+    "Signature": {
+      "Library": "ntdll.dll",
+      "Return": "NTSTATUS",
+      "Feature": "P84"
+    },
+
+    "Parameters": {
+      "SectionHandle": "HANDLE",
+      "ProcessHandle": "HANDLE",
+      "BaseAddress": "LPVOID*",
+      "ZeroBits": "ULONG",
+      "CommitSize": "ULONG",
+      "SectionOffset": "LPLARGE_INTEGER",
+      "ViewSize": "LPULONG",
+      "InheritDisposition": "DWORD",
+      "AllocationType": "ULONG",
+      "Protect": "ULONG"
+    }
+  },
+
+  "WSAStartup": {
+    "Signature": {
+      "Library": "ws2_32.dll",
+      "Return": "INT",
+      "Feature": "P88"
+    },
+
+    "Parameters": {
+      "wVersionRequired": "WORD",
+      "lpWSAData": "LPVOID"
+    }
+  },
+
+  "socket": {
+    "Signature": {
+      "Library": "ws2_32.dll",
+      "Return": "SOCKET",
+      "Feature": "P89"
+    },
+
+    "Parameters": {
+      "af": "INT",
+      "type": "INT",
+      "protocol": "INT"
+    }
+  },
+
+  "connect": {
+    "Signature": {
+      "Library": "ws2_32.dll",
+      "Return": "INT",
+      "Feature": "P90"
+    },
+
+    "Parameters": {
+      "s": "SOCKET",
+      "name": "LPVOID",
+      "namelen": "INT"
+    }
+  },
+
+  "SetProcessDEPPolicy": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "BOOL",
+      "Feature": "P91"
+    },
+
+    "Parameters": {
+      "dwFlags": "DWORD"
     }
   }
 }

@@ -629,6 +629,7 @@
     <None Include="test_config\services_test.json" />
     <None Include="test_config\system_test.json" />
     <None Include="test_config\types_test.json" />
+    <None Include="test_config\vbe_test.json" />
     <None Include="test_config\wmi_test.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

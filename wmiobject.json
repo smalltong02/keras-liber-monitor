@@ -299,6 +299,14 @@
         "Modify": {
           "DeviceId": "%var1 = 'PCI\\\\VEN_0033&DEV_PPEF&SUBSYS_C7231028&REV_A1\\4&2555DBDC&0&0208'"
         }
+      },
+      "1": {
+        "Check": {
+          "Name": "(%var0 =~ '.*82801FB.*$') || (%var0 =~ '.*82441FX.*$') || %var0 =~ ('.*82371SB.*$')"
+        },
+        "Modify": {
+          "Name": "%var1 = 'General Device'"
+        }
       }
     }
   },

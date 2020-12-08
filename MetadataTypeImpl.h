@@ -133,8 +133,8 @@ namespace cchips {
             type_invalid = 0, type_void, type_byte, type_bool, type_char, type_uchar, type_int16, type_uint16, type_short,
             type_ushort, type_word, type_wchar, type_int, type_uint, type_long, type_long_ptr, type_ulong, type_ulong_ptr,
             type_dword, type_dword_ptr, type_float, type_int64, type_uint64, type_longlong, type_ulonglong, type_qword,
-            type_double, type_large_integer, type_ularge_integer, type_lpvoid, type_hmodule, type_hresult, type_schandle,
-            type_ntstatus, type_string, type_wstring, type_handle, type_guid, type_max,
+            type_double, type_large_integer, type_ularge_integer, type_lpvoid, type_hmodule, type_hinstance, type_hresult, 
+            type_schandle, type_ntstatus, type_string, type_wstring, type_handle, type_guid, type_max,
         };
 
         CBaseDef() : _base_def(type_invalid) {}

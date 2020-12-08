@@ -281,6 +281,27 @@ DWORD NativeFetchMovEaxImmOffset(const char* func)
     return 0;
 }
 
+int GetCallOpSize(const void* addr)
+{
+#define CALL_INSN_IDS(id) (id == X86_INS_CALL || id == X86_INS_LCALL)
+
+    int insn_size = 0;
+    if (!addr) return 0;
+    if (g_cap_error != CS_ERR_OK ||
+        g_capstone_handle == 0) return insn_size;
+
+    cs_insn *insn = nullptr;
+    size_t count =
+        cs_disasm_ex(g_capstone_handle, reinterpret_cast<const uint8_t*>(addr), 16, reinterpret_cast<uintptr_t>(addr), 1, &insn);
+    if (count == 0) return insn_size;
+    if (!insn) return insn_size;
+
+    if (CALL_INSN_IDS(insn->id))
+        insn_size = insn->size;
+    cs_free(insn, count);
+    return insn_size;
+}
+
 static DWORD g_tls_check_index = TLS_OUT_OF_INDEXES;
 
 void tls_check_index_init()
@@ -307,4 +328,33 @@ void check_return()
     if (tls->active != 0) {
         longjmp(tls->jb, 1);
     }
+}
+
+void WalkFrameCurrentChain(std::vector<PVOID>& frame_chain)
+{
+#define DEFAULT_CHAINS 100
+    frame_chain.clear();
+    using RtlWalkFrameChain_Define = ULONG(WINAPI*)(PVOID* chainArray, DWORD dwSize, ULONG Flags);
+    static RtlWalkFrameChain_Define rtlwalkframechain_func = reinterpret_cast<RtlWalkFrameChain_Define>(GetProcAddress(GetModuleHandle("ntdll"), "RtlWalkFrameChain"));
+    if (!rtlwalkframechain_func) return;
+    frame_chain.resize(DEFAULT_CHAINS);
+    DWORD dwChains = rtlwalkframechain_func(frame_chain.data(), DEFAULT_CHAINS, 0);
+    if (!dwChains) {
+        frame_chain.clear();
+        return;
+    }
+    frame_chain.resize(dwChains);
+    return;
+}
+
+VOID GetStackRange(ULONG_PTR* base, ULONG_PTR* limit)
+{
+    typedef struct TEB_ {
+        NT_TIB  tib;
+    } TEB;
+
+    TEB * teb = (TEB *)NtCurrentTeb();
+    if (!teb) return;
+    *base = (ULONG_PTR)teb->tib.StackBase;
+    *limit = (ULONG_PTR)teb->tib.StackLimit;
 }

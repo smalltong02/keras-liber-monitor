@@ -9,6 +9,7 @@
 #define IDR_JSONTYPE_TEST               107
 #define IDR_JSONSERVICES_TEST           108
 #define IDR_JSONWMI_TEST                109
+#define IDR_JSONVBE_TEST                110
 
 // Next default values for new objects
 // 

@@ -71,7 +71,7 @@ HRESULT STDMETHODCALLTYPE EnumWbemClassObjectNext(
         if (!log_handle) return hr;
         BEGIN_LOG("Duplicate_IEnumWbemClassObject_Next");
         LOGGING("Class", ObjectName);
-        cchips::CHookImplementObject::detour_node node = { nullptr, nullptr, 0, nullptr, nullptr, log_handle->GetHandle() };
+        cchips::CHookImplementObject::detour_node node = { nullptr, nullptr, nullptr, 0, nullptr, nullptr, log_handle->GetHandle() };
         if (process_duplicate_for_wmiobject(&node, This->lpVtbl->m_wmi_object, (IWbemClassObject**)apObjects, puReturned, LOGGER))
         {
             LOGGING("Duplicate", "Success");
