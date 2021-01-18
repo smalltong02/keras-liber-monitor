@@ -344,6 +344,32 @@ namespace cchips {
         return RemoveNormalApi(node);
     }
 
+    bool CHookImplementObject::ShouldbeHooked(const std::shared_ptr<CFunction>& function)
+    {
+        if (!function) return false;
+        if (!function->GetHooksProto()) return true;
+        if (function->GetHooksProto()->GetOsPlatform().length()) {
+            if (!CommonFuncsObject::IsMatchCurrentOS(function->GetHooksProto()->GetOsPlatform())) {
+                function->ClearHooksProto();
+                return false;
+            }
+        }
+        if (function->GetHooksProto()->GetProcessCategory().length()) {
+            if (!m_category_ob_ptr->IsMatchCategory(function->GetHooksProto()->GetProcessCategory())) {
+                function->ClearHooksProto();
+                return false;
+            }
+        }
+        if (function->GetHooksProto()->GetProcessMode().length()) {
+            if (!CommonFuncsObject::IsMatchProcType(function->GetHooksProto()->GetProcessMode())) {
+                function->ClearHooksProto();
+                return false;
+            }
+        }
+        function->ClearHooksProto();
+        return true;
+    }
+
     bool CHookImplementObject::HookAllApis()
     {
         ASSERT(m_bValid);
@@ -352,38 +378,42 @@ namespace cchips {
         if (!InitializeNotificationDefine())
             return false;
         int count = 0;
-#ifdef _X86_
+
 #define RTL_HEAP_FUNCTION_COUNTS 3
-#endif
-#ifdef _AMD64_
-#define RTL_HEAP_FUNCTION_COUNTS 0
-#endif
+
         m_hookNodeList.resize(GetFunctionCounts() + RTL_HEAP_FUNCTION_COUNTS, hook_node({}));
 
         std::for_each(GetFunctions().begin(), GetFunctions().end(), [&](const auto& func) {
-            m_hookNodeList[count].bdelayed = false;
-            m_hookNodeList[count].orgin_api_implfunc = nullptr;
-            m_hookNodeList[count].hook_implement_object = shared_from_this();
-            m_hookNodeList[count].function = func.second;
 
-            if (MH_STATUS status = HookApi(m_hookNodeList[count]); status == MH_ERROR_MODULE_NOT_FOUND)
-            {
-                // delayed hook;
-                m_hookNodeList[count].bdelayed = true;
-                if(!(*m_hookNodeList[count].function).GetClassProto() || (*m_hookNodeList[count].function).GetClassProto()->GetClassType() == CPrototype::class_normal)
-                    m_delayNodeList[StringToLower((*m_hookNodeList[count].function).GetLibrary())].push_back(count);
-                else
-                    m_delayNodeList[(*m_hookNodeList[count].function).GetClassProto()->GetTypeName()].push_back(count);
-                error_log("api hook: '{}' be add to delay_list!", (*func.second).GetName());
+            if (ShouldbeHooked(func.second)) {
+                m_hookNodeList[count].bdelayed = false;
+                m_hookNodeList[count].orgin_api_implfunc = nullptr;
+                m_hookNodeList[count].hook_implement_object = shared_from_this();
+                m_hookNodeList[count].function = func.second;
+
+                if (MH_STATUS status = HookApi(m_hookNodeList[count]); status == MH_ERROR_MODULE_NOT_FOUND)
+                {
+                    // delayed hook;
+                    m_hookNodeList[count].bdelayed = true;
+                    if (!(*m_hookNodeList[count].function).GetClassProto() || (*m_hookNodeList[count].function).GetClassProto()->GetClassType() == CPrototype::class_normal)
+                        m_delayNodeList[StringToLower((*m_hookNodeList[count].function).GetLibrary())].push_back(count);
+                    else
+                        m_delayNodeList[(*m_hookNodeList[count].function).GetClassProto()->GetTypeName()].push_back(count);
+                    error_log("api hook: '{}' be add to delay_list!", (*func.second).GetName());
+                }
+                count++;
             }
-            count++;
         });
-#ifdef _X86_
-        // hook for exploit detection
-        MH_CreateHookApiEx_Orgin(L"ntdll.dll", "RtlAllocateHeap", detour_rtlAllocateHeap, (LPVOID*)&m_heap_allocation_define.rtlallocateheap_func, &m_hookNodeList[m_hookNodeList.size() - 3].ppTarget);
-        MH_CreateHookApiEx_Orgin(L"ntdll.dll", "RtlFreeHeap", detour_rtlFreeHeap, (LPVOID*)&m_heap_allocation_define.rtlfreeheap_func, &m_hookNodeList[m_hookNodeList.size() - 2].ppTarget);
-        MH_CreateHookApiEx_Orgin(L"ntdll.dll", "RtlDestroyHeap", detour_rtlDestroyHeap, (LPVOID*)&m_heap_allocation_define.rtldestroyheap_func, &m_hookNodeList[m_hookNodeList.size() - 1].ppTarget);
-#endif
+        {
+            // hook heap APIs for exploit detection, only hook 32bit process and limited category
+#define partten_proc_type "^(?i)32-bit$"
+#define partten_proc_category "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+            if (CommonFuncsObject::IsMatchProcType(partten_proc_type) && m_category_ob_ptr->IsMatchCategory(partten_proc_category)) {
+                MH_CreateHookApiEx_Orgin(L"ntdll.dll", "RtlAllocateHeap", detour_rtlAllocateHeap, (LPVOID*)&m_heap_allocation_define.rtlallocateheap_func, &m_hookNodeList[m_hookNodeList.size() - 3].ppTarget);
+                MH_CreateHookApiEx_Orgin(L"ntdll.dll", "RtlFreeHeap", detour_rtlFreeHeap, (LPVOID*)&m_heap_allocation_define.rtlfreeheap_func, &m_hookNodeList[m_hookNodeList.size() - 2].ppTarget);
+                MH_CreateHookApiEx_Orgin(L"ntdll.dll", "RtlDestroyHeap", detour_rtlDestroyHeap, (LPVOID*)&m_heap_allocation_define.rtldestroyheap_func, &m_hookNodeList[m_hookNodeList.size() - 1].ppTarget);
+            }
+        }
         if (HookProcessing())
             EnableAllApis();
         return true;

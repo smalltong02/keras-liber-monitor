@@ -390,5 +390,17 @@ namespace cchips {
 #define debug_log()
 #endif
 #endif
+    template<typename ...Args>
+    void exploit_output(const char* format, Args...args)
+    {
+        std::stringstream os;
+        cchips::special_log::sm_simple_log(os, format, args...);
+        ASSERT(os.str().length());
+        if (!os.str().length()) return;
+        std::unique_ptr<CLogHandle> exploit_handle = std::make_unique<CLogHandle>(EXPLOIT_FEATURE, CLogObject::logtype::log_event);
+        if (exploit_handle) (*exploit_handle).AddLog(LOGPAIR("exploit", os.str()));
+        return;
+    }
+#define exploit_log(format, ...) exploit_output(format, ##__VA_ARGS__);
 
 } // namespace cchips

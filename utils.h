@@ -36,6 +36,41 @@ void check_return();
 void WalkFrameCurrentChain(std::vector<PVOID>& frame_chain);
 VOID GetStackRange(ULONG_PTR* base, ULONG_PTR* limit);
 int GetCallOpSize(const void* addr);
+void ClearThreadTls();
+
+inline std::wstring to_wide_string(const std::string& input)
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    tls_check_struct *tls = check_get_tls();
+    if (tls) {
+        tls->active = 1;
+        if (setjmp(tls->jb) == 0) {
+            std::wstring tmp = converter.from_bytes(input);
+            tls->active = 0;
+            return tmp;
+        }
+        //execption occur
+        tls->active = 0;
+    }
+    return {};
+}
+inline std::string to_byte_string(const std::wstring& input)
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    tls_check_struct *tls = check_get_tls();
+    if (tls) {
+        tls->active = 1;
+        if (setjmp(tls->jb) == 0) {
+            std::string tmp;
+            tmp = converter.to_bytes(input);
+            tls->active = 0;
+            return tmp;
+        }
+        //execption occur
+        tls->active = 0;
+    }
+    return {};
+}
 
 template <typename Func>
 inline void getExecutionTime(const std::string& title, Func func) {
@@ -151,7 +186,20 @@ inline std::stringstream OutputAnyValue(const std::any& anyvalue) {
         ss << std::any_cast<std::string>(anyvalue);
     else if (anyvalue.type() == typeid(std::wstring)) {
         std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-        ss << converter.to_bytes(std::any_cast<std::wstring>(anyvalue));
+        tls_check_struct *tls = check_get_tls();
+        if (tls) {
+            tls->active = 1;
+            if (setjmp(tls->jb) == 0) {
+                ss << converter.to_bytes(std::any_cast<std::wstring>(anyvalue));
+                tls->active = 0;
+                return ss;
+            }
+            //execption occur
+            tls->active = 0;
+            ss.clear();
+            ss.str("");
+            return ss;
+        }
     }
     else if (anyvalue.type() == typeid(GUID)) {
         const std::string hex = "0123456789abcdef";
@@ -247,7 +295,18 @@ inline std::any GetAnyValue(const std::any& anyvalue) {
     if (anyvalue.type() == typeid(std::wstring))
     {
         std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-        return converter.to_bytes(std::any_cast<std::wstring>(anyvalue));
+        tls_check_struct *tls = check_get_tls();
+        if (tls) {
+            tls->active = 1;
+            if (setjmp(tls->jb) == 0) {
+                std::string tmp;
+                tmp = converter.to_bytes(std::any_cast<std::wstring>(anyvalue));
+                tls->active = 0;
+                return tmp;
+            }
+            //execption occur
+            tls->active = 0;
+        }
     }
     return {};
 }
@@ -348,7 +407,18 @@ inline std::string ConvertAnyType(const std::any& anyvalue) {
     else if (anyvalue.type() == typeid(std::wstring))
     {
         std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-        return converter.to_bytes(std::any_cast<std::wstring>(anyvalue));
+        tls_check_struct *tls = check_get_tls();
+        if (tls) {
+            tls->active = 1;
+            if (setjmp(tls->jb) == 0) {
+                std::string tmp;
+                tmp = converter.to_bytes(std::any_cast<std::wstring>(anyvalue));
+                tls->active = 0;
+                return tmp;
+            }
+            //execption occur
+            tls->active = 0;
+        }
     }
     return static_cast<char*>(nullptr);
 }
@@ -360,7 +430,19 @@ inline std::wstring ConvertAnyType(const std::any& anyvalue) {
     else if (anyvalue.type() == typeid(std::string))
     {
         std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-        return converter.from_bytes(std::any_cast<std::string>(anyvalue));
+        tls_check_struct *tls = check_get_tls();
+        if (tls) {
+            tls->active = 1;
+            if (setjmp(tls->jb) == 0) {
+                std::wstring tmp;
+                tmp = converter.from_bytes(std::any_cast<std::string>(anyvalue));
+                tls->active = 0;
+                return tmp;
+            }
+            //execption occur
+            tls->active = 0;
+        }
+        return {};
     }
     return static_cast<wchar_t*>(nullptr);
 }
@@ -499,8 +581,18 @@ inline bool AssignAnyType(std::any& anyvalue, Ty value) {
             std::stringstream ss;
             ss << value;
             std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-            anyvalue = converter.from_bytes(std::string(ss.str()));
-            return true;
+            tls_check_struct *tls = check_get_tls();
+            if (tls) {
+                tls->active = 1;
+                if (setjmp(tls->jb) == 0) {
+                    anyvalue = converter.from_bytes(std::string(ss.str()));
+                    tls->active = 0;
+                    return true;
+                }
+                //execption occur
+                tls->active = 0;
+            }
+            return false;
         }
     }
     else if constexpr (std::is_pointer_v<Ty>) {
@@ -536,8 +628,18 @@ inline bool AssignAnyType(std::any& anyvalue, Ty value) {
             std::stringstream ss;
             ss << std::hex << value;
             std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-            anyvalue = converter.from_bytes(std::string(ss.str()));
-            return true;
+            tls_check_struct *tls = check_get_tls();
+            if (tls) {
+                tls->active = 1;
+                if (setjmp(tls->jb) == 0) {
+                    anyvalue = converter.from_bytes(std::string(ss.str()));
+                    tls->active = 0;
+                    return true;
+                }
+                //execption occur
+                tls->active = 0;
+            }
+            return false;
         }
     }
     else if constexpr (std::is_floating_point_v<Ty>) {
@@ -563,8 +665,18 @@ inline bool AssignAnyType(std::any& anyvalue, Ty value) {
             std::stringstream ss;
             ss << value;
             std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-            anyvalue = converter.from_bytes(std::string(ss.str()));
-            return true;
+            tls_check_struct *tls = check_get_tls();
+            if (tls) {
+                tls->active = 1;
+                if (setjmp(tls->jb) == 0) {
+                    anyvalue = converter.from_bytes(std::string(ss.str()));
+                    tls->active = 0;
+                    return true;
+                }
+                //execption occur
+                tls->active = 0;
+            }
+            return false;
         }
     }
     return false;
@@ -588,8 +700,18 @@ inline bool AssignAnyType(std::any& anyvalue, const char* value) {
     else if (anyvalue.type() == typeid(std::wstring))
     {
         std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-        anyvalue = converter.from_bytes(std::string(value));
-        return true;
+        tls_check_struct *tls = check_get_tls();
+        if (tls) {
+            tls->active = 1;
+            if (setjmp(tls->jb) == 0) {
+                anyvalue = converter.from_bytes(std::string(value));
+                tls->active = 0;
+                return true;
+            }
+            //execption occur
+            tls->active = 0;
+        }
+        return false;
     }
     else if(anyvalue.type() == typeid(FLOAT) || anyvalue.type() == typeid(DOUBLE))
     {
@@ -613,7 +735,17 @@ inline bool AssignAnyType(std::any& anyvalue, wchar_t* value) {
     else
     {
         std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-        return AssignAnyType(anyvalue, converter.to_bytes(value).c_str());
+        tls_check_struct *tls = check_get_tls();
+        if (tls) {
+            tls->active = 1;
+            if (setjmp(tls->jb) == 0) {
+                bool tmp = AssignAnyType(anyvalue, converter.to_bytes(value).c_str());
+                tls->active = 0;
+                return tmp;
+            }
+            //execption occur
+            tls->active = 0;
+        }
     }
     return false;
 }

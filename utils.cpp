@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "MetadataTypeImpl.h"
 #include "capstone\include\capstone.h"
+#include "HookImplementObject.h"
 
 static csh g_capstone_handle = 0;
 
@@ -11,6 +12,18 @@ static const cs_err g_cap_error = cs_open(CS_ARCH_X86, CS_MODE_32, &g_capstone_h
 #ifdef _AMD64_
 static const cs_err g_cap_error = cs_open(CS_ARCH_X86, CS_MODE_64, &g_capstone_handle);
 #endif
+
+void ClearThreadTls()
+{
+    extern std::shared_ptr<cchips::CHookImplementObject> cchips::g_impl_object;
+    if (cchips::g_impl_object) {
+        ULONG_PTR entry_count = cchips::g_impl_object->GetTlsValueForThreadIdx() + 1;
+        while (entry_count) {
+            cchips::g_impl_object->ReleaseTlsValueForThreadIdx();
+            entry_count--;
+        }
+    }
+}
 
 std::wstring A2WString(const std::string& str)
 {

@@ -139,6 +139,31 @@ namespace cchips {
                     func_object->SetClassProto(std::move(class_proto));
                 }
             }
+            // set hooks information
+            if (auto anyclass(CRapidJsonWrapper::GetMember(SI_HOOKS, Object));
+                anyclass.has_value() && anyclass.type() == typeid(ConstRapidObject))
+            {
+                std::string_view platform;
+                std::string_view processes;
+                std::string_view category;
+                if (auto anytype(CRapidJsonWrapper::GetMember(std::vector<std::string>{ SI_HOOKS, SI_PLATFORM }, Object));
+                    anytype.has_value() && anytype.type() == typeid(std::string_view))
+                {
+                    platform = std::any_cast<std::string_view>(anytype);
+                }
+                if (auto anytype(CRapidJsonWrapper::GetMember(std::vector<std::string>{ SI_HOOKS, SI_PROC_TYPE }, Object));
+                    anytype.has_value() && anytype.type() == typeid(std::string_view))
+                {
+                    processes = std::any_cast<std::string_view>(anytype);
+                }
+                if (auto anytype(CRapidJsonWrapper::GetMember(std::vector<std::string>{ SI_HOOKS, SI_PROC_CATEGORY }, Object));
+                    anytype.has_value() && anytype.type() == typeid(std::string_view))
+                {
+                    category = std::any_cast<std::string_view>(anytype);
+                }
+                std::unique_ptr<CPrototype::HooksProto> hooks_proto = std::make_unique<CPrototype::HooksProto>(platform, processes, category);
+                func_object->SetHooksProto(std::move(hooks_proto));
+            }
             // set parameter information
             if (auto anyfeature(CRapidJsonWrapper::GetMember(SI_PARAMETERS, Object));
                 anyfeature.has_value() && anyfeature.type() == typeid(ConstRapidObject))

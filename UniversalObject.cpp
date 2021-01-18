@@ -20,12 +20,36 @@ namespace cchips {
         {category_test, {"^(?i)notepad.exe$"}},
     };
 
+    std::vector<std::pair<CategoryObject::_category_type, std::string>> CategoryObject::_category_name_def = {
+        {category_normal, {"category_normal"}},
+        {category_browser, {"category_browser"}},
+        {category_office, {"category_office"}},
+        {category_pdf, {"category_pdf"}},
+        {category_java, {"category_java"}},
+        {category_misc, {"category_misc"}},
+        {category_test, {"category_test"}},
+    };
+
     std::vector<CheckExploitFuncs::heap_block> CheckExploitFuncs::m_heap_block_table = {
         { 0x0A0A0A0A },
         { 0x0B0B0B0B },
         { 0x0C0C0C0C },
         { 0x0D0D0D0D },
     };
+
+    std::vector<std::pair<CommonFuncsObject::_os_type, std::string>> CommonFuncsObject::_os_type_def = {
+        {os_type_x32, {"x32"}}, {os_type_x64, {"x64"}},
+    };
+
+    std::vector<std::pair<CommonFuncsObject::_proc_type, std::string>> CommonFuncsObject::_proc_type_def = {
+        {proc_type_x32, {"32-bit"}}, {proc_type_x64, {"64-bit"}},
+    };
+
+    CommonFuncsObject::_proc_type CommonFuncsObject::m_proc_type = CommonFuncsObject::proc_type_invalid;
+    CommonFuncsObject::_os_type CommonFuncsObject::m_os_type = CommonFuncsObject::os_type_invalid;
+    CommonFuncsObject::IsWow64Process_Define CommonFuncsObject::m_lpfn_IsWow64Process = nullptr;
+    CommonFuncsObject::GetNativeSystemInfo_Define CommonFuncsObject::m_lpfn_GetNativeSystemInfo = nullptr;
+    bool CommonFuncsObject::m_is_dotnet_owner = false;
 
     void CategoryObject::InitGetCategory()
     {
@@ -60,7 +84,26 @@ namespace cchips {
         }
     }
 
-    bool CategoryObject::IsDangerousCommand(std::string command)
+    bool CategoryObject::IsMatchCategory(const std::string& category_pattern) const
+    {
+        if (!category_pattern.length()) return false;
+        std::unique_ptr<RE2> pattern_ptr = std::make_unique<RE2>(category_pattern, RE2::Quiet);
+        if (!pattern_ptr) return false;
+        std::string cur_category_str;
+        for (const auto& name : _category_name_def) {
+            if (m_category == name.first) {
+                cur_category_str = name.second;
+                break;
+            }
+        }
+        if (!cur_category_str.length()) return false;
+        if (RE2::FullMatch(cur_category_str, *pattern_ptr)) {
+            return true;
+        }
+        return false;
+    }
+
+    bool CategoryObject::IsDangerousCommand(std::string& command) const
     {
         if (!m_dangerous_pattern) return false;
         if (!command.size()) return false;
@@ -321,4 +364,120 @@ namespace cchips {
         }
     }
 
+    bool CommonFuncsObject::IsX64Process(HANDLE hprocess) {
+        bool bcurproc = false;
+        if (hprocess == GetCurrentProcess())
+            bcurproc = true;
+        if (bcurproc) {
+            if (m_proc_type == proc_type_x32) return false;
+            else if (m_proc_type == proc_type_x64) return true;
+        }
+        if (!Is64BitOS()) {
+            if(bcurproc)
+                m_proc_type = proc_type_x32;
+            return false;
+        }
+        if (m_lpfn_IsWow64Process == nullptr) {
+            m_lpfn_IsWow64Process = (IsWow64Process_Define)GetProcAddress(
+                GetModuleHandleA("kernel32"), "IsWow64Process");
+        }
+        BOOL wow64_process = false;
+        if (!m_lpfn_IsWow64Process) {
+            if(bcurproc)
+                m_proc_type = proc_type_x32;
+            return false;
+        }
+        BOOL bret = m_lpfn_IsWow64Process(hprocess, &wow64_process);
+        if (!bret) {
+            if (bcurproc)
+                m_proc_type = proc_type_x32;
+            return false;
+        }
+        if (wow64_process) {
+            if (bcurproc)
+                m_proc_type = proc_type_x32;
+            return false;
+        }
+        if (bcurproc)
+            m_proc_type = proc_type_x64;
+        return true;
+    }
+
+    bool CommonFuncsObject::Is64BitOS() {
+        if (m_os_type == os_type_x64) return true;
+        else if (m_os_type == os_type_x32) return false;
+
+        SYSTEM_INFO si;
+        if (!m_lpfn_GetNativeSystemInfo)
+            m_lpfn_GetNativeSystemInfo = (GetNativeSystemInfo_Define)GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetNativeSystemInfo");
+        if (m_lpfn_GetNativeSystemInfo != nullptr)
+        {
+            m_lpfn_GetNativeSystemInfo(&si);
+
+            if (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64 ||
+                si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_IA64)
+            {
+                m_os_type = os_type_x64;
+                return true;
+            }
+        }
+        m_os_type = os_type_x32;
+        return false;
+    }
+
+    bool CommonFuncsObject::IsMatchCurrentOS(const std::string& platform_pattern)
+    {
+        Is64BitOS();
+        std::string cur_os_type;
+        std::unique_ptr<RE2> pattern_ptr = std::make_unique<RE2>(platform_pattern, RE2::Quiet);
+        if (!pattern_ptr) return false;
+        for (const auto& os_type : _os_type_def) {
+            if (m_os_type == os_type.first) {
+                cur_os_type = os_type.second;
+                break;
+            }
+        }
+        if (!cur_os_type.length()) return false;
+        if (RE2::FullMatch(cur_os_type, *pattern_ptr)) {
+            return true;
+        }
+        return false;
+    }
+
+    bool CommonFuncsObject::IsMatchProcType(const std::string& type_pattern)
+    {
+        IsX64Process(GetCurrentProcess());
+        std::string cur_proc_type;
+        std::unique_ptr<RE2> pattern_ptr = std::make_unique<RE2>(type_pattern, RE2::Quiet);
+        if (!pattern_ptr) return false;
+        for (const auto& type : _proc_type_def) {
+            if (m_proc_type == type.first) {
+                cur_proc_type = type.second;
+                break;
+            }
+        }
+        if (!cur_proc_type.length()) return false;
+        if (RE2::FullMatch(cur_proc_type, *pattern_ptr)) {
+            return true;
+        }
+        return false;
+    }
+
+    bool CommonFuncsObject::IsDotnetOwner(void)
+    {
+        static std::once_flag dotnet_owner_flag;
+        std::call_once(dotnet_owner_flag, [](bool& b_dotnet_owner) {
+            static LPCSTR clr_dll_table[] = { "clr.dll", "clrjit.dll", "mscorwks.dll" };
+            b_dotnet_owner = false;
+            for (int count = 0; count < (sizeof(clr_dll_table) / sizeof(clr_dll_table[0])); count++) {
+                if (GetModuleHandle(clr_dll_table[count])) {
+                    b_dotnet_owner = true;
+                    break;
+                }
+            }
+            return;
+            }, m_is_dotnet_owner);
+
+        return m_is_dotnet_owner;
+    }
 } // namespace cchips

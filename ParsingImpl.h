@@ -18,6 +18,7 @@
 #include "hookimpl.h"
 #include "MetadataTypeImpl.h"
 #include "LogObject.h"
+#include "UniversalObject.h"
 
 namespace cchips {
 
@@ -660,6 +661,7 @@ namespace cchips {
             class_ps,
             class_kvm,
             class_cshape,
+            class_inline,
             class_max,
         };
         struct ClassProto {
@@ -683,9 +685,35 @@ namespace cchips {
             std::string delay_api;
             unsigned int vtbl_idx;
         };
+        struct HooksProto {
+            HooksProto() = delete;
+            HooksProto(std::string_view platform, std::string_view mode, std::string_view category) :os_platform(platform), process_mode(mode), process_category(category) { ; }
+            bool MatchHooks(std::unique_ptr<CategoryObject>& category_ob) const {
+                if (!category_ob) return false;
+                if (os_platform.length()) {
+                    if (!CommonFuncsObject::IsMatchCurrentOS(os_platform))
+                        return false;
+                }
+                if (process_mode.length()) {
+                    if (!CommonFuncsObject::IsMatchProcType(process_mode))
+                        return false;
+                }
+                if (process_category.length()) {
+                    if (!category_ob->IsMatchCategory(process_category))
+                        return false;
+                }
+                return true;
+            }
+            const std::string& GetOsPlatform() const { return os_platform; }
+            const std::string& GetProcessMode() const { return process_mode; }
+            const std::string& GetProcessCategory() const { return process_category; }
+            std::string os_platform;
+            std::string process_mode;
+            std::string process_category;
+        };
         CPrototype() = delete;
-        CPrototype(_call_convention conv, const std::string& name) : m_call_conv(conv), m_proto_name(name), m_special(false), m_feature(DEFAULT_FEATURE) { m_class_proto = nullptr; }
-        CPrototype(_call_convention conv, const std::string& library, const std::string& name, const PrototypeArguments& args, bool special = false) : m_call_conv(conv), m_library(library), m_special(special), m_feature(DEFAULT_FEATURE), m_proto_name(name), m_args(args) { m_class_proto = nullptr; }
+        CPrototype(_call_convention conv, const std::string& name) : m_call_conv(conv), m_proto_name(name), m_special(false), m_feature(DEFAULT_FEATURE) { m_class_proto = nullptr; m_hooks_proto = nullptr; }
+        CPrototype(_call_convention conv, const std::string& library, const std::string& name, const PrototypeArguments& args, bool special = false) : m_call_conv(conv), m_library(library), m_special(special), m_feature(DEFAULT_FEATURE), m_proto_name(name), m_args(args) { m_class_proto = nullptr; m_hooks_proto = nullptr; }
         ~CPrototype() = default;
 
         const std::string& GetName() const { return m_proto_name; }
@@ -802,6 +830,8 @@ namespace cchips {
             return -1;
         }
         const std::unique_ptr<ClassProto>& GetClassProto() const { return m_class_proto; }
+        const std::unique_ptr<HooksProto>& GetHooksProto() const { return m_hooks_proto; }
+        void ClearHooksProto() { m_hooks_proto = nullptr; }
         const PrototypeArgument& GetReturn() const { return m_return; }
         void SetLibrary(const std::string_view& library) { m_library = library; }
         void SetFeature(const std::string_view& feature) { m_feature = feature; }
@@ -814,6 +844,10 @@ namespace cchips {
             {
                 m_class_proto = std::move(class_proto);
             }
+        }
+        void SetHooksProto(std::unique_ptr<HooksProto> hooks_proto) {
+            if (hooks_proto == nullptr) return;
+            m_hooks_proto = std::move(hooks_proto);
         }
         virtual void* codegen() const = 0;
         static _class_type GetClassType(std::string_view class_type) {
@@ -836,6 +870,7 @@ namespace cchips {
         std::string m_library;
         std::string m_feature;
         std::unique_ptr<ClassProto> m_class_proto;
+        std::unique_ptr<HooksProto> m_hooks_proto;
         PrototypeArguments m_args;
         PrototypeArgument m_return;
         bool m_special;

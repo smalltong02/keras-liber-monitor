@@ -29,7 +29,8 @@ namespace cchips {
         CategoryObject() : m_category(category_normal), m_category_pattern(nullptr), m_dangerous_pattern(nullptr) { InitGetCategory(); }
         ~CategoryObject() = default;
         void InitGetCategory();
-        bool IsDangerousCommand(std::string command);
+        bool IsMatchCategory(const std::string& category_pattern) const;
+        bool IsDangerousCommand(std::string& command) const;
     private:
         _category_type m_category;
         std::unique_ptr<RE2> m_category_pattern;
@@ -37,6 +38,7 @@ namespace cchips {
 
         static std::vector<std::pair<_category_type, std::string>> _category_str_def;
         static std::vector<std::pair<_category_type, std::string>> _dangerous_str_def;
+        static std::vector<std::pair<_category_type, std::string>> _category_name_def;
     };
 
     class CheckExploitFuncs
@@ -55,6 +57,7 @@ namespace cchips {
             e_reason_heap_spray,
             e_reason_app_abort,
             e_reason_unlock_vba,
+            e_reason_vbe_suspicious,
         };
         enum _callInsnIds {
             X86_INS_CALL,
@@ -67,8 +70,8 @@ namespace cchips {
             ULONG_PTR    bound;
             PVOID        handle;
         };
-        CheckExploitFuncs() = default;
-        ~CheckExploitFuncs() = default;
+        CheckExploitFuncs() = delete;
+        ~CheckExploitFuncs() = delete;
         static bool AddressInModule(ULONG_PTR addr, MODULEINFO mi);
         static bool CheckStackInstruction(ULONG_PTR stack);
         static bool ValidStackPointer(ULONG_PTR stack);
@@ -92,5 +95,38 @@ namespace cchips {
         static std::vector<heap_block> m_heap_block_table;
         static bool CheckNOPSlide(heap_block* block);
         static bool DoCheckHeapSpray(ULONG_PTR base, ULONG_PTR bound);
+    };
+
+    class CommonFuncsObject {
+    public:
+        using _os_type = enum {
+            os_type_invalid = 0,
+            os_type_x32 = 1,
+            os_type_x64 = 2,
+        };
+        using _proc_type = enum {
+            proc_type_invalid = 0,
+            proc_type_x32 = 1,
+            proc_type_x64 = 2,
+        };
+        CommonFuncsObject() = delete;
+        ~CommonFuncsObject() = delete;
+
+        using IsWow64Process_Define = BOOL(WINAPI*)(HANDLE, PBOOL);
+        using GetNativeSystemInfo_Define = VOID(WINAPI*)(LPSYSTEM_INFO lpSystemInfo);
+
+        static bool IsX64Process(HANDLE hprocess);
+        static bool Is64BitOS();
+        static bool IsMatchCurrentOS(const std::string& platform_pattern);
+        static bool IsMatchProcType(const std::string& type_pattern);
+        static bool IsDotnetOwner(void);
+    private:
+        static _proc_type m_proc_type;
+        static _os_type m_os_type;
+        static bool m_is_dotnet_owner;
+        static IsWow64Process_Define m_lpfn_IsWow64Process;
+        static GetNativeSystemInfo_Define m_lpfn_GetNativeSystemInfo;
+        static std::vector<std::pair<_os_type, std::string>> _os_type_def;
+        static std::vector<std::pair<_proc_type, std::string>> _proc_type_def;
     };
 } // namespace cchips

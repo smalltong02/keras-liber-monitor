@@ -9,6 +9,12 @@
       "Feature": "V1"
     },
 
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
     "Class": {
       "Type": "VBE",
       "API": "rtcCreateObject2"
@@ -26,6 +32,12 @@
       "Library": "vbe6.dll",
       "Return": "LPVOID",
       "Feature": "V2"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
     },
 
     "Class": {
@@ -50,6 +62,12 @@
       "Feature": "V3"
     },
 
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
     "Class": {
       "Type": "VBE",
       "API": "rtcGetObject"
@@ -67,6 +85,12 @@
       "Library": "vbe6.dll",
       "Return": "LPVOID",
       "Feature": "V4"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
     },
 
     "Class": {
@@ -87,6 +111,12 @@
       "Feature": "V1"
     },
 
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
     "Class": {
       "Type": "VBE",
       "API": "rtcCreateObject2"
@@ -104,6 +134,12 @@
       "Library": "vbe7.dll",
       "Return": "LPVOID",
       "Feature": "V2"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
     },
 
     "Class": {
@@ -128,6 +164,12 @@
       "Feature": "V3"
     },
 
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
     "Class": {
       "Type": "VBE",
       "API": "rtcGetObject"
@@ -145,6 +187,12 @@
       "Library": "vbe7.dll",
       "Return": "LPVOID",
       "Feature": "V4"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
     },
 
     "Class": {
@@ -165,6 +213,12 @@
       "Feature": "V1"
     },
 
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
     "Class": {
       "Type": "VBE",
       "API": "rtcCreateObject2"
@@ -182,6 +236,12 @@
       "Library": "vbe71.dll",
       "Return": "LPVOID",
       "Feature": "V2"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
     },
 
     "Class": {
@@ -206,6 +266,12 @@
       "Feature": "V3"
     },
 
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
     "Class": {
       "Type": "VBE",
       "API": "rtcGetObject"
@@ -223,6 +289,12 @@
       "Library": "vbe71.dll",
       "Return": "LPVOID",
       "Feature": "V4"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
     },
 
     "Class": {
@@ -243,6 +315,12 @@
       "Feature": "V5"
     },
 
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
     "Class": {
       "Type": "INLINE",
       "Bitmap": "558BEC56578B7D0C85FF75076A5B"
@@ -259,6 +337,12 @@
       "Library": "vbe7.dll",
       "Return": "LPVOID",
       "Feature": "V5"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
     },
 
     "Class": {
@@ -279,6 +363,12 @@
       "Feature": "V5"
     },
 
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
     "Class": {
       "Type": "INLINE",
       "Bitmap": "558BEC56578B7D0C85FF75076A5B"
@@ -295,6 +385,12 @@
       "Library": "vbe6.dll",
       "Return": "LPVOID",
       "Feature": "V6"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
     },
 
     "Class": {
@@ -319,6 +415,12 @@
       "Feature": "V6"
     },
 
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
     "Class": {
       "Type": "INLINE",
       "Bitmap": "8BFF558BEC83EC34837D08000F8401BD0F00"
@@ -339,6 +441,12 @@
       "Library": "vbe71.dll",
       "Return": "LPVOID",
       "Feature": "V6"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
     },
 
     "Class": {
@@ -363,6 +471,12 @@
       "Feature": "V7"
     },
 
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
     "Class": {
       "Type": "INLINE",
       "Bitmap": "558BEC837D1808568B7510751C0F"
@@ -384,6 +498,12 @@
       "Feature": "V7"
     },
 
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
     "Class": {
       "Type": "INLINE",
       "Bitmap": "558BEC837D1808568B7510751C0F"
@@ -403,6 +523,12 @@
       "Library": "vbe71.dll",
       "Return": "LPVOID",
       "Feature": "V7"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
     },
 
     "Class": {

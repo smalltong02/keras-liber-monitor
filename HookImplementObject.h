@@ -174,11 +174,13 @@ if (!de_node->return_addr) return processing_skip;
 
 #define CHECK_COMMON_EXPLOIT() \
 if (DWORD index_; !CheckExploitFuncs::ValidStackPointer(reinterpret_cast<ULONG_PTR>(&index_))) {    \
+    exploit_log("API: {}, reason: {}", node->function->GetName(), CheckExploitFuncs::e_reason_stack_corrupted); \
     return processing_continue; \
 } else { \
     CheckExploitFuncs::_exploit_reason reason = CheckExploitFuncs::e_reason_null; \
     reason = CheckExploitFuncs::CheckReturnAddress(reinterpret_cast<ULONG_PTR>(node->return_addr)); \
     if (reason != CheckExploitFuncs::e_reason_null) { \
+            exploit_log("API: {}, reason: {}", node->function->GetName(), reason); \
             return processing_continue; \
     } \
 }
@@ -327,6 +329,7 @@ if (DWORD index_; !CheckExploitFuncs::ValidStackPointer(reinterpret_cast<ULONG_P
         }
         const std::unique_ptr<CDriverMgr>& GetDriverMgr() const { return m_drivermgr; }
         const std::unique_ptr<CategoryObject>& GetCategoryPtr() const { return m_category_ob_ptr; }
+        bool ShouldbeHooked(const std::shared_ptr<CFunction>& function);
         MH_STATUS HookApi(hook_node& node);
         void RemoveApi(hook_node& node);
         bool HookAllApis();

@@ -41,6 +41,10 @@
       "Feature": "H11"
     },
 
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "lpDirectoryName": "LPCWSTR",
       "lpFreeBytesAvailableToCaller": "LPULARGE_INTEGER",
@@ -72,6 +76,10 @@
       "Feature": "H12"
     },
 
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
     "PostLog": [
       "Return"
     ],
@@ -90,6 +98,9 @@
       "Library": "kernel32.dll",
       "Return": "VOID",
       "Feature": "H13"
+    },
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
     },
     "Parameters": {
       "lpSystemTime": "LPSYSTEMTIME"
@@ -112,6 +123,10 @@
       "Feature": "P60"
     },
 
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "lpModuleName": "LPCWSTR"
     },
@@ -132,6 +147,10 @@
       "Feature": "P61"
     },
 
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "hModule": "HMODULE",
       "lpProcName": "LPCSTR"
@@ -147,6 +166,10 @@
       "Library": "ntdll.dll",
       "Return": "NTSTATUS",
       "Feature": "P62"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -204,6 +227,10 @@
       "Feature": "P63"
     },
 
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "SystemInformationClass": "SYSTEM_INFORMATION_CLASS",
       "SystemInformation": "LPVOID",
@@ -240,6 +267,10 @@
       "Feature": "P64"
     },
 
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "lpSystemInfo": "LPSYSTEM_INFO"
     },
@@ -266,6 +297,10 @@
       "Library": "ntdll.dll",
       "Return": "NTSTATUS",
       "Feature": "P65"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -299,6 +334,9 @@
       "Return": "BYTE",
       "Feature": "P66"
     },
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
     "Parameters": {
       "lpspc": "LPSYSTEM_POWER_CAPABILITIES"
     },
@@ -323,6 +361,10 @@
       "Library": "Kernel32.dll",
       "Return": "BOOL",
       "Feature": "P67"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -363,6 +405,11 @@
       "Feature": "P68"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "lpAddress": "LPVOID",
       "dwSize": "ULONG_PTR",
@@ -376,6 +423,11 @@
       "Library": "Kernel32.dll",
       "Return": "LPVOID",
       "Feature": "P69"
+    },
+
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -394,6 +446,11 @@
       "Feature": "P70"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "hProcess": "HANDLE",
       "lpAddress": "LPVOID",
@@ -408,6 +465,11 @@
       "Library": "User32.dll",
       "Return": "LPVOID",
       "Feature": "P71"
+    },
+
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -426,6 +488,11 @@
       "Feature": "P71"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "hInstance": "HINSTANCE",
       "hDialogTemplate": "LPVOID",
@@ -440,6 +507,11 @@
       "Library": "User32.dll",
       "Return": "LPVOID",
       "Feature": "P72"
+    },
+
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -458,6 +530,11 @@
       "Feature": "P72"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "hInstance": "HINSTANCE",
       "lpTemplateName": "LPCWSTR",
@@ -472,6 +549,11 @@
       "Library": "Kernel32.dll",
       "Return": "BOOL",
       "Feature": "P73"
+    },
+
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -495,6 +577,11 @@
       "Feature": "P74"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "lpApplicationName": "LPCWSTR",
       "lpCommandLine": "LPWSTR",
@@ -514,6 +601,11 @@
       "Library": "Kernel32.dll",
       "Return": "BOOL",
       "Feature": "P75"
+    },
+
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -539,6 +631,11 @@
       "Feature": "P76"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "lpFileName": "LPCSTR",
       "dwDesiredAccess": "DWORD",
@@ -555,6 +652,11 @@
       "Library": "Kernel32.dll",
       "Return": "BOOL",
       "Feature": "P76"
+    },
+
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -575,6 +677,11 @@
       "Feature": "P77"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "lpExistingFileName": "LPCSTR",
       "lpNewFileName": "LPCSTR",
@@ -589,6 +696,11 @@
       "Feature": "P77"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "lpExistingFileName": "LPCWSTR",
       "lpNewFileName": "LPCWSTR",
@@ -601,6 +713,11 @@
       "Library": "Shell32.dll",
       "Return": "HINSTANCE",
       "Feature": "P78"
+    },
+
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -620,6 +737,11 @@
       "Feature": "P78"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "hwnd": "HWND",
       "lpOperation": "LPCWSTR",
@@ -635,6 +757,11 @@
       "Library": "Urlmon.dll",
       "Return": "HRESULT",
       "Feature": "P79"
+    },
+
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -653,6 +780,11 @@
       "Feature": "P79"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "pCaller": "LPVOID",
       "szURL": "LPCWSTR",
@@ -667,6 +799,11 @@
       "Library": "Urlmon.dll",
       "Return": "HRESULT",
       "Feature": "P80"
+    },
+
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -686,6 +823,11 @@
       "Feature": "P80"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "lpUnkcaller": "LPVOID",
       "szURL": "LPCSTR",
@@ -703,6 +845,11 @@
       "Feature": "P81"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "lpCmdLine": "LPCSTR",
       "uCmdShow": "UINT"
@@ -714,6 +861,11 @@
       "Library": "Kernel32.dll",
       "Return": "HMODULE",
       "Feature": "P82"
+    },
+
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -728,6 +880,11 @@
       "Feature": "P82"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "lpLibFileName": "LPCWSTR"
     }
@@ -738,6 +895,11 @@
       "Library": "Kernel32.dll",
       "Return": "HMODULE",
       "Feature": "P83"
+    },
+
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -754,6 +916,11 @@
       "Feature": "P83"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "lpLibFileName": "LPCWSTR",
       "hFile": "HANDLE",
@@ -766,6 +933,11 @@
       "Library": "ntdll.dll",
       "Return": "NTSTATUS",
       "Feature": "P84"
+    },
+
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -789,6 +961,11 @@
       "Feature": "P88"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "wVersionRequired": "WORD",
       "lpWSAData": "LPVOID"
@@ -800,6 +977,11 @@
       "Library": "ws2_32.dll",
       "Return": "SOCKET",
       "Feature": "P89"
+    },
+
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -816,6 +998,11 @@
       "Feature": "P90"
     },
 
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "s": "SOCKET",
       "name": "LPVOID",
@@ -828,6 +1015,11 @@
       "Library": "Kernel32.dll",
       "Return": "BOOL",
       "Feature": "P91"
+    },
+
+    "Hooks": {
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Parameters": {

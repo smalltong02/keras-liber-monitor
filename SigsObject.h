@@ -16,6 +16,7 @@ namespace cchips {
 
 #define SI_SIGNATURE "Signature"
 #define SI_CLASS "Class"
+#define SI_HOOKS "Hooks"
 #define SI_PARAMETERS "Parameters"
 #define SI_HANDLE "Handle"
 #define SI_ENSURE "Ensure"
@@ -36,6 +37,10 @@ namespace cchips {
 #define SI_CNAME "Name"
 #define SI_CDELAY "Delay"
 #define SI_CVTBLIDX "VtblIdx"
+
+#define SI_PLATFORM "Platform"
+#define SI_PROC_TYPE "Processes"
+#define SI_PROC_CATEGORY "Category"
 
 #define SI_CCODE "CCode"
 #define SI_CHECK "Check"

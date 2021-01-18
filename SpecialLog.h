@@ -8,19 +8,12 @@
 #include <locale>
 #include <codecvt>
 
+extern std::wstring to_wide_string(const std::string& input);
+extern std::string to_byte_string(const std::wstring& input);
+
 namespace cchips {
     namespace special_log {
 
-        inline std::wstring to_wide_string(const std::string& input)
-        {
-            std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-            return converter.from_bytes(input);
-        }
-        inline std::string to_byte_string(const std::wstring& input)
-        {
-            std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-            return converter.to_bytes(input);
-        }
         template<typename E,
             typename TR = std::char_traits<E>,
             typename AL = std::allocator<E>>
@@ -188,6 +181,50 @@ namespace cchips {
         template<typename ...Args>
         void sm_log(std::wostream& stream, const char* file, int line, const char* format, Args...args) {
             sm_log(stream, file, line, to_wide_string(format), args...);
+        }
+
+        template<typename E,
+            typename TR = std::char_traits<E>,
+            typename AL = std::allocator<E>,
+            typename _str_type = std::basic_string<E, TR, AL>,
+            typename ...Args>
+            void sm_simple_log(std::basic_ostream<E, TR>& stream, const std::basic_string<E, TR, AL>& format, Args...args) {
+            const static std::string delim("{}");
+            static std::once_flag oc;
+            std::call_once(oc, [] {
+#ifdef _MSC_VER
+                std::locale loc(std::locale(), "", LC_CTYPE);
+                std::wcout.imbue(loc);
+                std::wcerr.imbue(loc);
+                std::wclog.imbue(loc);
+#elif defined(__GNUC__)
+                std::locale::global(std::locale(""));
+#endif
+                });
+            auto vf = split(format, std::string("\\{\\}"));
+            if (end_with(format, delim)) {
+                vf.push_back(_str_type());
+            }
+            int index = 0;
+            _sm_log_output(stream, vf, index, args...);
+            for (; index < vf.size(); ++index) {
+                stream << vf[index];
+                if (index < vf.size() - 1) {
+                    stream << "{}";
+                }
+            }
+            //		stream << std::endl;
+        }
+        template<typename E,
+            typename TR = std::char_traits<E>,
+            typename AL = std::allocator<E>,
+            typename ...Args>
+            void sm_simple_log(std::basic_ostream<E, TR>& stream, const E* format, Args...args) {
+            sm_simple_log(stream, std::basic_string<E, TR, AL>(format), args...);
+        }
+        template<typename ...Args>
+        void sm_simple_log(std::wostream& stream, const char* format, Args...args) {
+            sm_simple_log(stream, to_wide_string(format), args...);
         }
 
 #define SAMPLE_LOG_STREAM(stream,format,...) cchips::special_log::sm_log(stream,__FILE__,__LINE__,format, ##__VA_ARGS__)
