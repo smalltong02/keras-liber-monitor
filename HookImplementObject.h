@@ -174,13 +174,13 @@ if (!de_node->return_addr) return processing_skip;
 
 #define CHECK_COMMON_EXPLOIT() \
 if (DWORD index_; !CheckExploitFuncs::ValidStackPointer(reinterpret_cast<ULONG_PTR>(&index_))) {    \
-    exploit_log("API: {}, reason: {}", node->function->GetName(), CheckExploitFuncs::e_reason_stack_corrupted); \
+    exploit_log("\"API\": \"{}\", \"reason\": {}", node->function->GetName(), CheckExploitFuncs::e_reason_stack_corrupted); \
     return processing_continue; \
 } else { \
     CheckExploitFuncs::_exploit_reason reason = CheckExploitFuncs::e_reason_null; \
     reason = CheckExploitFuncs::CheckReturnAddress(reinterpret_cast<ULONG_PTR>(node->return_addr)); \
     if (reason != CheckExploitFuncs::e_reason_null) { \
-            exploit_log("API: {}, reason: {}", node->function->GetName(), reason); \
+            exploit_log("\"API\": \"{}\", \"reason\": {}", node->function->GetName(), reason); \
             return processing_continue; \
     } \
 }
