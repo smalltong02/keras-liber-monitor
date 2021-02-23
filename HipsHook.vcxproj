@@ -299,6 +299,7 @@
     <None Include="services.json" />
     <None Include="system.json" />
     <None Include="types.json" />
+    <None Include="vbe.json" />
     <None Include="wmiobject.json" />
   </ItemGroup>
   <ItemGroup>

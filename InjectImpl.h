@@ -365,7 +365,7 @@ namespace cchips {
             CInjectProcess::_LoadInformation load_info = {};
             load_info.ldr_load_dll = m_lpfn_LdrLoadDll;
             load_info.get_last_error = m_lpfn_GetLastError;
-            std::wstring wide_name = cchips::special_log::to_wide_string(inject_dll_name);
+            std::wstring wide_name = to_wide_string(inject_dll_name);
             if (!wide_name.length()) return false;
             load_info.replacedll.Length = (USHORT)(wide_name.length() * sizeof(wchar_t));
             load_info.replacedll.MaximumLength = (USHORT)((wide_name.length() + 1) * sizeof(wchar_t));

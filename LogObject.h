@@ -18,7 +18,7 @@ namespace cchips {
     class CLogEntry;
     class CLogObject;
     extern std::unique_ptr<CLogObject> g_log_object;
-
+    
     class CLpcLocalObject : public CSocketObject
     {
     public:
@@ -227,6 +227,29 @@ namespace cchips {
             m_checker.Update(log_pair.second);
             return true;
         }
+        bool AddRapidValue(const LOGPAIR& log_pair) {
+            ASSERT(log_pair.first.length());
+            ASSERT(log_pair.second.length());
+            if (!log_pair.first.length()) return false;
+            if (!log_pair.second.length()) return false;
+            if (GetLogSize())
+            {
+                const auto& it = m_log_value.FindMember(log_pair.first.c_str());
+                if (it != m_log_value.MemberEnd()) return false;
+            }
+            std::unique_ptr<RapidDocument> log_document = std::make_unique<RapidDocument>();
+            log_document->Parse(log_pair.second.data(), log_pair.second.length());
+            if (!log_document->IsObject() || log_document->IsNull()) {
+                //config data is incorrect.
+                return false;
+            }
+            RapidValue* rapid_value = log_document.get();
+            if (!rapid_value) return false;
+            ADD_JSON_LOG(m_log_document, m_log_value, log_pair.first.c_str(), std::move(*rapid_value));
+            m_checker.Update(log_pair.first);
+            m_checker.Update(log_pair.second);
+            return true;
+        }
         bool AddLog(const std::shared_ptr<CLogEntry>& log_entry) {
             ASSERT(log_entry);
             if (!log_entry) return false;
@@ -306,6 +329,14 @@ namespace cchips {
             {
                 ASSERT(m_handle != nullptr);
                 return m_handle->AddLog(log_pair);
+            }
+            return false;
+        }
+        bool AddRapidValue(const LOGPAIR& log_pair) {
+            if (m_valid)
+            {
+                ASSERT(m_handle != nullptr);
+                return m_handle->AddRapidValue(log_pair);
             }
             return false;
         }
@@ -390,5 +421,17 @@ namespace cchips {
 #define debug_log()
 #endif
 #endif
+    template<typename ...Args>
+    void exploit_output(const char* format, Args...args)
+    {
+        std::stringstream os;
+        cchips::special_log::sm_simple_log(os, format, args...);
+        ASSERT(os.str().length());
+        if (!os.str().length()) return;
+        std::unique_ptr<CLogHandle> exploit_handle = std::make_unique<CLogHandle>(EXPLOIT_FEATURE, CLogObject::logtype::log_event);
+        if (exploit_handle) (*exploit_handle).AddRapidValue(LOGPAIR("exploit", os.str()));
+        return;
+    }
+#define exploit_log(format, ...) exploit_output(format, ##__VA_ARGS__);
 
 } // namespace cchips

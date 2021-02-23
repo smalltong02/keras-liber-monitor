@@ -24,7 +24,7 @@ class CServerObject
 {
 public:
     CServerObject() {
-        //m_tempfp = tmpfile();
+        m_tempfp = tmpfile();
 #ifdef USING_PIPE_MESSAGE
         std::function<void(const std::unique_ptr<RapidDocument>)> callback(std::bind(&CServerObject::LogCallBack, this, std::placeholders::_1));
         m_pipe_mess_object = std::make_shared<PipeJSONServer>(L"\\\\.\\pipe\\hips_hook");

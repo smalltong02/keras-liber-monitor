@@ -5,6 +5,7 @@
 #define ERROR_FEATURE "ER"
 #define FILTER_FEATURE "FL"
 #define ASSERT_FEATURE "ASSERT"
+#define EXPLOIT_FEATURE "P43"
 
 // define feature for wmi interface
 #define WMI_ENUMWBEM_NEXT "W1"

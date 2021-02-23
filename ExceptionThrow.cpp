@@ -14,6 +14,7 @@ namespace cchips {
         {
             if (ep->ExceptionRecord->NumberParameters>= 3 && ep->ExceptionRecord->ExceptionInformation[0] == ms_eh_magic_number)
             {
+                ClearThreadTls();
                 static ULONG_PTR* exception_vtbl = (reinterpret_cast<ULONG_PTR*>(*reinterpret_cast<ULONG_PTR*>(&g_exception_msg)));
                 std::exception* p = reinterpret_cast<std::exception*>(ep->ExceptionRecord->ExceptionInformation[1]);
                 ThrowInfo* throw_info = reinterpret_cast<ThrowInfo*>(ep->ExceptionRecord->ExceptionInformation[2]);
@@ -48,6 +49,7 @@ namespace cchips {
                         }
                     }
                 }
+                check_return();
             }
         //    //std::abort();
         }

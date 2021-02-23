@@ -57,9 +57,17 @@
 #define THREAD_ACCESS \
     (THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION | THREAD_SET_CONTEXT)
 
+//Hook type.
+enum
+{
+    type_old_hook = 0,
+    type_new_hook,
+};
+
 // Hook information.
 typedef struct _HOOK_ENTRY
 {
+    int    hook_type;
     LPVOID pTarget;             // Address of the target function.
     LPVOID pDetour;             // Address of the detour or relay function.
     LPVOID pTrampoline;         // Address of the trampoline function.
@@ -423,6 +431,63 @@ static MH_STATUS EnableHookLL(UINT pos, BOOL enable)
 }
 
 //-------------------------------------------------------------------------
+static MH_STATUS EnableHookLL_Orgin(UINT pos, BOOL enable)
+{
+    PHOOK_ENTRY pHook = &g_hooks.pItems[pos];
+    DWORD  oldProtect;
+    SIZE_T patchSize = sizeof(JMP_REL);
+    LPBYTE pPatchTarget = (LPBYTE)pHook->pTarget;
+
+    if (pHook->patchAbove)
+    {
+        pPatchTarget -= sizeof(JMP_REL);
+        patchSize += sizeof(JMP_REL_SHORT);
+    }
+
+    if (!VirtualProtect(pPatchTarget, patchSize, PAGE_EXECUTE_READWRITE, &oldProtect))
+        return MH_ERROR_MEMORY_PROTECT;
+
+    if (enable)
+    {
+        // add assist buffer for push context address to detour func.
+        ULONG_PTR pAssistBuf = ((ULONG_PTR)pHook->pTrampoline) + MEMORY_ASSIST_POSIT;
+        PPUSH_CON pPush = (PPUSH_CON)pAssistBuf;
+        memset(pPush, 0x90, sizeof(PUSH_CON));
+        PJMP_REL pJmpAss = (PJMP_REL)(((ULONG_PTR)pHook->pTrampoline) + MEMORY_ASSIST_POSIT + sizeof(PUSH_CON));
+        pJmpAss->opcode = 0xE9;
+        pJmpAss->operand = (UINT32)((LPBYTE)pHook->pDetour - ((LPBYTE)pJmpAss + sizeof(JMP_REL)));
+
+        PJMP_REL pJmp = (PJMP_REL)pPatchTarget;
+        pJmp->opcode = 0xE9;
+        pJmp->operand = (UINT32)((LPBYTE)pAssistBuf - (pPatchTarget + sizeof(JMP_REL)));
+
+        if (pHook->patchAbove)
+        {
+            PJMP_REL_SHORT pShortJmp = (PJMP_REL_SHORT)pHook->pTarget;
+            pShortJmp->opcode = 0xEB;
+            pShortJmp->operand = (UINT8)(0 - (sizeof(JMP_REL_SHORT) + sizeof(JMP_REL)));
+        }
+    }
+    else
+    {
+        if (pHook->patchAbove)
+            memcpy(pPatchTarget, pHook->backup, sizeof(JMP_REL) + sizeof(JMP_REL_SHORT));
+        else
+            memcpy(pPatchTarget, pHook->backup, sizeof(JMP_REL));
+    }
+
+    VirtualProtect(pPatchTarget, patchSize, oldProtect, &oldProtect);
+
+    // Just-in-case measure.
+    FlushInstructionCache(GetCurrentProcess(), pPatchTarget, patchSize);
+
+    pHook->isEnabled = enable;
+    pHook->queueEnable = enable;
+
+    return MH_OK;
+}
+
+//-------------------------------------------------------------------------
 static MH_STATUS EnableAllHooksLL(BOOL enable)
 {
     MH_STATUS status = MH_OK;
@@ -446,7 +511,11 @@ static MH_STATUS EnableAllHooksLL(BOOL enable)
         {
             if (g_hooks.pItems[i].isEnabled != enable)
             {
-                status = EnableHookLL(i, enable);
+                if(g_hooks.pItems[i].hook_type == type_new_hook)
+                    status = EnableHookLL(i, enable);
+                else if(g_hooks.pItems[i].hook_type == type_old_hook)
+                    status = EnableHookLL_Orgin(i, enable);
+                else status = MH_ERROR_TYPE;
                 if (status != MH_OK)
                     break;
             }
@@ -558,7 +627,7 @@ MH_STATUS WINAPI MH_Uninitialize(VOID)
 }
 
 //-------------------------------------------------------------------------
-MH_STATUS WINAPI MH_CreateHook(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOriginal, LPVOID pContext)
+MH_STATUS WINAPI MH_CreateHook(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOriginal, LPVOID pContext, int hook_type)
 {
     MH_STATUS status = MH_OK;
 
@@ -585,6 +654,7 @@ MH_STATUS WINAPI MH_CreateHook(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOrigina
                         PHOOK_ENTRY pHook = AddHookEntry();
                         if (pHook != NULL)
                         {
+                            pHook->hook_type = hook_type;
                             pHook->pTarget     = ct.pTarget;
 #if defined(_M_X64) || defined(__x86_64__)
                             pHook->pDetour     = ct.pRelay;
@@ -657,6 +727,11 @@ MH_STATUS WINAPI MH_CreateHook(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOrigina
     return status;
 }
 
+MH_STATUS WINAPI MH_CreateHook_New(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOriginal, LPVOID pContext)
+{
+    return MH_CreateHook(pTarget, pDetour, ppOriginal, pContext, type_new_hook);
+}
+
 //-------------------------------------------------------------------------
 MH_STATUS WINAPI MH_RemoveHook(LPVOID pTarget)
 {
@@ -674,8 +749,11 @@ MH_STATUS WINAPI MH_RemoveHook(LPVOID pTarget)
                 FROZEN_THREADS threads;
                 Freeze(&threads, pos, ACTION_DISABLE);
 
-                status = EnableHookLL(pos, FALSE);
-
+                if(g_hooks.pItems[pos].hook_type == type_new_hook)
+                    status = EnableHookLL(pos, FALSE);
+                else if(g_hooks.pItems[pos].hook_type == type_old_hook)
+                    status = EnableHookLL_Orgin(pos, FALSE);
+                else status = MH_ERROR_TYPE;
                 Unfreeze(&threads);
             }
 
@@ -701,7 +779,7 @@ MH_STATUS WINAPI MH_RemoveHook(LPVOID pTarget)
 }
 
 //-------------------------------------------------------------------------
-static MH_STATUS EnableHook(LPVOID pTarget, BOOL enable)
+static MH_STATUS EnableHook(LPVOID pTarget, BOOL enable, int hook_type)
 {
     MH_STATUS status = MH_OK;
 
@@ -719,12 +797,15 @@ static MH_STATUS EnableHook(LPVOID pTarget, BOOL enable)
             UINT pos = FindHookEntry(pTarget);
             if (pos != INVALID_HOOK_POS)
             {
-                if (g_hooks.pItems[pos].isEnabled != enable)
+                if (g_hooks.pItems[pos].hook_type == hook_type && g_hooks.pItems[pos].isEnabled != enable)
                 {
                     Freeze(&threads, pos, ACTION_ENABLE);
 
-                    status = EnableHookLL(pos, enable);
-
+                    if(hook_type == type_new_hook)
+                        status = EnableHookLL(pos, enable);
+                    else if(hook_type == type_old_hook)
+                        status = EnableHookLL_Orgin(pos, enable);
+                    else status = MH_ERROR_TYPE;
                     Unfreeze(&threads);
                 }
                 else
@@ -751,13 +832,23 @@ static MH_STATUS EnableHook(LPVOID pTarget, BOOL enable)
 //-------------------------------------------------------------------------
 MH_STATUS WINAPI MH_EnableHook(LPVOID pTarget)
 {
-    return EnableHook(pTarget, TRUE);
+    return EnableHook(pTarget, TRUE, type_new_hook);
+}
+
+MH_STATUS WINAPI MH_EnableHook_Orgin(LPVOID pTarget)
+{
+    return EnableHook(pTarget, TRUE, type_old_hook);
 }
 
 //-------------------------------------------------------------------------
 MH_STATUS WINAPI MH_DisableHook(LPVOID pTarget)
 {
-    return EnableHook(pTarget, FALSE);
+    return EnableHook(pTarget, FALSE, type_new_hook);
+}
+
+MH_STATUS WINAPI MH_DisableHook_Orgin(LPVOID pTarget)
+{
+    return EnableHook(pTarget, FALSE, type_old_hook);
 }
 
 //-------------------------------------------------------------------------
@@ -877,7 +968,28 @@ MH_STATUS WINAPI MH_CreateHookApiEx(
     if(ppTarget != NULL)
         *ppTarget = pTarget;
 
-    return MH_CreateHook(pTarget, pDetour, ppOriginal, pContext);
+    return MH_CreateHook(pTarget, pDetour, ppOriginal, pContext, type_new_hook);
+}
+
+MH_STATUS WINAPI MH_CreateHookApiEx_Orgin(
+    LPCWSTR pszModule, LPCSTR pszProcName, const LPVOID pDetour,
+    LPVOID *ppOriginal, LPVOID *ppTarget)
+{
+    HMODULE hModule;
+    LPVOID  pTarget;
+
+    hModule = GetModuleHandleW(pszModule);
+    if (hModule == NULL)
+        return MH_ERROR_MODULE_NOT_FOUND;
+
+    pTarget = (LPVOID)GetProcAddress(hModule, pszProcName);
+    if (pTarget == NULL)
+        return MH_ERROR_FUNCTION_NOT_FOUND;
+
+    if (ppTarget != NULL)
+        *ppTarget = pTarget;
+
+    return MH_CreateHook(pTarget, pDetour, ppOriginal, NULL, type_old_hook);
 }
 
 //-------------------------------------------------------------------------

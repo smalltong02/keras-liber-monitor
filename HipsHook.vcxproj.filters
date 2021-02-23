@@ -51,5 +51,8 @@
     <None Include="wmiobject.json">
       <Filter>config</Filter>
     </None>
+    <None Include="vbe.json">
+      <Filter>config</Filter>
+    </None>
   </ItemGroup>
 </Project>

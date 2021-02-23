@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "utils.h"
 #include "HookImplementObject.h"
+#include "exploitmpl.h"
 
 namespace cchips {
 
@@ -9,6 +10,14 @@ namespace cchips {
     thread_local ULONG_PTR CHookImplementObject::m_threadTlsCount = 0;
     std::atomic_bool CHookImplementObject::m_disable_hook = true;
     const std::unique_ptr<CExceptionObject> CHookImplementObject::m_exceptionObject = (CExceptionObject::GetInstance());
+    CHookImplementObject::heap_allocation_define CHookImplementObject::m_heap_allocation_define = {};
+    const std::vector<std::string> CHookImplementObject::_vbe_module_name_def = {
+        "vbe6.dll",
+        "vbe7.dll",
+        "vbe70.dll",
+        "vbe71.dll",
+        "Shell32.dll"
+    };
 
 #ifdef _X86_
 #pragma code_seg(".wrtext")
@@ -38,18 +47,18 @@ namespace cchips {
                 entry_count = __object->GetTlsValueForThreadIdx();
             CLogHandle* __log = nullptr;
             if (__status == processing_continue)
-                __status = __object->Preprocessing(__hook_node, __addr, __psize, __return, entry_count, &__log);
+                __status = __object->Preprocessing(__hook_node, __addr, __addr, __psize, __return, entry_count, &__log);
             if (__status != processing_exit)
             {
                 void* __func = __hook_node->orgin_api_implfunc;
                 char** __params = nullptr;
+                if (__psize == 0) __psize = (int)__hook_node->function->GetArgumentAlignSize();
                 __params = (char**)((ULONG_PTR)__addr + __psize);
                 CFunction::_call_convention __call_conv = __hook_node->function->GetCallConv();
-
-                MACRO_CALL_ORGINAL_(__params, __psize, __call_conv, __func, __return);
+                MACRO_CALL_ORGINAL_(__backup_regs, __params, __psize, __call_conv, __func, __return);
                 __hook_node->hook_implement_object->GetLastError(error);
                 if(__status == processing_continue)
-                    __object->Postprocessing(__hook_node, __addr, __psize, __return, entry_count, &__log);
+                    __object->Postprocessing(__hook_node, __addr, __addr, __psize, __return, entry_count, &__log);
             }
             if(entry_count != -1)
                 __object->ReleaseTlsValueForThreadIdx();
@@ -87,6 +96,75 @@ namespace cchips {
         return true;
     }
 
+    bool CHookImplementObject::InitializeSelfModuleInfo()
+    {
+        if (m_special_module_info.m_self_info.EntryPoint != nullptr &&
+            m_special_module_info.m_self_info.lpBaseOfDll != nullptr &&
+            m_special_module_info.m_self_info.SizeOfImage != 0)
+            return true;
+
+        MODULEINFO mi = { 0 };
+        MEMORY_BASIC_INFORMATION membinfo;
+        static int base = 0;
+        if (VirtualQuery(&base, &membinfo, sizeof(membinfo)) == 0)
+            return false;
+        if (!GetModuleInformation(GetCurrentProcess(), (HMODULE)membinfo.AllocationBase, &mi, sizeof(mi)))
+            return false;
+        m_special_module_info.m_self_info = mi;
+        return true;
+    }
+
+    bool CHookImplementObject::InitializeVbeModuleInfo()
+    {
+        if (m_special_module_info.m_vbe_info.EntryPoint != nullptr &&
+            m_special_module_info.m_vbe_info.lpBaseOfDll != nullptr &&
+            m_special_module_info.m_vbe_info.SizeOfImage != 0)
+            return true;
+        HMODULE hVbe = nullptr;
+        for (const auto& def_str : _vbe_module_name_def) {
+            hVbe = GetModuleHandle(def_str.c_str());
+            if (hVbe != nullptr) break;
+        }
+        if (!hVbe)
+            return false;
+        MODULEINFO mi = { 0 };
+        if (!GetModuleInformation(GetCurrentProcess(), hVbe, &mi, sizeof(mi)))
+            return false;
+        m_special_module_info.m_vbe_info = mi;
+        return true;
+    }
+
+    bool CHookImplementObject::InitializeVbeModuleInfo(const std::string& lib_name, PVOID vbe_base)
+    {
+        if (m_special_module_info.m_vbe_info.EntryPoint != nullptr &&
+            m_special_module_info.m_vbe_info.lpBaseOfDll != nullptr &&
+            m_special_module_info.m_vbe_info.SizeOfImage != 0)
+            return true;
+        bool bfind = false;
+        for (const auto& def_str : _vbe_module_name_def) {
+            if (stricmp(lib_name.c_str(), def_str.c_str()) == 0) {
+                bfind = true;
+                break;
+            }
+        }
+        if (!bfind) return bfind;
+        MODULEINFO mi = { 0 };
+        if (!GetModuleInformation(GetCurrentProcess(), reinterpret_cast<HMODULE>(vbe_base), &mi, sizeof(mi)))
+            return false;
+        m_special_module_info.m_vbe_info = mi;
+        return true;
+    }
+
+    bool CHookImplementObject::InitializeSpecialModuleInfo()
+    {
+        if (InitializeSelfModuleInfo()) {
+            if (InitializeVbeModuleInfo()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool CHookImplementObject::Initialize(std::shared_ptr<CHipsCfgObject> configObject)
     {
         m_configObject = std::move(configObject);
@@ -94,6 +172,9 @@ namespace cchips {
 
         if (!InitializeErrorOffset())
             return m_bValid;
+        InitializeSpecialModuleInfo();
+        m_category_ob_ptr = std::make_unique<CategoryObject>();
+        if (!m_category_ob_ptr) return m_bValid;
         m_notification_api_define.ldrregisterdllnotification_func = reinterpret_cast<LdrRegisterDllNotification_Define>(GetProcAddress(GetModuleHandleA("ntdll"), "LdrRegisterDllNotification"));
         if (!m_notification_api_define.ldrregisterdllnotification_func)
             return m_bValid;
@@ -175,7 +256,7 @@ namespace cchips {
             ASSERT(target_addr);
             if (!target_addr)
                 break;
-            status = MH_CreateHook(target_addr, node.hook_implement_object->GetHookImplementFunction(), &(node.orgin_api_implfunc), (LPVOID*)&node);
+            status = MH_CreateHook_New(target_addr, node.hook_implement_object->GetHookImplementFunction(), &(node.orgin_api_implfunc), (LPVOID*)&node);
             if (status == MH_OK)
             {
                 if (node.bdelayed)
@@ -263,6 +344,32 @@ namespace cchips {
         return RemoveNormalApi(node);
     }
 
+    bool CHookImplementObject::ShouldbeHooked(const std::shared_ptr<CFunction>& function)
+    {
+        if (!function) return false;
+        if (!function->GetHooksProto()) return true;
+        if (function->GetHooksProto()->GetOsPlatform().length()) {
+            if (!CommonFuncsObject::IsMatchCurrentOS(function->GetHooksProto()->GetOsPlatform())) {
+                function->ClearHooksProto();
+                return false;
+            }
+        }
+        if (function->GetHooksProto()->GetProcessCategory().length()) {
+            if (!m_category_ob_ptr->IsMatchCategory(function->GetHooksProto()->GetProcessCategory())) {
+                function->ClearHooksProto();
+                return false;
+            }
+        }
+        if (function->GetHooksProto()->GetProcessMode().length()) {
+            if (!CommonFuncsObject::IsMatchProcType(function->GetHooksProto()->GetProcessMode())) {
+                function->ClearHooksProto();
+                return false;
+            }
+        }
+        function->ClearHooksProto();
+        return true;
+    }
+
     bool CHookImplementObject::HookAllApis()
     {
         ASSERT(m_bValid);
@@ -271,33 +378,48 @@ namespace cchips {
         if (!InitializeNotificationDefine())
             return false;
         int count = 0;
-        m_hookNodeList.resize(GetFunctionCounts(), hook_node({}));
+
+#define RTL_HEAP_FUNCTION_COUNTS 3
+
+        m_hookNodeList.resize(GetFunctionCounts() + RTL_HEAP_FUNCTION_COUNTS, hook_node({}));
 
         std::for_each(GetFunctions().begin(), GetFunctions().end(), [&](const auto& func) {
-            m_hookNodeList[count].bdelayed = false;
-            m_hookNodeList[count].orgin_api_implfunc = nullptr;
-            m_hookNodeList[count].hook_implement_object = shared_from_this();
-            m_hookNodeList[count].function = func.second;
 
-            if (MH_STATUS status = HookApi(m_hookNodeList[count]); status == MH_ERROR_MODULE_NOT_FOUND)
-            {
-                // delayed hook;
-                m_hookNodeList[count].bdelayed = true;
-                if(!(*m_hookNodeList[count].function).GetClassProto() || (*m_hookNodeList[count].function).GetClassProto()->GetClassType() == CPrototype::class_normal)
-                    m_delayNodeList[StringToLower((*m_hookNodeList[count].function).GetLibrary())].push_back(count);
-                else
-                    m_delayNodeList[(*m_hookNodeList[count].function).GetClassProto()->GetTypeName()].push_back(count);
-                error_log("api hook: '{}' be add to delay_list!", (*func.second).GetName());
+            if (ShouldbeHooked(func.second)) {
+                m_hookNodeList[count].bdelayed = false;
+                m_hookNodeList[count].orgin_api_implfunc = nullptr;
+                m_hookNodeList[count].hook_implement_object = shared_from_this();
+                m_hookNodeList[count].function = func.second;
+
+                if (MH_STATUS status = HookApi(m_hookNodeList[count]); status == MH_ERROR_MODULE_NOT_FOUND)
+                {
+                    // delayed hook;
+                    m_hookNodeList[count].bdelayed = true;
+                    if (!(*m_hookNodeList[count].function).GetClassProto() || (*m_hookNodeList[count].function).GetClassProto()->GetClassType() == CPrototype::class_normal)
+                        m_delayNodeList[StringToLower((*m_hookNodeList[count].function).GetLibrary())].push_back(count);
+                    else
+                        m_delayNodeList[(*m_hookNodeList[count].function).GetClassProto()->GetTypeName()].push_back(count);
+                    error_log("api hook: '{}' be add to delay_list!", (*func.second).GetName());
+                }
+                count++;
             }
-            count++;
         });
-
+        {
+            // hook heap APIs for exploit detection, only hook 32bit process and limited category
+#define partten_proc_type "^(?i)32-bit$"
+#define partten_proc_category "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+            if (CommonFuncsObject::IsMatchProcType(partten_proc_type) && m_category_ob_ptr->IsMatchCategory(partten_proc_category)) {
+                MH_CreateHookApiEx_Orgin(L"ntdll.dll", "RtlAllocateHeap", detour_rtlAllocateHeap, (LPVOID*)&m_heap_allocation_define.rtlallocateheap_func, &m_hookNodeList[m_hookNodeList.size() - 3].ppTarget);
+                MH_CreateHookApiEx_Orgin(L"ntdll.dll", "RtlFreeHeap", detour_rtlFreeHeap, (LPVOID*)&m_heap_allocation_define.rtlfreeheap_func, &m_hookNodeList[m_hookNodeList.size() - 2].ppTarget);
+                MH_CreateHookApiEx_Orgin(L"ntdll.dll", "RtlDestroyHeap", detour_rtlDestroyHeap, (LPVOID*)&m_heap_allocation_define.rtldestroyheap_func, &m_hookNodeList[m_hookNodeList.size() - 1].ppTarget);
+            }
+        }
         if (HookProcessing())
             EnableAllApis();
         return true;
     }
 
-    processing_status CHookImplementObject::Preprocessing(CHookImplementObject::hook_node* node_elem, PVOID param_addr, int& params_size, ULONG_PTR& func_return, DWORD entry_count, CLogHandle** __log)
+    processing_status CHookImplementObject::Preprocessing(CHookImplementObject::hook_node* node_elem, PVOID param_addr, PVOID return_addr, int& params_size, ULONG_PTR& func_return, DWORD entry_count, CLogHandle** __log)
     {
         ASSERT(node_elem->function != nullptr && node_elem->hook_implement_object != nullptr && node_elem->orgin_api_implfunc != nullptr);
         if (node_elem->function == nullptr || node_elem->hook_implement_object == nullptr || node_elem->orgin_api_implfunc == nullptr)
@@ -325,9 +447,10 @@ namespace cchips {
 #ifdef _AMD64_
         char* __params = reinterpret_cast<char*>(param_addr);
 #endif
+        char* __return_addr = *reinterpret_cast<char**>(return_addr);
         std::unique_ptr<CLogHandle> log_handle = std::make_unique<CLogHandle>(func_object->GetFeature(), CLogObject::logtype::log_invalid);
         ASSERT(log_handle != nullptr);
-        detour_node node = { &func_return, __params, (size_t)params_size, node_elem->function, node_elem->hook_implement_object, log_handle->GetHandle() };
+        detour_node node = { &func_return, __return_addr, __params, (size_t)params_size, node_elem->function, node_elem->hook_implement_object, log_handle->GetHandle() };
         detour_node* pnode = &node;
 #ifdef _X86_
         char** __rev_params = (char**)((ULONG_PTR)param_addr + params_size);
@@ -371,7 +494,7 @@ namespace cchips {
         return status;
     }
 
-    processing_status CHookImplementObject::Postprocessing(CHookImplementObject::hook_node* node_elem, PVOID param_addr, int& params_size, ULONG_PTR& func_return, DWORD entry_count, CLogHandle** __log)
+    processing_status CHookImplementObject::Postprocessing(CHookImplementObject::hook_node* node_elem, PVOID param_addr, PVOID return_addr, int& params_size, ULONG_PTR& func_return, DWORD entry_count, CLogHandle** __log)
     {
         ASSERT(node_elem->function != nullptr && node_elem->hook_implement_object != nullptr && node_elem->orgin_api_implfunc != nullptr && __log != nullptr);
 
@@ -379,14 +502,16 @@ namespace cchips {
         std::shared_ptr<CFunction> func_object = node_elem->function;
         std::shared_ptr<CHookImplementObject> hook_implement_object = node_elem->hook_implement_object;
         if (params_size == 0) params_size = (int)func_object->GetArgumentAlignSize();
+
 #ifdef _X86_
         char* __params = reinterpret_cast<char*>(reinterpret_cast<ULONG_PTR>(param_addr) + CFunction::stack_aligned_bytes);
 #endif
 #ifdef _AMD64_
         char* __params = reinterpret_cast<char*>(param_addr);
 #endif
+        char* __ret_addr = *reinterpret_cast<char**>(return_addr);
         ASSERT(log_handle != nullptr);
-        detour_node node = { &func_return, __params, (size_t)params_size, node_elem->function, node_elem->hook_implement_object, log_handle->GetHandle() };
+        detour_node node = { &func_return, __ret_addr, __params, (size_t)params_size, node_elem->function, node_elem->hook_implement_object, log_handle->GetHandle() };
         detour_node* pnode = &node;
 #ifdef _X86_
         char** __rev_params = (char**)((ULONG_PTR)param_addr + params_size);
@@ -427,10 +552,40 @@ namespace cchips {
         //processing pre hook
         ADD_PRE_PROCESSING(NtQueryInformationProcess, detour_ntQueryInformationProcess);
         ADD_PRE_PROCESSING(CoUninitialize, detour_coUninitialize);
+        ADD_PRE_PROCESSING(VirtualAlloc, detour_virtualAlloc);
+        ADD_PRE_PROCESSING(CreateProcessA, detour_createProcessA);
+        ADD_PRE_PROCESSING(CreateProcessW, detour_createProcessW);
+        ADD_PRE_PROCESSING(CreateProcessInternalW, detour_createProcessInternalW);
+        ADD_PRE_PROCESSING(DialogBoxParamA, detour_dialogBoxParamA);
+        ADD_PRE_PROCESSING(DialogBoxParamW, detour_dialogBoxParamW);
+        ADD_PRE_PROCESSING(CreateFileA, detour_createFileA);
+        ADD_PRE_PROCESSING(CreateFileW, detour_createFileW);
+        ADD_PRE_PROCESSING(CopyFileA, detour_copyFileA);
+        ADD_PRE_PROCESSING(CopyFileW, detour_copyFileW);
+        ADD_PRE_PROCESSING(ShellExecuteA, detour_shellExecuteA);
+        ADD_PRE_PROCESSING(ShellExecuteW, detour_shellExecuteW);
+        ADD_PRE_PROCESSING(URLDownloadToFileA, detour_URLDownloadToFileA);
+        ADD_PRE_PROCESSING(URLDownloadToFileW, detour_URLDownloadToFileW);
+        ADD_PRE_PROCESSING(URLDownloadToCacheFileA, detour_URLDownloadToCacheFileA);
+        ADD_PRE_PROCESSING(URLDownloadToCacheFileW, detour_URLDownloadToCacheFileW);
+        ADD_PRE_PROCESSING(WinExec, detour_winExec);
+        ADD_PRE_PROCESSING(LoadLibraryA, detour_loadLibraryA);
+        ADD_PRE_PROCESSING(LoadLibraryW, detour_loadLibraryW);
+        ADD_PRE_PROCESSING(LoadLibraryExA, detour_loadLibraryExA);
+        ADD_PRE_PROCESSING(LoadLibraryExW, detour_loadLibraryExW);
+        ADD_PRE_PROCESSING(NtMapViewOfSection, detour_ntMapViewOfSection);
+        ADD_PRE_PROCESSING(RtlFreeHeap, detour_rtlFreeHeap);
+        ADD_PRE_PROCESSING(RtlDestroyHeap, detour_rtlDestroyHeap);
+        ADD_PRE_PROCESSING(WSAStartup, detour_WSAStartup);
+        ADD_PRE_PROCESSING(socket, detour_socket);
+        ADD_PRE_PROCESSING(connect, detour_connect);
         // processing post hook
         ADD_POST_PROCESSING(CoInitializeEx, detour_coInitializeEx);
         ADD_POST_PROCESSING(GetProcAddress, detour_getProcAddress);
         ADD_POST_PROCESSING(CoInitializeSecurity, detour_coInitializeSecurity);
+        ADD_POST_PROCESSING(VirtualAllocEx, detour_virtualAllocEx);
+        ADD_POST_PROCESSING(VirtualProtectEx, detour_virtualProtectEx);
+        ADD_POST_PROCESSING(RtlAllocateHeap, detour_rtlAllocateHeap);
         // processing wmi hook
         ADD_PRE_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_ExecQuery);
         ADD_POST_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_Post_ExecQuery);
@@ -448,9 +603,40 @@ namespace cchips {
         //processing pre hook
         DEL_PRE_PROCESSING(NtQueryInformationProcess, detour_ntQueryInformationProcess);
         DEL_PRE_PROCESSING(CoUninitialize, detour_coUninitialize);
+        DEL_PRE_PROCESSING(VirtualAlloc, detour_virtualAlloc);
+        DEL_PRE_PROCESSING(CreateProcessA, detour_createProcessA);
+        DEL_PRE_PROCESSING(CreateProcessW, detour_createProcessW);
+        DEL_PRE_PROCESSING(CreateProcessInternalW, detour_createProcessInternalW);
+        DEL_PRE_PROCESSING(DialogBoxParamA, detour_dialogBoxParamA);
+        DEL_PRE_PROCESSING(DialogBoxParamW, detour_dialogBoxParamW);
+        DEL_PRE_PROCESSING(CreateFileA, detour_createFileA);
+        DEL_PRE_PROCESSING(CreateFileW, detour_createFileW);
+        DEL_PRE_PROCESSING(CopyFileA, detour_copyFileA);
+        DEL_PRE_PROCESSING(CopyFileW, detour_copyFileW);
+        DEL_PRE_PROCESSING(ShellExecuteA, detour_shellExecuteA);
+        DEL_PRE_PROCESSING(ShellExecuteW, detour_shellExecuteW);
+        DEL_PRE_PROCESSING(URLDownloadToFileA, detour_URLDownloadToFileA);
+        DEL_PRE_PROCESSING(URLDownloadToFileW, detour_URLDownloadToFileW);
+        DEL_PRE_PROCESSING(URLDownloadToCacheFileA, detour_URLDownloadToCacheFileA);
+        DEL_PRE_PROCESSING(URLDownloadToCacheFileW, detour_URLDownloadToCacheFileW);
+        DEL_PRE_PROCESSING(WinExec, detour_winExec);
+        DEL_PRE_PROCESSING(LoadLibraryA, detour_loadLibraryA);
+        DEL_PRE_PROCESSING(LoadLibraryW, detour_loadLibraryW);
+        DEL_PRE_PROCESSING(LoadLibraryExA, detour_loadLibraryExA);
+        DEL_PRE_PROCESSING(LoadLibraryExW, detour_loadLibraryExW);
+        DEL_PRE_PROCESSING(NtMapViewOfSection, detour_ntMapViewOfSection);
+        DEL_PRE_PROCESSING(RtlFreeHeap, detour_rtlFreeHeap);
+        DEL_PRE_PROCESSING(RtlDestroyHeap, detour_rtlDestroyHeap);
+        DEL_PRE_PROCESSING(WSAStartup, detour_WSAStartup);
+        DEL_PRE_PROCESSING(socket, detour_socket);
+        DEL_PRE_PROCESSING(connect, detour_connect);
         // processing post hook
         DEL_POST_PROCESSING(CoInitializeEx, detour_coInitializeEx);
         DEL_POST_PROCESSING(CoInitializeSecurity, detour_coInitializeSecurity);
+        DEL_POST_PROCESSING(GetProcAddress, detour_getProcAddress);
+        DEL_POST_PROCESSING(VirtualAllocEx, detour_virtualAllocEx);
+        DEL_POST_PROCESSING(VirtualProtectEx, detour_virtualProtectEx);
+        DEL_POST_PROCESSING(RtlAllocateHeap, detour_rtlAllocateHeap);
         // processing wmi hook
         DEL_PRE_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_ExecQuery);
         DEL_POST_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_Post_ExecQuery);
@@ -490,9 +676,10 @@ namespace cchips {
                 entry_count = __object->GetTlsValueForThreadIdx();
             CLogHandle* __log = nullptr;
             void* __new_addr = reinterpret_cast<void*>(reinterpret_cast<ULONG_PTR>(__addr) - 0x270);
+            void* __return_addr = reinterpret_cast<void*>(reinterpret_cast<ULONG_PTR>(__addr) - 0x8);
             bool __bforward = __object->ForwardPropagationArgs(reinterpret_cast<ULONG_PTR*>(__new_addr), __backup_regs, __hook_node->function, __addr);
             if (__status == processing_continue)
-                if (__bforward) __status = __object->Preprocessing(__hook_node, __new_addr, __psize, __return, entry_count, &__log);
+                if (__bforward) __status = __object->Preprocessing(__hook_node, __new_addr, __return_addr, __psize, __return, entry_count, &__log);
             if (__status != processing_exit)
             {
                 if (__psize == 0) __psize = (int)__hook_node->function->GetArgumentAlignSize();
@@ -503,7 +690,7 @@ namespace cchips {
                 MACRO_CALL_ORGINAL_(__params, __psize, __call_conv, __func, &__return);
                 __hook_node->hook_implement_object->GetLastError(error);
                 if(__status == processing_continue)
-                    if (__bforward) __object->Postprocessing(__hook_node, __new_addr, __psize, __return, entry_count, &__log);
+                    if (__bforward) __object->Postprocessing(__hook_node, __new_addr, __return_addr, __psize, __return, entry_count, &__log);
             }
             if (entry_count != -1)
                 __object->ReleaseTlsValueForThreadIdx();

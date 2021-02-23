@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <execution>
+#include "Psapi.h"
 #include "HipsCfgObject.h"
 #include "SigsObject.h"
 #include "MinHook.h"
@@ -12,6 +13,7 @@
 #include "SafePtr.h"
 #include "asmfunction.h"
 #include "ExceptionThrow.h"
+#include "UniversalObject.h"
 #include "drivermgr.h"
 #include "ntapi.h"
 
@@ -76,7 +78,7 @@ namespace cchips {
     __asm {pop  ebx}                            \
     __asm {mov __status, eax}
 
-#define MACRO_CALL_ORGINAL_(__params, __psize, __call_conv, __func, __return) \
+#define MACRO_CALL_ORGINAL_(__backup_regs, __params, __psize, __call_conv, __func, __return) \
     __asm {push ebx}                            \
     for (int i = 0; i < __psize / 4; i++)       \
     {                                           \
@@ -87,8 +89,7 @@ namespace cchips {
         __asm {mov  eax, dword ptr [eax]}       \
         __asm {push eax}                        \
     }                                           \
-    __asm {mov  eax, __func}                    \
-    __asm {call eax}                            \
+    __asm {call __func}                            \
     __asm {mov  __return, eax}                  \
     __asm {cmp  __psize, 0}                     \
     __asm {jz   std_quit}                       \
@@ -143,6 +144,46 @@ namespace cchips {
 #define ADD_POST_PROCESSING(NAME, FUNC) AddPostProcessing(#NAME, reinterpret_cast<CFunction::func_proto>(FUNC))
 #define DEL_PRE_PROCESSING(NAME, FUNC) DelPreProcessing(#NAME, reinterpret_cast<CFunction::func_proto>(FUNC))
 #define DEL_POST_PROCESSING(NAME, FUNC) DelPostProcessing(#NAME, reinterpret_cast<CFunction::func_proto>(FUNC))
+
+#define PRE_BEGIN(de_node) \
+BreakPoint; \
+ASSERT(de_node != nullptr); \
+ASSERT(de_node->return_va != nullptr); \
+ASSERT(de_node->log_entry != nullptr); \
+ASSERT(de_node->function != nullptr); \
+ASSERT(de_node->hook_implement_object != nullptr); \
+if (!de_node || !de_node->return_va || !de_node->log_entry || !de_node->hook_implement_object) return processing_skip;
+
+#define EXPLOIT_PRE_BEGIN(de_node) \
+PRE_BEGIN(de_node) \
+if (!de_node->return_addr) return processing_skip;
+
+#define POST_BEGIN(de_node) \
+BreakPoint; \
+ASSERT(de_node != nullptr); \
+ASSERT(de_node->return_va != nullptr); \
+ASSERT(de_node->log_entry != nullptr); \
+ASSERT(de_node->function != nullptr); \
+ASSERT(de_node->hook_implement_object != nullptr); \
+if (!de_node || !de_node->return_va || !de_node->log_entry || !de_node->hook_implement_object) return processing_skip; \
+if (processing_status status; (status = de_node->function->CheckReturn(de_node)) != processing_continue) return status;
+
+#define EXPLOIT_POST_BEGIN(de_node) \
+POST_BEGIN(de_node) \
+if (!de_node->return_addr) return processing_skip;
+
+#define CHECK_COMMON_EXPLOIT() \
+if (DWORD index_; !CheckExploitFuncs::ValidStackPointer(reinterpret_cast<ULONG_PTR>(&index_))) {    \
+    exploit_log("\"API\": \"{}\", \"reason\": {}", node->function->GetName(), CheckExploitFuncs::e_reason_stack_corrupted); \
+    return processing_continue; \
+} else { \
+    CheckExploitFuncs::_exploit_reason reason = CheckExploitFuncs::e_reason_null; \
+    reason = CheckExploitFuncs::CheckReturnAddress(reinterpret_cast<ULONG_PTR>(node->return_addr)); \
+    if (reason != CheckExploitFuncs::e_reason_null) { \
+            exploit_log("\"API\": \"{}\", \"reason\": {}", node->function->GetName(), reason); \
+            return processing_continue; \
+    } \
+}
 
         using REGISTERS = struct __REGISTERS {
 #ifdef _X86_
@@ -201,9 +242,13 @@ namespace cchips {
         using IWbemClassObject_Next_Define = HRESULT(*)(IWbemClassObject* This, long lFlags, BSTR *strName, VARIANT *pVal, long *pType, long *plFlavor);
         using IWbemServices_ExecMethod_Define = HRESULT(*)(IWbemServices* This, const BSTR strObjectPath, const BSTR strMethodName, long lFlags, IWbemContext *pCtx, PVOID pInParams, IWbemClassObject **ppOutParams, IWbemCallResult **ppCallResult);
         using IWbemServices_ExecQuery_Define = HRESULT(*)(IWbemServices* This, const BSTR strQueryLanguage, const BSTR strQuery, long lFlags, IWbemContext *pCtx, IEnumWbemClassObject **ppEnum);
+        using RtlAllocateHeap_Define = PVOID(WINAPI*)(PVOID HeapHandle, ULONG Flags, SIZE_T Size);
+        using RtlFreeHeap_Define = BOOLEAN(WINAPI*)(PVOID HeapHandle, ULONG Flags, PVOID BaseAddress);
+        using RtlDestroyHeap_Define = PVOID(WINAPI*)(PVOID HeapHandle);
 
         using detour_node = struct _detour_node {
             PVOID return_va;
+            char* return_addr;
             char* pparams;
             size_t params_size;
             std::shared_ptr<CFunction> function;
@@ -228,10 +273,19 @@ namespace cchips {
         using notification_api_define = struct {
             LdrRegisterDllNotification_Define ldrregisterdllnotification_func;
         };
-
+        using heap_allocation_define = struct {
+            RtlAllocateHeap_Define rtlallocateheap_func;
+            RtlFreeHeap_Define rtlfreeheap_func;
+            RtlDestroyHeap_Define rtldestroyheap_func;
+        };
         using error_offset_define = struct {
             DWORD m_win32_error_offset;
             DWORD m_nt_status_offset;
+        };
+
+        using special_module_info = struct {
+            MODULEINFO m_self_info;
+            MODULEINFO m_vbe_info;
         };
 
         using last_error_define = struct {
@@ -240,9 +294,14 @@ namespace cchips {
         };
 
         bool InitializeErrorOffset();
+        bool InitializeSpecialModuleInfo();
+        bool InitializeSelfModuleInfo();
+        bool InitializeVbeModuleInfo();
+        bool InitializeVbeModuleInfo(const std::string& lib_name, PVOID vbe_base);
+        special_module_info& GetSpecialModuleInfo() { return m_special_module_info; }
         bool Initialize(std::shared_ptr<CHipsCfgObject> configObject);
-        static processing_status Preprocessing(CHookImplementObject::hook_node* node_elem, PVOID param_addr, int& params_size, ULONG_PTR& func_return, DWORD entry_count, CLogHandle** __log);
-        static processing_status Postprocessing(CHookImplementObject::hook_node* node_elem, PVOID param_addr, int& params_size, ULONG_PTR& func_return, DWORD entry_count, CLogHandle** __log);
+        static processing_status Preprocessing(CHookImplementObject::hook_node* node_elem, PVOID param_addr, PVOID return_addr, int& params_size, ULONG_PTR& func_return, DWORD entry_count, CLogHandle** __log);
+        static processing_status Postprocessing(CHookImplementObject::hook_node* node_elem, PVOID param_addr, PVOID return_addr, int& params_size, ULONG_PTR& func_return, DWORD entry_count, CLogHandle** __log);
 #ifdef _AMD64_
         static bool ForwardPropagationArgs(ULONG_PTR* new_addr, CHookImplementObject::REGISTERS* backup_regs, std::shared_ptr<CFunction> function, void* addr);
 #endif
@@ -268,7 +327,9 @@ namespace cchips {
                 return true;
             return false;
         }
-        const std::unique_ptr< CDriverMgr>& GetDriverMgr() const { return m_drivermgr; }
+        const std::unique_ptr<CDriverMgr>& GetDriverMgr() const { return m_drivermgr; }
+        const std::unique_ptr<CategoryObject>& GetCategoryPtr() const { return m_category_ob_ptr; }
+        bool ShouldbeHooked(const std::shared_ptr<CFunction>& function);
         MH_STATUS HookApi(hook_node& node);
         void RemoveApi(hook_node& node);
         bool HookAllApis();
@@ -302,11 +363,16 @@ namespace cchips {
                 return false;
         }
         const ULONG_PTR GetTlsValueForThreadIdx() const {
-            return m_threadTlsCount++;
+            if (readtls(TLS_TIB) != 0)
+                return m_threadTlsCount++;
+            else
+                return 1;
         }
         const ULONG_PTR ReleaseTlsValueForThreadIdx() const {
-            if(m_threadTlsCount > 0)
-                return m_threadTlsCount--;
+            if (readtls(TLS_TIB) != 0) {
+                if (m_threadTlsCount > 0)
+                    return m_threadTlsCount--;
+            }
             return 0;
         }
         void GetLastError(last_error_define& error) { 
@@ -343,6 +409,40 @@ namespace cchips {
         static processing_status STDMETHODCALLTYPE detour_IWbemServices_ExecMethod(detour_node* node, IWbemServices* This, const BSTR strObjectPath, const BSTR strMethodName, long lFlags, IWbemContext *pCtx, IWbemClassObject *pInParams, IWbemClassObject **ppOutParams, IWbemCallResult **ppCallResult);
         static processing_status STDMETHODCALLTYPE detour_IWbemServices_ExecQuery(detour_node* node, IWbemServices* This, const BSTR strQueryLanguage, const BSTR strQuery, long lFlags, IWbemContext *pCtx, IEnumWbemClassObject **ppEnum);
         static processing_status STDMETHODCALLTYPE detour_IWbemServices_Post_ExecQuery(detour_node* node, IWbemServices* This, const BSTR strQueryLanguage, const BSTR strQuery, long lFlags, IWbemContext *pCtx, IEnumWbemClassObject **ppEnum);
+        // define static detour for exploit
+        static processing_status WINAPI detour_virtualAlloc(detour_node* node, LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect);
+        static processing_status WINAPI detour_virtualAllocEx(detour_node* node, HANDLE hProcess, LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect);
+        static processing_status WINAPI detour_virtualProtectEx(detour_node* node, HANDLE hProcess, LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, LPDWORD lpflOldProtect);
+        static processing_status WINAPI detour_createProcessA(detour_node* node, LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCSTR lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation);
+        static processing_status WINAPI detour_createProcessW(detour_node* node, LPCWSTR lpApplicationName, LPWSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCWSTR lpCurrentDirectory, LPSTARTUPINFOW lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation);
+        static processing_status WINAPI detour_createProcessInternalW(detour_node* node, HANDLE hToken, LPCWSTR lpApplicationName, LPWSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCWSTR lpCurrentDirectory, LPSTARTUPINFOW lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation, PHANDLE hNewToken);
+        static processing_status WINAPI detour_dialogBoxParamA(detour_node* node, HINSTANCE hInstance, LPCSTR lpTemplateName, HWND hWndParent, DLGPROC lpDialogFunc, LPARAM dwInitParam);
+        static processing_status WINAPI detour_dialogBoxParamW(detour_node* node, HINSTANCE hInstance, LPCWSTR lpTemplateName, HWND hWndParent, DLGPROC lpDialogFunc, LPARAM dwInitParam);
+        static processing_status WINAPI detour_createFileA(detour_node* node, LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
+        static processing_status WINAPI detour_createFileW(detour_node* node, LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
+        static processing_status WINAPI detour_copyFileA(detour_node* node, LPCSTR lpExistingFileName, LPCSTR lpNewFileName, BOOL bFailIfExists);
+        static processing_status WINAPI detour_copyFileW(detour_node* node, LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName, BOOL bFailIfExists);
+        static processing_status WINAPI detour_shellExecuteA(detour_node* node, HWND hwnd, LPCSTR lpOperation, LPCSTR lpFile, LPCSTR lpParameters, LPCSTR lpDirectory, INT nShowCmd);
+        static processing_status WINAPI detour_shellExecuteW(detour_node* node, HWND hwnd, LPCWSTR lpOperation, LPCWSTR lpFile, LPCWSTR lpParameters, LPCWSTR lpDirectory, INT nShowCmd);
+        static processing_status WINAPI detour_URLDownloadToFileA(detour_node* node, LPUNKNOWN pCaller, LPCSTR szURL, LPCSTR szFileName, DWORD dwReserved, LPBINDSTATUSCALLBACK lpfnCB);
+        static processing_status WINAPI detour_URLDownloadToFileW(detour_node* node, LPUNKNOWN pCaller, LPCWSTR szURL, LPCWSTR szFileName, DWORD dwReserved, LPBINDSTATUSCALLBACK lpfnCB);
+        static processing_status WINAPI detour_URLDownloadToCacheFileA(detour_node* node, LPUNKNOWN lpUnkcaller, LPCSTR szURL, LPCSTR szFileName, DWORD cchFileName, DWORD dwReserved, IBindStatusCallback *pBSC);
+        static processing_status WINAPI detour_URLDownloadToCacheFileW(detour_node* node, LPUNKNOWN lpUnkcaller, LPCSTR szURL, LPCWSTR szFileName, DWORD cchFileName, DWORD dwReserved, IBindStatusCallback *pBSC);
+        static processing_status WINAPI detour_winExec(detour_node* node, LPCSTR lpCmdLine, UINT uCmdShow);
+        static processing_status WINAPI detour_loadLibraryA(detour_node* node, LPCSTR lpLibFileName);
+        static processing_status WINAPI detour_loadLibraryW(detour_node* node, LPCWSTR lpLibFileName);
+        static processing_status WINAPI detour_loadLibraryExA(detour_node* node, LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
+        static processing_status WINAPI detour_loadLibraryExW(detour_node* node, LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
+        static processing_status WINAPI detour_ntMapViewOfSection(detour_node* node, HANDLE SectionHandle, HANDLE ProcessHandle, PVOID *BaseAddress, ULONG ZeroBits, ULONG CommitSize, PLARGE_INTEGER SectionOffset, PULONG ViewSize, UINT InheritDisposition, ULONG AllocationType, ULONG Protect);
+        static processing_status WINAPI detour_WSAStartup(detour_node* node, WORD wVersionRequired, LPWSADATA lpWSAData);
+        static processing_status WINAPI detour_socket(detour_node* node, int af, int type, int protocol);
+        static processing_status WINAPI detour_connect(detour_node* node, SOCKET s, const sockaddr *name, int namelen);
+
+        // Use traditional hooks to handle heap APIs.
+        static PVOID WINAPI detour_rtlAllocateHeap(PVOID HeapHandle, ULONG Flags, SIZE_T Size);
+        static BOOLEAN WINAPI detour_rtlFreeHeap(PVOID HeapHandle, ULONG Flags, PVOID BaseAddress);
+        static PVOID WINAPI detour_rtlDestroyHeap(PVOID HeapHandle);
+
     private:
         MH_STATUS HookNormalApi(hook_node& node);
         MH_STATUS HookSpecialApi(hook_node& node);
@@ -372,6 +472,7 @@ namespace cchips {
         std::map<std::string, ULONG_PTR*> m_wmi_interface_define;
         ole32_api_define m_ole32_api_define = {};
         notification_api_define m_notification_api_define = {};
+        static heap_allocation_define m_heap_allocation_define;
         std::recursive_mutex m_recursive_mutex;
         std::map<std::string, std::vector<int>> m_delayNodeList;
         std::recursive_mutex m_filterids_mutex;
@@ -379,6 +480,9 @@ namespace cchips {
         static const std::unique_ptr<CExceptionObject> m_exceptionObject;
         std::unique_ptr< CDriverMgr> m_drivermgr;
         error_offset_define m_error_offset = {};
+        special_module_info m_special_module_info = {};
+        std::unique_ptr<CategoryObject> m_category_ob_ptr;
+        const static std::vector<std::string> _vbe_module_name_def;
     };
 
     extern std::shared_ptr<CHookImplementObject> g_impl_object;

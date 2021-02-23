@@ -40,6 +40,9 @@
     <Filter Include="PipeMessage">
       <UniqueIdentifier>{2d90e746-8e1e-4b44-8e2b-b97c977cb0b3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PassManager">
+      <UniqueIdentifier>{25e6388a-7d69-4593-b365-78278391638e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HipsHookLib.cpp">
@@ -173,6 +176,15 @@
     </ClCompile>
     <ClCompile Include="Win32EnumWbemClassObject.cpp">
       <Filter>Coms</Filter>
+    </ClCompile>
+    <ClCompile Include="PassManager.cpp">
+      <Filter>PassManager</Filter>
+    </ClCompile>
+    <ClCompile Include="UniversalObject.cpp">
+      <Filter>HipsObject</Filter>
+    </ClCompile>
+    <ClCompile Include="exploitimpl.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -391,6 +403,18 @@
     </ClInclude>
     <ClInclude Include="pipemessage\PipeMessager.h">
       <Filter>PipeMessage</Filter>
+    </ClInclude>
+    <ClInclude Include="PassManager.h">
+      <Filter>PassManager</Filter>
+    </ClInclude>
+    <ClInclude Include="PassStructure.h">
+      <Filter>PassManager</Filter>
+    </ClInclude>
+    <ClInclude Include="UniversalObject.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="exploitmpl.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -232,5 +232,8 @@
     <None Include="test_config\types_test.json">
       <Filter>config</Filter>
     </None>
+    <None Include="test_config\vbe_test.json">
+      <Filter>config</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -9,6 +9,10 @@
       "Feature": "S0"
     },
 
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "lpMachineName": "LPCSTR",
       "lpDatabaseName": "LPCSTR",
@@ -25,6 +29,10 @@
       "Feature": "S0"
     },
 
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "lpMachineName": "LPCWSTR",
       "lpDatabaseName": "LPCWSTR",
@@ -39,6 +47,10 @@
       "Library": "advapi32.dll",
       "Return": "SC_HANDLE",
       "Feature": "S1"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -72,6 +84,10 @@
       "Feature": "S1"
     },
 
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "hSCManager": "SC_HANDLE",
       "lpServiceName": "LPCWSTR",
@@ -103,6 +119,10 @@
       "Feature": "S2"
     },
 
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "hSCManager": "SC_HANDLE",
       "lpServiceName": "LPCSTR",
@@ -119,6 +139,10 @@
       "Library": "advapi32.dll",
       "Return": "SC_HANDLE",
       "Feature": "S2"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -139,6 +163,10 @@
       "Feature": "S3"
     },
 
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "hService": "SC_HANDLE"
     },
@@ -153,6 +181,10 @@
       "Library": "advapi32.dll",
       "Return": "BOOL",
       "Feature": "S4"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -173,6 +205,10 @@
       "Feature": "S4"
     },
 
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "hService": "SC_HANDLE",
       "dwNumServiceArgs": "DWORD",
@@ -189,6 +225,10 @@
       "Library": "advapi32.dll",
       "Return": "BOOL",
       "Feature": "S5"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -208,6 +248,10 @@
       "Feature": "S5"
     },
 
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "hService": "SC_HANDLE",
       "InfoLevel": "SC_STATUS_TYPE",
@@ -216,6 +260,6 @@
       "pcbBytesNeeded": "SC_HANDLE"
     },
 
-    "Logging":  true
+    "Logging": true
   }
 }

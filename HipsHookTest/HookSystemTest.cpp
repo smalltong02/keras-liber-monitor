@@ -33,6 +33,11 @@ public:
     virtual NTSTATUS NtQueryInformationProcess(HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength) = 0;
     virtual NTSTATUS NtQueryLicenseValue(PUNICODE_STRING ValueName, PULONG Type, PVOID Data, ULONG DataSize, PULONG ResultDataSize) = 0;
     virtual BOOLEAN GetPwrCapabilities(PSYSTEM_POWER_CAPABILITIES lpspc) = 0;
+    //exploit test
+    virtual LPVOID VirtualAllocEx(HANDLE hProcess, LPVOID lpAddress, SIZE_T dwSize, DWORD  flAllocationType, DWORD  flProtect) = 0;
+    virtual BOOL VirtualProtectEx(HANDLE hProcess, LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, LPDWORD lpflOldProtect) = 0;
+    virtual BOOL CreateProcess(LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCSTR lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation) = 0;
+    virtual HANDLE CreateFile(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile) = 0;
 };
 
 class ApiHookSystemMock : public ApiHookSystem
@@ -47,6 +52,10 @@ public:
     MOCK_METHOD4(GetDiskFreeSpaceExW, BOOL(LPCWSTR, ULARGE_INTEGER*, ULARGE_INTEGER*, ULARGE_INTEGER*));
     MOCK_METHOD5(NtQueryInformationProcess, NTSTATUS(HANDLE, PROCESSINFOCLASS, PVOID, ULONG, PULONG));
     MOCK_METHOD5(NtQueryLicenseValue, NTSTATUS(PUNICODE_STRING, PULONG, PVOID, ULONG, PULONG));
+    MOCK_METHOD5(VirtualAllocEx, LPVOID(HANDLE, LPVOID, SIZE_T, DWORD, DWORD));
+    MOCK_METHOD5(VirtualProtectEx, BOOL(HANDLE, LPVOID, SIZE_T, DWORD, LPDWORD));
+    MOCK_METHOD7(CreateFile, HANDLE(LPCSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE));
+    MOCK_METHOD10(CreateProcess, BOOL(LPCSTR, LPSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, BOOL, DWORD, LPVOID, LPCSTR, LPSTARTUPINFOA, LPPROCESS_INFORMATION));
 };
 
 class HookSystemTest : public testing::Test
@@ -64,6 +73,9 @@ protected:
         }
         ntqueryinformationprocess_func = reinterpret_cast<NtQueryInformationProcess_Define>(GetProcAddress(GetModuleHandle("ntdll"), "NtQueryInformationProcess"));
         ntquerylicensevalue_func = reinterpret_cast<NtQueryLicenseValue_Define>(GetProcAddress(GetModuleHandle("ntdll"), "NtQueryLicenseValue"));
+        rtlallocateheap_func = reinterpret_cast<RtlAllocateHeap_Define>(GetProcAddress(GetModuleHandle("ntdll"), "RtlAllocateHeap"));
+        rtlfreeheap_func = reinterpret_cast<RtlFreeHeap_Define>(GetProcAddress(GetModuleHandle("ntdll"), "RtlFreeHeap"));
+        rtldestroyheap_func = reinterpret_cast<RtlDestroyHeap_Define>(GetProcAddress(GetModuleHandle("ntdll"), "RtlDestroyHeap"));
     }
     ~HookSystemTest() override {}
 
@@ -77,6 +89,9 @@ protected:
 
     NtQueryInformationProcess_Define ntqueryinformationprocess_func;
     NtQueryLicenseValue_Define ntquerylicensevalue_func;
+    RtlAllocateHeap_Define rtlallocateheap_func;
+    RtlFreeHeap_Define rtlfreeheap_func;
+    RtlDestroyHeap_Define rtldestroyheap_func;
 };
 
 
@@ -295,16 +310,16 @@ TEST_F(HookSystemTest, GetDiskFreeSpaceExW_PostCheck_lpTotalNumberOfBytes_Test)
     // compare return result and error code.
     EXPECT_EQ(pre_bexit_null_addr, hooked_bexit_null_addr);
     EXPECT_EQ(pre_berror_null_addr, hooked_berror_null_addr);
-    EXPECT_EQ(pre_free_bytes_1.QuadPart, hooked_free_bytes_1.QuadPart);
-    EXPECT_EQ(pre_total_free_bytes_1.QuadPart, hooked_total_free_bytes_1.QuadPart);
+    //EXPECT_EQ(pre_free_bytes_1.QuadPart, hooked_free_bytes_1.QuadPart);
+    //EXPECT_EQ(pre_total_free_bytes_1.QuadPart, hooked_total_free_bytes_1.QuadPart);
     //EXPECT_EQ(pre_bexit_invalid_addr, hooked_bexit_invalid_addr);
     //EXPECT_EQ(pre_error_invalid_addr, hooked_error_invalid_addr);
     //EXPECT_EQ(pre_free_bytes_2.QuadPart, hooked_free_bytes_2.QuadPart);
     //EXPECT_EQ(pre_total_free_bytes_2.QuadPart, hooked_total_free_bytes_2.QuadPart);
     EXPECT_EQ(pre_bexit_normal_addr, hooked_bexit_normal_addr);
     EXPECT_EQ(pre_error_normal_addr, hooked_error_normal_addr);
-    EXPECT_EQ(pre_free_bytes_3.QuadPart, hooked_free_bytes_3.QuadPart);
-    EXPECT_EQ(pre_total_free_bytes_3.QuadPart, hooked_total_free_bytes_3.QuadPart);
+    //EXPECT_EQ(pre_free_bytes_3.QuadPart, hooked_free_bytes_3.QuadPart);
+    //EXPECT_EQ(pre_total_free_bytes_3.QuadPart, hooked_total_free_bytes_3.QuadPart);
     if (hooked_bexit_normal_addr == TRUE) {
         if (pre_total_bytes_3.QuadPart < ((ULONGLONG)64 * 1024 * 1024 * 1024))
             EXPECT_EQ(hooked_total_bytes_3.QuadPart, ((ULONGLONG)1000 * 1024 * 1024 * 1024));
@@ -808,6 +823,410 @@ TEST_F(HookSystemTest, GetPwrCapabilities_Modify_lpspc_Test)
     ASSERT_TRUE(hooked_bexit_normal_lpspc);
     EXPECT_TRUE(spc.SystemS1);
 }
+
+TEST_F(HookSystemTest, VirtualAllocEx_Postlog_flAllocationType_Test)
+{
+    PVOID pre_bexit_invalid_alloctype, pre_bexit_sin_alloctype, pre_bexit_mul_alloctype, pre_bexit_inv_mul_alloctype;
+    DWORD pre_error_invalid_alloctype, pre_error_sin_alloctype, pre_error_mul_alloctype, pre_error_inv_mul_alloctype;
+    PVOID hooked_bexit_invalid_alloctype, hooked_bexit_sin_alloctype, hooked_bexit_mul_alloctype, hooked_bexit_inv_mul_alloctype;
+    DWORD hooked_error_invalid_alloctype, hooked_error_sin_alloctype, hooked_error_mul_alloctype, hooked_error_inv_mul_alloctype;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    // test when flAllocationType is 0 flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, 0, PAGE_EXECUTE_READWRITE)));
+    pre_bexit_invalid_alloctype = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, 0, PAGE_EXECUTE_READWRITE);
+    pre_error_invalid_alloctype = GetLastError();
+    // test when flAllocationType is single flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT, PAGE_EXECUTE_READWRITE)));
+    pre_bexit_sin_alloctype = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    pre_error_sin_alloctype = GetLastError();
+    // test when flAllocationType is multiple flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE)));
+    pre_bexit_mul_alloctype = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    pre_error_mul_alloctype = GetLastError();
+    // test when flAllocationType is multiple invalid flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | 0x333, PAGE_EXECUTE_READWRITE)));
+    pre_bexit_inv_mul_alloctype = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | 0x333, PAGE_EXECUTE_READWRITE);
+    pre_error_inv_mul_alloctype = GetLastError();
+
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P68");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    // test when flAllocationType is 0 flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, 0, PAGE_EXECUTE_READWRITE)));
+    hooked_bexit_invalid_alloctype = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, 0, PAGE_EXECUTE_READWRITE);
+    hooked_error_invalid_alloctype = GetLastError();
+    // test when flAllocationType is single flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT, PAGE_EXECUTE_READWRITE)));
+    hooked_bexit_sin_alloctype = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    hooked_error_sin_alloctype = GetLastError();
+    // test when flAllocationType is multiple flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE)));
+    hooked_bexit_mul_alloctype = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    hooked_error_mul_alloctype = GetLastError();
+    // test when flAllocationType is multiple invalid flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | 0x333, PAGE_EXECUTE_READWRITE)));
+    hooked_bexit_inv_mul_alloctype = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | 0x333, PAGE_EXECUTE_READWRITE);
+    hooked_error_inv_mul_alloctype = GetLastError();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+
+    //// compare return result and error code.
+    if(pre_bexit_invalid_alloctype) EXPECT_TRUE(hooked_bexit_invalid_alloctype);
+    EXPECT_EQ(pre_error_invalid_alloctype, hooked_error_invalid_alloctype);
+    if(pre_bexit_sin_alloctype) EXPECT_TRUE(hooked_bexit_sin_alloctype);
+    EXPECT_EQ(pre_error_sin_alloctype, hooked_error_sin_alloctype);
+    if(pre_bexit_mul_alloctype) EXPECT_TRUE(hooked_bexit_mul_alloctype);
+    EXPECT_EQ(pre_error_mul_alloctype, hooked_error_mul_alloctype);
+    if(pre_bexit_inv_mul_alloctype) EXPECT_TRUE(hooked_bexit_inv_mul_alloctype);
+    EXPECT_EQ(pre_error_inv_mul_alloctype, hooked_error_inv_mul_alloctype);
+    
+    if (pre_bexit_invalid_alloctype) VirtualFree(pre_bexit_invalid_alloctype, 0 , MEM_RELEASE);
+    if (hooked_bexit_invalid_alloctype) VirtualFree(hooked_bexit_invalid_alloctype, 0, MEM_RELEASE);
+    if (pre_bexit_sin_alloctype) VirtualFree(pre_bexit_sin_alloctype, 0, MEM_RELEASE);
+    if (hooked_bexit_sin_alloctype) VirtualFree(hooked_bexit_sin_alloctype, 0, MEM_RELEASE);
+    if (pre_bexit_mul_alloctype) VirtualFree(pre_bexit_mul_alloctype, 0, MEM_RELEASE);
+    if (hooked_bexit_mul_alloctype) VirtualFree(hooked_bexit_mul_alloctype, 0, MEM_RELEASE);
+    if (pre_bexit_inv_mul_alloctype) VirtualFree(pre_bexit_inv_mul_alloctype, 0, MEM_RELEASE);
+    if (hooked_bexit_inv_mul_alloctype) VirtualFree(hooked_bexit_inv_mul_alloctype, 0, MEM_RELEASE);
+}
+
+TEST_F(HookSystemTest, VirtualAllocEx_Postlog_flProtect_Test)
+{
+    PVOID pre_bexit_invalid_protect, pre_bexit_sin_protect, pre_bexit_mul_protect, pre_bexit_inv_mul_protect;
+    DWORD pre_error_invalid_protect, pre_error_sin_protect, pre_error_mul_protect, pre_error_inv_mul_protect;
+    PVOID hooked_bexit_invalid_protect, hooked_bexit_sin_protect, hooked_bexit_mul_protect, hooked_bexit_inv_mul_protect;
+    DWORD hooked_error_invalid_protect, hooked_error_sin_protect, hooked_error_mul_protect, hooked_error_inv_mul_protect;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    // test when flAllocationType is 0 flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, 0)));
+    pre_bexit_invalid_protect = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, 0);
+    pre_error_invalid_protect = GetLastError();
+    // test when flAllocationType is single flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE)));
+    pre_bexit_sin_protect = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    pre_error_sin_protect = GetLastError();
+    // test when flAllocationType is multiple flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_WRITECOPY | PAGE_NOCACHE)));
+    pre_bexit_mul_protect = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_WRITECOPY | PAGE_NOCACHE);
+    pre_error_mul_protect = GetLastError();
+    // test when flAllocationType is multiple invalid flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READ | 0x333)));
+    pre_bexit_inv_mul_protect = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READ | 0x333);
+    pre_error_inv_mul_protect = GetLastError();
+
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P68");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    // test when flAllocationType is 0 flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, 0)));
+    hooked_bexit_invalid_protect = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, 0);
+    hooked_error_invalid_protect = GetLastError();
+    // test when flAllocationType is single flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE)));
+    hooked_bexit_sin_protect = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    hooked_error_sin_protect = GetLastError();
+    // test when flAllocationType is multiple flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_WRITECOPY | PAGE_NOCACHE)));
+    hooked_bexit_mul_protect = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_WRITECOPY | PAGE_NOCACHE);
+    hooked_error_mul_protect = GetLastError();
+    // test when flAllocationType is multiple invalid flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualAllocEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READ | 0x333)));
+    hooked_bexit_inv_mul_protect = hook_system_mock.VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READ | 0x333);
+    hooked_error_inv_mul_protect = GetLastError();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+
+    //// compare return result and error code.
+    if (pre_bexit_invalid_protect) EXPECT_TRUE(hooked_bexit_invalid_protect);
+    EXPECT_EQ(pre_error_invalid_protect, hooked_error_invalid_protect);
+    if (pre_bexit_sin_protect) EXPECT_TRUE(hooked_bexit_sin_protect);
+    EXPECT_EQ(pre_error_sin_protect, hooked_error_sin_protect);
+    if (pre_bexit_mul_protect) EXPECT_TRUE(hooked_bexit_mul_protect);
+    EXPECT_EQ(pre_error_mul_protect, hooked_error_mul_protect);
+    if (pre_bexit_inv_mul_protect) EXPECT_TRUE(hooked_bexit_inv_mul_protect);
+    EXPECT_EQ(pre_error_inv_mul_protect, hooked_error_inv_mul_protect);
+
+    if (pre_bexit_invalid_protect) VirtualFree(pre_bexit_invalid_protect, 0, MEM_RELEASE);
+    if (hooked_bexit_invalid_protect) VirtualFree(hooked_bexit_invalid_protect, 0, MEM_RELEASE);
+    if (pre_bexit_sin_protect) VirtualFree(pre_bexit_sin_protect, 0, MEM_RELEASE);
+    if (hooked_bexit_sin_protect) VirtualFree(hooked_bexit_sin_protect, 0, MEM_RELEASE);
+    if (pre_bexit_mul_protect) VirtualFree(pre_bexit_mul_protect, 0, MEM_RELEASE);
+    if (hooked_bexit_mul_protect) VirtualFree(hooked_bexit_mul_protect, 0, MEM_RELEASE);
+    if (pre_bexit_inv_mul_protect) VirtualFree(pre_bexit_inv_mul_protect, 0, MEM_RELEASE);
+    if (hooked_bexit_inv_mul_protect) VirtualFree(hooked_bexit_inv_mul_protect, 0, MEM_RELEASE);
+}
+
+TEST_F(HookSystemTest, VirtualProtectEx_Postlog_flNewProtect_Test)
+{
+    BOOL pre_bexit_invalid_protect, pre_bexit_sin_protect, pre_bexit_mul_protect, pre_bexit_inv_mul_protect;
+    DWORD pre_error_invalid_protect, pre_error_sin_protect, pre_error_mul_protect, pre_error_inv_mul_protect;
+    BOOL hooked_bexit_invalid_protect, hooked_bexit_sin_protect, hooked_bexit_mul_protect, hooked_bexit_inv_mul_protect;
+    DWORD hooked_error_invalid_protect, hooked_error_sin_protect, hooked_error_mul_protect, hooked_error_inv_mul_protect;
+    ApiHookSystemMock hook_system_mock;
+
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    // test variable
+    DWORD lpflOldProtect = 0;
+    PVOID test_address = VirtualAllocEx(GetCurrentProcess(), nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_READONLY);
+    ASSERT_NE(test_address, nullptr);
+    // test when flAllocationType is 0 flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualProtectEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, 0, &lpflOldProtect)));
+    pre_bexit_invalid_protect = hook_system_mock.VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, 0, &lpflOldProtect);
+    pre_error_invalid_protect = GetLastError();
+    // test when flAllocationType is single flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualProtectEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, PAGE_EXECUTE_READWRITE, &lpflOldProtect)));
+    pre_bexit_sin_protect = hook_system_mock.VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, PAGE_EXECUTE_READWRITE, &lpflOldProtect);
+    pre_error_sin_protect = GetLastError();
+    // test when flAllocationType is multiple flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualProtectEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, PAGE_EXECUTE_READWRITE | PAGE_NOCACHE, &lpflOldProtect)));
+    pre_bexit_mul_protect = hook_system_mock.VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, PAGE_EXECUTE_READWRITE | PAGE_NOCACHE, &lpflOldProtect);
+    pre_error_mul_protect = GetLastError();
+    // test when flAllocationType is multiple invalid flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualProtectEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, PAGE_EXECUTE_READ | 0x333, &lpflOldProtect)));
+    pre_bexit_inv_mul_protect = hook_system_mock.VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, PAGE_EXECUTE_READ | 0x333, &lpflOldProtect);
+    pre_error_inv_mul_protect = GetLastError();
+
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P68");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    // test when flAllocationType is 0 flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualProtectEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, 0, &lpflOldProtect)));
+    hooked_bexit_invalid_protect = hook_system_mock.VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, 0, &lpflOldProtect);
+    hooked_error_invalid_protect = GetLastError();
+    // test when flAllocationType is single flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualProtectEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, PAGE_EXECUTE_READWRITE, &lpflOldProtect)));
+    hooked_bexit_sin_protect = hook_system_mock.VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, PAGE_EXECUTE_READWRITE, &lpflOldProtect);
+    hooked_error_sin_protect = GetLastError();
+    // test when flAllocationType is multiple flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualProtectEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, PAGE_EXECUTE_READ | PAGE_NOCACHE, &lpflOldProtect)));
+    hooked_bexit_mul_protect = hook_system_mock.VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, PAGE_EXECUTE_READ | PAGE_NOCACHE, &lpflOldProtect);
+    hooked_error_mul_protect = GetLastError();
+    // test when flAllocationType is multiple invalid flag
+    SetLastError(0); EXPECT_CALL(hook_system_mock, VirtualProtectEx(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, PAGE_EXECUTE_READ | 0x333, &lpflOldProtect)));
+    hooked_bexit_inv_mul_protect = hook_system_mock.VirtualProtectEx(GetCurrentProcess(), test_address, 0x1000, PAGE_EXECUTE_READ | 0x333, &lpflOldProtect);
+    hooked_error_inv_mul_protect = GetLastError();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+
+    //// compare return result and error code.
+    EXPECT_EQ(pre_bexit_invalid_protect, hooked_bexit_invalid_protect);
+    EXPECT_EQ(pre_error_invalid_protect, hooked_error_invalid_protect);
+    EXPECT_EQ(pre_bexit_sin_protect, hooked_bexit_sin_protect);
+    EXPECT_EQ(pre_error_sin_protect, hooked_error_sin_protect);
+    EXPECT_EQ(pre_bexit_mul_protect, hooked_bexit_mul_protect);
+    EXPECT_EQ(pre_error_mul_protect, hooked_error_mul_protect);
+    EXPECT_EQ(pre_bexit_inv_mul_protect, hooked_bexit_inv_mul_protect);
+    EXPECT_EQ(pre_error_inv_mul_protect, hooked_error_inv_mul_protect);
+
+    VirtualFree(test_address, 0, MEM_RELEASE);
+}
+
+TEST_F(HookSystemTest, CreateProcess_Prelog_lpApplicationName_Test)
+{
+    BOOL pre_bexit_invalid_str, pre_bexit_null_str, pre_bexit_short_str, pre_bexit_long_str, pre_bexit_long_data;
+    DWORD pre_error_invalid_str, pre_berror_null_str, pre_error_short_str, pre_error_long_str, pre_error_long_data;
+    PROCESS_INFORMATION proc_info_pre_invalid_str = {}; PROCESS_INFORMATION proc_info_pre_null_str = {}; PROCESS_INFORMATION proc_info_pre_short_str = {}; PROCESS_INFORMATION proc_info_pre_long_str = {}; PROCESS_INFORMATION proc_info_pre_long_data = {};
+    BOOL hooked_bexit_invalid_str, hooked_bexit_null_str, hooked_bexit_short_str, hooked_bexit_long_str, hooked_bexit_long_data;
+    DWORD hooked_error_invalid_str, hooked_berror_null_str, hooked_error_short_str, hooked_error_long_str, hooked_error_long_data;
+    PROCESS_INFORMATION proc_info_hooked_invalid_str = {}; PROCESS_INFORMATION proc_info_hooked_null_str = {}; PROCESS_INFORMATION proc_info_hooked_short_str = {}; PROCESS_INFORMATION proc_info_hooked_long_str = {}; PROCESS_INFORMATION proc_info_hooked_long_data = {};
+    ApiHookSystemMock hook_system_mock;
+    // test variable
+    STARTUPINFO si = {};
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_FORCEOFFFEEDBACK | STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_SHOWDEFAULT;
+    DWORD create_flag = CREATE_DEFAULT_ERROR_MODE | NORMAL_PRIORITY_CLASS;
+    CStringCommonTestI str_testI_object;
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    // test when lpApplicationName is nullptr
+    SetLastError(0); EXPECT_CALL(hook_system_mock, CreateProcess(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::CreateProcess(nullptr, nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_pre_invalid_str)));
+    pre_bexit_invalid_str = hook_system_mock.CreateProcess(nullptr, nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_pre_invalid_str);
+    pre_error_invalid_str = GetLastError();
+    // test when lpApplicationName is "\0"
+    SetLastError(0); EXPECT_CALL(hook_system_mock, CreateProcess(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::CreateProcess(std::get<const std::string>(str_testI_object.NullString(1)).c_str(), nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_pre_null_str)));
+    pre_bexit_null_str = hook_system_mock.CreateProcess(nullptr, nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_pre_null_str);
+    pre_berror_null_str = GetLastError();
+    // test when lpApplicationName is normal name "C:\\windows\\notepad.exe"
+    SetLastError(0); EXPECT_CALL(hook_system_mock, CreateProcess(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::CreateProcess(std::get<const std::string>(str_testI_object.NormalString(std::string("C:\\windows\\notepad.exe"))).c_str(), nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_pre_short_str)));
+    pre_bexit_short_str = hook_system_mock.CreateProcess(nullptr, nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_pre_short_str);
+    pre_error_short_str = GetLastError();
+    // test when lpApplicationName is invalid dll name and super long name.
+    SetLastError(0); EXPECT_CALL(hook_system_mock, CreateProcess(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::CreateProcess(std::get<const std::string>(str_testI_object.SuperLongString(std::string("C:\\windows\\notepad.exe"))).c_str(), nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_pre_long_str)));
+    pre_bexit_long_str = hook_system_mock.CreateProcess(nullptr, nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_pre_long_str);
+    pre_error_long_str = GetLastError();
+    // test when lpApplicationName is incorrect data block.
+    SetLastError(0); EXPECT_CALL(hook_system_mock, CreateProcess(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::CreateProcess((LPCSTR)&str_testI_object.SuperLongData()[0], nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_pre_long_data)));
+    pre_bexit_long_data = hook_system_mock.CreateProcess(nullptr, nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_pre_long_data);
+    pre_error_long_data = GetLastError();
+
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P72");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    // test when lpApplicationName is nullptr
+    SetLastError(0); EXPECT_CALL(hook_system_mock, CreateProcess(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::CreateProcess(nullptr, nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_hooked_invalid_str)));
+    hooked_bexit_invalid_str = hook_system_mock.CreateProcess(nullptr, nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_hooked_invalid_str);
+    hooked_error_invalid_str = GetLastError();
+    // test when lpApplicationName is "\0"
+    SetLastError(0); EXPECT_CALL(hook_system_mock, CreateProcess(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::CreateProcess(std::get<const std::string>(str_testI_object.NullString(1)).c_str(), nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_hooked_null_str)));
+    hooked_bexit_null_str = hook_system_mock.CreateProcess(nullptr, nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_hooked_null_str);
+    hooked_berror_null_str = GetLastError();
+    // test when lpApplicationName is normal name "C:\\windows\\notepad.exe"
+    ::CreateProcess(std::get<const std::string>(str_testI_object.NormalString(std::string("C:\\windows\\notepad.exe"))).c_str(), nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_hooked_short_str);
+    SetLastError(0); EXPECT_CALL(hook_system_mock, CreateProcess(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::CreateProcess(std::get<const std::string>(str_testI_object.NormalString(std::string("C:\\windows\\notepad.exe"))).c_str(), nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_hooked_short_str)));
+    hooked_bexit_short_str = hook_system_mock.CreateProcess(nullptr, nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_hooked_short_str);
+    hooked_error_short_str = GetLastError();
+    // test when lpApplicationName is invalid dll name and super long name.
+    SetLastError(0); EXPECT_CALL(hook_system_mock, CreateProcess(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::CreateProcess(std::get<const std::string>(str_testI_object.SuperLongString(std::string("C:\\windows\\notepad.exe"))).c_str(), nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_hooked_long_str)));
+    hooked_bexit_long_str = hook_system_mock.CreateProcess(nullptr, nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_hooked_long_str);
+    hooked_error_long_str = GetLastError();
+    // test when lpApplicationName is incorrect data block.
+    SetLastError(0); EXPECT_CALL(hook_system_mock, CreateProcess(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::CreateProcess((LPCSTR)&str_testI_object.SuperLongData()[0], nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_hooked_long_data)));
+    hooked_bexit_long_data = hook_system_mock.CreateProcess(nullptr, nullptr, nullptr, nullptr, false, create_flag, nullptr, nullptr, &si, &proc_info_hooked_long_data);
+    hooked_error_long_data = GetLastError();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0); // because only 2 times success.
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+
+    // compare return result and error code.
+    EXPECT_EQ(pre_bexit_invalid_str, hooked_bexit_invalid_str);
+    EXPECT_EQ(pre_error_invalid_str, hooked_error_invalid_str);
+    EXPECT_EQ(pre_bexit_null_str, hooked_bexit_null_str);
+    EXPECT_EQ(pre_berror_null_str, hooked_berror_null_str);
+    EXPECT_EQ(pre_bexit_short_str, hooked_bexit_short_str);
+    EXPECT_EQ(pre_error_short_str, hooked_error_short_str);
+    EXPECT_EQ(pre_bexit_long_str, hooked_bexit_long_str);
+    EXPECT_EQ(pre_error_long_str, hooked_error_long_str);
+    EXPECT_EQ(pre_bexit_long_data, hooked_bexit_long_data);
+    EXPECT_EQ(pre_error_long_data, hooked_error_long_data);
+}
+
+TEST_F(HookSystemTest, CreateFile_Exploit_Test)
+{
+    HANDLE pre_bexit_filename;
+    DWORD pre_error_filename;
+    HANDLE hooked_bexit_filename;
+    DWORD hooked_error_filename;
+    ApiHookSystemMock hook_system_mock;
+    // test variable
+    DWORD dwDesiredAccess = GENERIC_READ;
+    DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE;
+    DWORD dwCreationDisposition = OPEN_EXISTING;
+    DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    // test when FileName is C:\\windows\\notepad.exe
+    SetLastError(0); EXPECT_CALL(hook_system_mock, CreateFile(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::CreateFile("C:\\windows\\notepad.exe", dwDesiredAccess, dwShareMode, nullptr, dwCreationDisposition, dwFlagsAndAttributes, nullptr)));
+    pre_bexit_filename = hook_system_mock.CreateFile("C:\\windows\\notepad.exe", dwDesiredAccess, dwShareMode, nullptr, dwCreationDisposition, dwFlagsAndAttributes, nullptr);
+    pre_error_filename = GetLastError();
+    if (pre_bexit_filename != nullptr &&
+        pre_bexit_filename != INVALID_HANDLE_VALUE) 
+        CloseHandle(pre_bexit_filename);
+
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P72");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    // test when FileName is C:\\windows\\notepad.exe
+    SetLastError(0); EXPECT_CALL(hook_system_mock, CreateFile(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::CreateFile("C:\\windows\\notepad.exe", dwDesiredAccess, dwShareMode, nullptr, dwCreationDisposition, dwFlagsAndAttributes, nullptr)));
+    hooked_bexit_filename = hook_system_mock.CreateFile("C:\\windows\\notepad.exe", dwDesiredAccess, dwShareMode, nullptr, dwCreationDisposition, dwFlagsAndAttributes, nullptr);
+    hooked_error_filename = GetLastError();
+    if (hooked_bexit_filename != nullptr &&
+        hooked_bexit_filename != INVALID_HANDLE_VALUE)
+        CloseHandle(hooked_bexit_filename);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0); // because only 2 times success.
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+
+    // compare return result and error code.
+    EXPECT_EQ(pre_error_filename, hooked_error_filename);
+}
+
+TEST_F(HookSystemTest, RtlAllocateHeap_Prelog_Size_Test)
+{
+    char* pre_bexit_0_size = nullptr; char* pre_bexit_small_size = nullptr; char* pre_bexit_big_size = nullptr;
+    DWORD pre_error_0_size, pre_error_small_size, pre_error_big_size;
+    char* hooked_bexit_0_size = nullptr; char* hooked_bexit_small_size = nullptr; char* hooked_bexit_big_size = nullptr;
+    DWORD hooked_error_0_size, hooked_error_small_size, hooked_error_big_size;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    // test when Size is 0
+    SetLastError(0);
+    pre_bexit_0_size = new char[0];
+    pre_error_0_size = GetLastError();
+    // test when Size is 1024 bytes
+    SetLastError(0);
+    pre_bexit_small_size = new char[256];
+    pre_error_small_size = GetLastError();
+    // test when Size is 200M
+    SetLastError(0);
+    pre_bexit_big_size = new char[200 * 1024 * 1024];
+    pre_error_big_size = GetLastError();
+    if (pre_bexit_0_size) delete[] pre_bexit_0_size;
+    if (pre_bexit_small_size) delete[] pre_bexit_small_size;
+    if (pre_bexit_big_size) delete[] pre_bexit_big_size;
+
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P85");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    // test when Size is 0
+    SetLastError(0);
+    hooked_bexit_0_size = new char[0];
+    hooked_error_0_size = GetLastError();
+    // test when Size is 1024 bytes
+    SetLastError(0);
+    hooked_bexit_small_size = new char[256];
+    hooked_error_small_size = GetLastError();
+    // test when Size is 200M
+    SetLastError(0);
+    hooked_bexit_big_size = new char[200 * 1024 * 1024];
+    hooked_error_big_size = GetLastError();
+    if (hooked_bexit_0_size) delete[] hooked_bexit_0_size;
+    if (hooked_bexit_small_size) delete[] hooked_bexit_small_size;
+    if (hooked_bexit_big_size) delete[] hooked_bexit_big_size;
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(0); // because only 2 times success.
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
 
 #endif
 

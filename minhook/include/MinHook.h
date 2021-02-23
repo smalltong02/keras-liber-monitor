@@ -79,7 +79,9 @@ typedef enum MH_STATUS
     MH_ERROR_MODULE_NOT_FOUND,
 
     // The specified function is not found.
-    MH_ERROR_FUNCTION_NOT_FOUND
+    MH_ERROR_FUNCTION_NOT_FOUND,
+
+    MH_ERROR_TYPE
 }
 MH_STATUS;
 
@@ -108,7 +110,8 @@ extern "C" {
     //   ppOriginal [out] A pointer to the trampoline function, which will be
     //                    used to call the original target function.
     //                    This parameter can be NULL.
-    MH_STATUS WINAPI MH_CreateHook(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOriginal, LPVOID pContext);
+    MH_STATUS WINAPI MH_CreateHook_New(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOriginal, LPVOID pContext);
+    MH_STATUS WINAPI MH_CreateHook(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOriginal, LPVOID pContext, int hook_type);
 
     // Creates a Hook for the specified API function, in disabled state.
     // Parameters:
@@ -123,6 +126,8 @@ extern "C" {
     //                    This parameter can be NULL.
     MH_STATUS WINAPI MH_CreateHookApi(
         LPCWSTR pszModule, LPCSTR pszProcName, LPVOID pDetour, LPVOID *ppOriginal, LPVOID pContext);
+    MH_STATUS WINAPI MH_CreateHookApi_Orgin(
+        LPCWSTR pszModule, LPCSTR pszProcName, LPVOID pDetour, LPVOID *ppOriginal);
 
     // Creates a Hook for the specified API function, in disabled state.
     // Parameters:
@@ -140,6 +145,8 @@ extern "C" {
     //                    This parameter can be NULL.
     MH_STATUS WINAPI MH_CreateHookApiEx(
         LPCWSTR pszModule, LPCSTR pszProcName, const LPVOID pDetour, LPVOID *ppOriginal, LPVOID pContext, LPVOID *ppTarget);
+    MH_STATUS WINAPI MH_CreateHookApiEx_Orgin(
+        LPCWSTR pszModule, LPCSTR pszProcName, const LPVOID pDetour, LPVOID *ppOriginal, LPVOID *ppTarget);
 
     // Removes an already created hook.
     // Parameters:
@@ -152,6 +159,7 @@ extern "C" {
     //                If this parameter is MH_ALL_HOOKS, all created hooks are
     //                enabled in one go.
     MH_STATUS WINAPI MH_EnableHook(LPVOID pTarget);
+    MH_STATUS WINAPI MH_EnableHook_Orgin(LPVOID pTarget);
 
     // Disables an already created hook.
     // Parameters:
@@ -159,6 +167,7 @@ extern "C" {
     //                If this parameter is MH_ALL_HOOKS, all created hooks are
     //                disabled in one go.
     MH_STATUS WINAPI MH_DisableHook(LPVOID pTarget);
+    MH_STATUS WINAPI MH_DisableHook_Orgin(LPVOID pTarget);
 
     // Queues to enable an already created hook.
     // Parameters:
