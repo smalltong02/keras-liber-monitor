@@ -298,6 +298,7 @@ if (DWORD index_; !CheckExploitFuncs::ValidStackPointer(reinterpret_cast<ULONG_P
         bool InitializeSelfModuleInfo();
         bool InitializeVbeModuleInfo();
         bool InitializeVbeModuleInfo(const std::string& lib_name, PVOID vbe_base);
+        bool InitializeCapstoneEngine();
         special_module_info& GetSpecialModuleInfo() { return m_special_module_info; }
         bool Initialize(std::shared_ptr<CHipsCfgObject> configObject);
         static processing_status Preprocessing(CHookImplementObject::hook_node* node_elem, PVOID param_addr, PVOID return_addr, int& params_size, ULONG_PTR& func_return, DWORD entry_count, CLogHandle** __log);

@@ -1,0 +1,547 @@
+{
+  "Category": "VBE",
+  "Calling convention": "WINAPI",
+
+  "rtcCreateObject2_v6": {
+    "Signature": {
+      "Library": "vbe6.dll",
+      "Return": "LPVOID",
+      "Feature": "V1"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "VBE",
+      "API": "rtcCreateObject2"
+    },
+
+    "Parameters": {
+      "param1": "DWORD",
+      "szName": "LPCWSTR",
+      "param2": "DWORD"
+    }
+  },
+
+  "rtcCallByName_v6": {
+    "Signature": {
+      "Library": "vbe6.dll",
+      "Return": "LPVOID",
+      "Feature": "V2"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "VBE",
+      "API": "rtcCallByName"
+    },
+
+    "Parameters": {
+      "param1": "LPVOID",
+      "param2": "LPVOID",
+      "ProcName": "LPCWSTR",
+      "CallType": "DWORD",
+      "Args": "LPVOID*",
+      "param3": "LPVOID"
+    }
+  },
+
+  "rtcGetObject_v6": {
+    "Signature": {
+      "Library": "vbe6.dll",
+      "Return": "LPVOID",
+      "Feature": "V3"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "VBE",
+      "API": "rtcGetObject"
+    },
+
+    "Parameters": {
+      "param1": "LPVOID",
+      "ObjectName": "LPVOID",
+      "param2": "LPVOID"
+    }
+  },
+
+  "rtcShell_v6": {
+    "Signature": {
+      "Library": "vbe6.dll",
+      "Return": "LPVOID",
+      "Feature": "V4"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "VBE",
+      "API": "rtcShell"
+    },
+
+    "Parameters": {
+      "ShellPath": "LPVOID",
+      "param1": "LPVOID"
+    }
+  },
+
+  "rtcCreateObject2_v7": {
+    "Signature": {
+      "Library": "vbe7.dll",
+      "Return": "LPVOID",
+      "Feature": "V1"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "VBE",
+      "API": "rtcCreateObject2"
+    },
+
+    "Parameters": {
+      "param1": "DWORD",
+      "szName": "LPCWSTR",
+      "param2": "DWORD"
+    }
+  },
+
+  "rtcCallByName_v7": {
+    "Signature": {
+      "Library": "vbe7.dll",
+      "Return": "LPVOID",
+      "Feature": "V2"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "VBE",
+      "API": "rtcCallByName"
+    },
+
+    "Parameters": {
+      "param1": "LPVOID",
+      "param2": "LPVOID",
+      "ProcName": "LPCWSTR",
+      "CallType": "DWORD",
+      "Args": "LPVOID*",
+      "param3": "LPVOID"
+    }
+  },
+
+  "rtcGetObject_v7": {
+    "Signature": {
+      "Library": "vbe7.dll",
+      "Return": "LPVOID",
+      "Feature": "V3"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "VBE",
+      "API": "rtcGetObject"
+    },
+
+    "Parameters": {
+      "param1": "LPVOID",
+      "ObjectName": "LPVOID",
+      "param2": "LPVOID"
+    }
+  },
+
+  "rtcShell_v7": {
+    "Signature": {
+      "Library": "vbe7.dll",
+      "Return": "LPVOID",
+      "Feature": "V4"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "VBE",
+      "API": "rtcShell"
+    },
+
+    "Parameters": {
+      "ShellPath": "LPVOID",
+      "param1": "LPVOID"
+    }
+  },
+
+  "rtcCreateObject2_v71": {
+    "Signature": {
+      "Library": "vbe71.dll",
+      "Return": "LPVOID",
+      "Feature": "V1"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "VBE",
+      "API": "rtcCreateObject2"
+    },
+
+    "Parameters": {
+      "param1": "DWORD",
+      "szName": "LPCWSTR",
+      "param2": "DWORD"
+    }
+  },
+
+  "rtcCallByName_v71": {
+    "Signature": {
+      "Library": "vbe71.dll",
+      "Return": "LPVOID",
+      "Feature": "V2"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "VBE",
+      "API": "rtcCallByName"
+    },
+
+    "Parameters": {
+      "param1": "LPVOID",
+      "param2": "LPVOID",
+      "ProcName": "LPCWSTR",
+      "CallType": "DWORD",
+      "Args": "LPVOID*",
+      "param3": "LPVOID"
+    }
+  },
+
+  "rtcGetObject_v71": {
+    "Signature": {
+      "Library": "vbe71.dll",
+      "Return": "LPVOID",
+      "Feature": "V3"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "VBE",
+      "API": "rtcGetObject"
+    },
+
+    "Parameters": {
+      "param1": "LPVOID",
+      "ObjectName": "LPVOID",
+      "param2": "LPVOID"
+    }
+  },
+
+  "rtcShell_v71": {
+    "Signature": {
+      "Library": "vbe71.dll",
+      "Return": "LPVOID",
+      "Feature": "V4"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "VBE",
+      "API": "rtcShell"
+    },
+
+    "Parameters": {
+      "ShellPath": "LPVOID",
+      "param1": "LPVOID"
+    }
+  },
+
+  "Vbe6_rtcCallFunction": {
+    "Signature": {
+      "Library": "vbe6.dll",
+      "Return": "LPVOID",
+      "Feature": "V5"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "INLINE",
+      "Bitmap": "558BEC56578B7D0C85FF75076A5B"
+    },
+
+    "Parameters": {
+      "FunctionName": "LPCWSTR",
+      "param1": "INT"
+    }
+  },
+
+  "Vbe7_rtcCallFunction": {
+    "Signature": {
+      "Library": "vbe7.dll",
+      "Return": "LPVOID",
+      "Feature": "V5"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "INLINE",
+      "Bitmap": "558BEC56578B7D0C85FF75076A5B"
+    },
+
+    "Parameters": {
+      "FunctionName": "LPCWSTR",
+      "param1": "INT"
+    }
+  },
+
+  "Vbe71_rtcCallFunction": {
+    "Signature": {
+      "Library": "vbe71.dll",
+      "Return": "LPVOID",
+      "Feature": "V5"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "INLINE",
+      "Bitmap": "558BEC56578B7D0C85FF75076A5B"
+    },
+
+    "Parameters": {
+      "FunctionName": "LPCWSTR",
+      "param1": "INT"
+    }
+  },
+
+  "Vbe6_rtcComCall": {
+    "Signature": {
+      "Library": "vbe6.dll",
+      "Return": "LPVOID",
+      "Feature": "V6"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "INLINE",
+      "Bitmap": "558BEC83EC34837D080075076A5B"
+    },
+
+    "Parameters": {
+      "param1": "INT",
+      "param2": "INT",
+      "ArgType": "INT",
+      "Arguments": "LPDWORD",
+      "ArgCount": "INT",
+      "param3": "INT"
+    }
+  },
+
+  "Vbe7_rtcComCall": {
+    "Signature": {
+      "Library": "vbe7.dll",
+      "Return": "LPVOID",
+      "Feature": "V6"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "INLINE",
+      "Bitmap": "8BFF558BEC83EC34837D08000F8401BD0F00"
+    },
+
+    "Parameters": {
+      "param1": "INT",
+      "param2": "INT",
+      "ArgType": "INT",
+      "Arguments": "LPDWORD",
+      "ArgCount": "INT",
+      "param3": "INT"
+    }
+  },
+
+  "Vbe71_rtcComCall": {
+    "Signature": {
+      "Library": "vbe71.dll",
+      "Return": "LPVOID",
+      "Feature": "V6"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "INLINE",
+      "Bitmap": "558BEC83EC34837D080075076A5B"
+    },
+
+    "Parameters": {
+      "param1": "INT",
+      "param2": "INT",
+      "ArgType": "INT",
+      "Arguments": "LPDWORD",
+      "ArgCount": "INT",
+      "param3": "INT"
+    }
+  },
+
+  "Vbe6_rtcSetProp": {
+    "Signature": {
+      "Library": "vbe6.dll",
+      "Return": "LPVOID",
+      "Feature": "V7"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "INLINE",
+      "Bitmap": "558BEC837D1808568B7510751C0F"
+    },
+
+    "Parameters": {
+      "param1": "INT",
+      "param2": "INT",
+      "Arguments": "LPDWORD",
+      "param3": "INT",
+      "param4": "INT"
+    }
+  },
+
+  "Vbe7_rtcSetProp": {
+    "Signature": {
+      "Library": "vbe7.dll",
+      "Return": "LPVOID",
+      "Feature": "V7"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "INLINE",
+      "Bitmap": "558BEC837D1808568B7510751C0F"
+    },
+
+    "Parameters": {
+      "param1": "INT",
+      "param2": "INT",
+      "Arguments": "LPDWORD",
+      "param3": "INT",
+      "param4": "INT"
+    }
+  },
+
+  "Vbe71_rtcSetProp": {
+    "Signature": {
+      "Library": "vbe71.dll",
+      "Return": "LPVOID",
+      "Feature": "V7"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_office$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "INLINE",
+      "Bitmap": "558BEC837D1808568B7510751C0F"
+    },
+
+    "Parameters": {
+      "param1": "INT",
+      "param2": "INT",
+      "Arguments": "LPDWORD",
+      "param3": "INT",
+      "param4": "INT"
+    }
+  }
+}

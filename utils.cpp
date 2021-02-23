@@ -1,17 +1,8 @@
 #include "stdafx.h"
 #include "utils.h"
 #include "MetadataTypeImpl.h"
-#include "capstone\include\capstone.h"
+#include "CapstoneImpl.h"
 #include "HookImplementObject.h"
-
-static csh g_capstone_handle = 0;
-
-#ifdef _X86_
-static const cs_err g_cap_error = cs_open(CS_ARCH_X86, CS_MODE_32, &g_capstone_handle);
-#endif
-#ifdef _AMD64_
-static const cs_err g_cap_error = cs_open(CS_ARCH_X86, CS_MODE_64, &g_capstone_handle);
-#endif
 
 void ClearThreadTls()
 {
@@ -261,12 +252,12 @@ bool SetVariantValue(VARIANT& Value, std::any& anyvalue)
 int lde(const void *addr)
 {
     if (!addr) return 0;
-    if (g_cap_error != CS_ERR_OK ||
-        g_capstone_handle == 0) return 0;
+    if (!cchips::GetCapstoneImplment().IsValid())
+        return 0;
 
     cs_insn *insn = nullptr;
     size_t count =
-        cs_disasm_ex(g_capstone_handle, reinterpret_cast<const uint8_t*>(addr), 16, reinterpret_cast<uintptr_t>(addr), 1, &insn);
+        cs_disasm_ex(cchips::GetCapstoneImplment().GetCapHandle(), reinterpret_cast<const uint8_t*>(addr), 16, reinterpret_cast<uintptr_t>(addr), 1, &insn);
     if (count == 0) return 0;
     if (!insn) return 0;
 
@@ -279,8 +270,8 @@ int lde(const void *addr)
 DWORD NativeFetchMovEaxImmOffset(const char* func)
 {
     if (!func) return 0;
-    if (g_cap_error != CS_ERR_OK ||
-        g_capstone_handle == 0) return 0;
+    if (!cchips::GetCapstoneImplment().IsValid())
+        return 0;
 
     for (uint32_t idx = 0; idx < 32; idx++) {
         if (memcmp(func, "\x8b\x80", 2) == 0) {
@@ -300,12 +291,12 @@ int GetCallOpSize(const void* addr)
 
     int insn_size = 0;
     if (!addr) return 0;
-    if (g_cap_error != CS_ERR_OK ||
-        g_capstone_handle == 0) return insn_size;
+    if (!cchips::GetCapstoneImplment().IsValid())
+        return 0;
 
     cs_insn *insn = nullptr;
     size_t count =
-        cs_disasm_ex(g_capstone_handle, reinterpret_cast<const uint8_t*>(addr), 16, reinterpret_cast<uintptr_t>(addr), 1, &insn);
+        cs_disasm_ex(cchips::GetCapstoneImplment().GetCapHandle(), reinterpret_cast<const uint8_t*>(addr), 16, reinterpret_cast<uintptr_t>(addr), 1, &insn);
     if (count == 0) return insn_size;
     if (!insn) return insn_size;
 

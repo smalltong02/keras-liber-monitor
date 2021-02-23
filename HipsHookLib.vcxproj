@@ -31,7 +31,7 @@
     <ProjectGuid>{8D954A72-7929-478A-B6DA-ACDA7631F4C4}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>HipsHookLib</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -123,7 +123,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -175,7 +175,7 @@
       <PreprocessorDefinitions>_DEBUG;_LIB;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -229,7 +229,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4244;4290;4800;4200;4214;4018;4996</DisableSpecificWarnings>
@@ -262,7 +262,7 @@
       <PreprocessorDefinitions>NDEBUG;_LIB;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -373,6 +373,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugger|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="PassManager.cpp" />
+    <ClCompile Include="PassStructure.cpp" />
+    <ClCompile Include="PeInfo.cpp" />
     <ClCompile Include="R3LogObject.cpp" />
     <ClCompile Include="SigsObject.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
@@ -382,6 +384,22 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugger|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\BoundImportDirectory.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\CoffSymbolTable.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\ComHeaderDirectory.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\DebugDirectory.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\ExportDirectory.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\IatDirectory.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\InputBuffer.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\MzHeader.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\OutputBuffer.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\PeFile.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\PeHeader.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\PeLibAux.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\RelocationsDirectory.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\ResourceDirectory.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\RichHeader.cpp" />
+    <ClCompile Include="ThirdParty\pelib\src\SecurityDirectory.cpp" />
     <ClCompile Include="UniversalObject.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="Win32EnumWbemClassObject.cpp" />
@@ -391,6 +409,7 @@
     <ClInclude Include="asmfunction.h" />
     <ClInclude Include="bson\bson.h" />
     <ClInclude Include="bson\encoding.h" />
+    <ClInclude Include="CapstoneImpl.h" />
     <ClInclude Include="capstone\include\arm.h" />
     <ClInclude Include="capstone\include\arm64.h" />
     <ClInclude Include="capstone\include\capstone.h" />
@@ -449,6 +468,7 @@
     <ClInclude Include="ParsingImpl.h" />
     <ClInclude Include="PassManager.h" />
     <ClInclude Include="PassStructure.h" />
+    <ClInclude Include="PeInfo.h" />
     <ClInclude Include="pipemessage\PipeClient.h" />
     <ClInclude Include="pipemessage\PipeJSONClient.h" />
     <ClInclude Include="pipemessage\PipeMessager.h" />
@@ -460,6 +480,27 @@
     <ClInclude Include="SpecialLog.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="ThirdParty\pelib\include\BoundImportDirectory.h" />
+    <ClInclude Include="ThirdParty\pelib\include\CoffSymbolTable.h" />
+    <ClInclude Include="ThirdParty\pelib\include\ComHeaderDirectory.h" />
+    <ClInclude Include="ThirdParty\pelib\include\DebugDirectory.h" />
+    <ClInclude Include="ThirdParty\pelib\include\DelayImportDirectory.h" />
+    <ClInclude Include="ThirdParty\pelib\include\ExportDirectory.h" />
+    <ClInclude Include="ThirdParty\pelib\include\IatDirectory.h" />
+    <ClInclude Include="ThirdParty\pelib\include\ImportDirectory.h" />
+    <ClInclude Include="ThirdParty\pelib\include\InputBuffer.h" />
+    <ClInclude Include="ThirdParty\pelib\include\MzHeader.h" />
+    <ClInclude Include="ThirdParty\pelib\include\OutputBuffer.h" />
+    <ClInclude Include="ThirdParty\pelib\include\PeFile.h" />
+    <ClInclude Include="ThirdParty\pelib\include\PeHeader.h" />
+    <ClInclude Include="ThirdParty\pelib\include\PeLib.h" />
+    <ClInclude Include="ThirdParty\pelib\include\PeLibAux.h" />
+    <ClInclude Include="ThirdParty\pelib\include\PeLibInc.h" />
+    <ClInclude Include="ThirdParty\pelib\include\RelocationsDirectory.h" />
+    <ClInclude Include="ThirdParty\pelib\include\ResourceDirectory.h" />
+    <ClInclude Include="ThirdParty\pelib\include\RichHeader.h" />
+    <ClInclude Include="ThirdParty\pelib\include\SecurityDirectory.h" />
+    <ClInclude Include="ThirdParty\pelib\include\TlsDirectory.h" />
     <ClInclude Include="UniversalObject.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="Win32EnumWbemClassObject.h" />

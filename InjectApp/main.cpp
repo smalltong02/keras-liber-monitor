@@ -66,7 +66,7 @@ int main()
         return -1;
     }
 
-    std::string narrow_name = cchips::special_log::to_byte_string(dll_path);
+    std::string narrow_name = cchips::to_byte_string(dll_path);
     if (!narrow_name.length()) return false;
 #ifdef _X86_
     std::unique_ptr<cchips::CDllInjectorObject::_InjectDllInfo> p_dll_info = nullptr;

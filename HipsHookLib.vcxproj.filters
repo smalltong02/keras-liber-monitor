@@ -25,9 +25,6 @@
     <Filter Include="bson">
       <UniqueIdentifier>{adcefcc0-7e66-4dc7-ac5d-497f9c0a6f69}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Capstone">
-      <UniqueIdentifier>{5a8f6239-9c62-49fd-985b-60aee0f2e667}</UniqueIdentifier>
-    </Filter>
     <Filter Include="g-re2">
       <UniqueIdentifier>{62225d23-4d57-4c2d-a919-07e895503bd7}</UniqueIdentifier>
     </Filter>
@@ -42,6 +39,15 @@
     </Filter>
     <Filter Include="PassManager">
       <UniqueIdentifier>{25e6388a-7d69-4593-b365-78278391638e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdPary">
+      <UniqueIdentifier>{66b934fd-80fb-41a3-8086-04886625b807}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdPary\PeInfo">
+      <UniqueIdentifier>{e3fff677-063d-4f34-ab89-d517b30db3d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdPary\Capstone">
+      <UniqueIdentifier>{e75dd508-e4ec-4919-bd82-c53d45b8dea2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -186,6 +192,60 @@
     <ClCompile Include="exploitimpl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\BoundImportDirectory.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\CoffSymbolTable.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\ComHeaderDirectory.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\DebugDirectory.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\ExportDirectory.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\IatDirectory.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\InputBuffer.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\MzHeader.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\OutputBuffer.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\PeFile.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\PeHeader.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\PeLibAux.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\RelocationsDirectory.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\ResourceDirectory.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\RichHeader.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\SecurityDirectory.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="PeInfo.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="PassStructure.cpp">
+      <Filter>PassManager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FlagsObject.h">
@@ -268,51 +328,6 @@
     </ClInclude>
     <ClInclude Include="crc.h">
       <Filter>Log</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\arm.h">
-      <Filter>Capstone</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\arm64.h">
-      <Filter>Capstone</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\capstone.h">
-      <Filter>Capstone</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\evm.h">
-      <Filter>Capstone</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\m68k.h">
-      <Filter>Capstone</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\m680x.h">
-      <Filter>Capstone</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\mips.h">
-      <Filter>Capstone</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\mos65xx.h">
-      <Filter>Capstone</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\platform.h">
-      <Filter>Capstone</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\ppc.h">
-      <Filter>Capstone</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\sparc.h">
-      <Filter>Capstone</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\systemz.h">
-      <Filter>Capstone</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\tms320c64x.h">
-      <Filter>Capstone</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\x86.h">
-      <Filter>Capstone</Filter>
-    </ClInclude>
-    <ClInclude Include="capstone\include\xcore.h">
-      <Filter>Capstone</Filter>
     </ClInclude>
     <ClInclude Include="PackageWrapper.h">
       <Filter>Log</Filter>
@@ -415,6 +430,120 @@
     </ClInclude>
     <ClInclude Include="exploitmpl.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\BoundImportDirectory.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\CoffSymbolTable.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\ComHeaderDirectory.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\DebugDirectory.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\DelayImportDirectory.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\ExportDirectory.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\IatDirectory.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\ImportDirectory.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\InputBuffer.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\MzHeader.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\OutputBuffer.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\PeFile.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\PeHeader.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\PeLib.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\PeLibAux.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\PeLibInc.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\RelocationsDirectory.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\ResourceDirectory.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\RichHeader.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\SecurityDirectory.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\TlsDirectory.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="PeInfo.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="CapstoneImpl.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\arm.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\arm64.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\capstone.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\evm.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\m68k.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\m680x.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\mips.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\mos65xx.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\platform.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\ppc.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\sparc.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\systemz.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\tms320c64x.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\x86.h">
+      <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="capstone\include\xcore.h">
+      <Filter>ThirdPary\Capstone</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -2,6 +2,8 @@
 #include "utils.h"
 #include "HookImplementObject.h"
 #include "exploitmpl.h"
+#include "CapstoneImpl.h"
+#include "UniversalObject.h"
 
 namespace cchips {
 
@@ -165,6 +167,20 @@ namespace cchips {
         return false;
     }
 
+    bool CHookImplementObject::InitializeCapstoneEngine()
+    {
+        if (!GetNativeObject().Success())
+            return false;
+        cs_opt_mem cs_mem;
+        cs_mem.malloc = &NativeObject::native_malloc;
+        cs_mem.calloc = &NativeObject::native_calloc;
+        cs_mem.realloc = &NativeObject::native_realloc;
+        cs_mem.free = &NativeObject::native_free;
+        cs_mem.vsnprintf = &vsnprintf;
+        GetCapstoneImplment().Reset(cs_mem);
+        return true;
+    }
+
     bool CHookImplementObject::Initialize(std::shared_ptr<CHipsCfgObject> configObject)
     {
         m_configObject = std::move(configObject);
@@ -177,6 +193,9 @@ namespace cchips {
         if (!m_category_ob_ptr) return m_bValid;
         m_notification_api_define.ldrregisterdllnotification_func = reinterpret_cast<LdrRegisterDllNotification_Define>(GetProcAddress(GetModuleHandleA("ntdll"), "LdrRegisterDllNotification"));
         if (!m_notification_api_define.ldrregisterdllnotification_func)
+            return m_bValid;
+
+        if (!InitializeCapstoneEngine())
             return m_bValid;
 
         if (m_hookImplementFunction != nullptr &&
