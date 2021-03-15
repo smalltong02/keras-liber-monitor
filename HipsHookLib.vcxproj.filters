@@ -49,6 +49,21 @@
     <Filter Include="ThirdPary\Capstone">
       <UniqueIdentifier>{e75dd508-e4ec-4919-bd82-c53d45b8dea2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Passes">
+      <UniqueIdentifier>{d6bfab61-8896-4663-ad68-defbea39ec2a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Passes\modinit">
+      <UniqueIdentifier>{5f256d1b-89c9-4525-95f3-01bcaab8fc6d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Passes\funcinit">
+      <UniqueIdentifier>{82ddaecf-3346-41fe-876a-50e9b7fe8fa1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Passes\bbinit">
+      <UniqueIdentifier>{553434d5-d4b2-479d-bf1c-a14623e4044a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Passes\insninit">
+      <UniqueIdentifier>{9eccd0ff-cfe7-475d-87e5-6d125798c25e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HipsHookLib.cpp">
@@ -245,6 +260,60 @@
     </ClCompile>
     <ClCompile Include="PassStructure.cpp">
       <Filter>PassManager</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\PeFormat.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\ImportTable.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\SharedFunc.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\ExportTable.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\ResourceTable.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\SectionTable.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pelib\src\TlsInfo.cpp">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="Abi.cpp">
+      <Filter>PassManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Abix86.cpp">
+      <Filter>PassManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Abix64.cpp">
+      <Filter>PassManager</Filter>
+    </ClCompile>
+    <ClCompile Include="NativeObject.cpp">
+      <Filter>HipsObject</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger.cpp">
+      <Filter>PassManager</Filter>
+    </ClCompile>
+    <ClCompile Include="PassSupport.cpp">
+      <Filter>PassManager</Filter>
+    </ClCompile>
+    <ClCompile Include="PassSupportData.cpp">
+      <Filter>PassManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\funcinit\funcinit.cpp">
+      <Filter>Passes\funcinit</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\modinit\modinit.cpp">
+      <Filter>Passes\modinit</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\bbinit\bbinit.cpp">
+      <Filter>Passes\bbinit</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\insninit\insninit.cpp">
+      <Filter>Passes\insninit</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -544,6 +613,66 @@
     </ClInclude>
     <ClInclude Include="capstone\include\xcore.h">
       <Filter>ThirdPary\Capstone</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\DynamicBuffer.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\ImportTable.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\SharedFunc.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\ExportTable.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\ResourceTable.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\SectionTable.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\TlsInfo.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="Abi.h">
+      <Filter>PassManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Abix86.h">
+      <Filter>PassManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Abix64.h">
+      <Filter>PassManager</Filter>
+    </ClInclude>
+    <ClInclude Include="JumpTargets.h">
+      <Filter>PassManager</Filter>
+    </ClInclude>
+    <ClInclude Include="NativeObject.h">
+      <Filter>HipsObject</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\PeFormat.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger.h">
+      <Filter>PassManager</Filter>
+    </ClInclude>
+    <ClInclude Include="PassSupport.h">
+      <Filter>PassManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes.h">
+      <Filter>PassManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\funcinit\funcinit.h">
+      <Filter>Passes\funcinit</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\modinit\modinit.h">
+      <Filter>Passes\modinit</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\bbinit\bbinit.h">
+      <Filter>Passes\bbinit</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\insninit\insninit.h">
+      <Filter>Passes\insninit</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

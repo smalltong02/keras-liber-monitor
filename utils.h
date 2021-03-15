@@ -72,6 +72,52 @@ inline std::string to_byte_string(const std::wstring& input)
     return {};
 }
 
+template<typename Char> struct CaseInsensitiveCompare {
+public:
+    bool operator()(Char x, Char y) const {
+        return tolower(x) == tolower(y);
+    }
+};
+
+template <typename STR>
+bool StartsWithT(const STR& str, const STR& search, bool case_sensitive) {
+    if (case_sensitive) {
+        return str.compare(0, search.length(), search) == 0;
+    }
+    else {
+        if (search.size() > str.size())
+            return false;
+        return std::equal(search.begin(), search.end(), str.begin(),
+            CaseInsensitiveCompare<typename STR::value_type>());
+    }
+}
+
+bool StartsWith(const std::string& str, const std::string& search,
+    bool case_sensitive);
+bool StartsWith(const std::wstring& str, const std::wstring& search,
+    bool case_sensitive);
+
+template <typename STR>
+bool EndsWithT(const STR& str, const STR& search, bool case_sensitive) {
+    typename STR::size_type str_length = str.length();
+    typename STR::size_type search_length = search.length();
+    if (search_length > str_length)
+        return false;
+    if (case_sensitive) {
+        return str.compare(str_length - search_length, search_length, search) == 0;
+    }
+    else {
+        return std::equal(search.begin(), search.end(),
+            str.begin() + (str_length - search_length),
+            CaseInsensitiveCompare<typename STR::value_type>());
+    }
+}
+
+bool EndsWith(const std::string& str, const std::string& search,
+    bool case_sensitive);
+bool EndsWith(const std::wstring& str, const std::wstring& search,
+    bool case_sensitive);
+
 template <typename Func>
 inline void getExecutionTime(const std::string& title, Func func) {
     const auto sta = std::chrono::steady_clock::now();
@@ -202,25 +248,15 @@ inline std::stringstream OutputAnyValue(const std::any& anyvalue) {
         }
     }
     else if (anyvalue.type() == typeid(GUID)) {
-        const std::string hex = "0123456789abcdef";
+        WCHAR *clsid_str = nullptr;
         GUID guid = std::any_cast<GUID>(anyvalue);
-        ss << "{";
-        ss << std::hex << guid.Data1;
-        ss << "-";
-        ss << std::hex << guid.Data2;
-        ss << "-";
-        ss << std::hex << guid.Data3;
-        ss << "-";
-        ss << hex[guid.Data4[0] >> 4] << hex[guid.Data4[0] & 0xf] \
-            << hex[guid.Data4[1] >> 4] << hex[guid.Data4[1] & 0xf] \
-            << "-" \
-            << hex[guid.Data4[2] >> 4] << hex[guid.Data4[2] & 0xf] \
-            << hex[guid.Data4[3] >> 4] << hex[guid.Data4[3] & 0xf] \
-            << hex[guid.Data4[4] >> 4] << hex[guid.Data4[4] & 0xf] \
-            << hex[guid.Data4[5] >> 4] << hex[guid.Data4[5] & 0xf] \
-            << hex[guid.Data4[6] >> 4] << hex[guid.Data4[6] & 0xf] \
-            << hex[guid.Data4[7] >> 4] << hex[guid.Data4[7] & 0xf] \
-            << "}";
+        HRESULT hr = StringFromCLSID(guid, &clsid_str);
+        if (!FAILED(hr)) {
+            if (clsid_str) {
+                ss << to_byte_string(clsid_str);
+                CoTaskMemFree(clsid_str);
+            }
+        }
     }
     return ss;
 }

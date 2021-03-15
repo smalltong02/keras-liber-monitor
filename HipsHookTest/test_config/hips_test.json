@@ -4,6 +4,10 @@
   "CreateDate": "24//12//2019 2:24PM",
   "Description": "Creating hooks and signature format config information head file",
 
+  "Config": {
+    "Mode": 3
+  },
+
   "Sigs": [
     104,
     105,

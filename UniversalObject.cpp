@@ -1,9 +1,13 @@
 #include "stdafx.h"
 #include <SubAuth.h>
 #include <algorithm>
+#include <WbemDisp.h>
+#include <WbemProv.h>
+#include <WbemTran.h>
 #include "UniversalObject.h"
 #include "CapstoneImpl.h"
 #include "ExceptionThrow.h"
+#include "CBaseType.h"
 
 namespace cchips {
     std::vector<std::pair<CategoryObject::_category_type, std::string>> CategoryObject::_category_str_def = {
@@ -49,21 +53,58 @@ namespace cchips {
         {proc_type_x32, {"32-bit"}}, {proc_type_x64, {"64-bit"}},
     };
 
+    CommonFuncsObject::SetGUID CommonFuncsObject::_known_wmi_clsid_def = {
+        CLSID_WbemLocator,
+        CLSID_WbemContext,
+        CLSID_UnsecuredApartment,
+        CLSID_WbemClassObject,
+        CLSID_MofCompiler,
+        CLSID_WbemStatusCodeText,
+        CLSID_WbemBackupRestore,
+        CLSID_WbemRefresher,
+        CLSID_WbemObjectTextSrc,
+        CLSID_WbemDefPath,
+        CLSID_WbemQuery,
+        CLSID_SWbemLocator,
+        CLSID_SWbemNamedValueSet,
+        CLSID_SWbemObjectPath,
+        CLSID_SWbemLastError,
+        CLSID_SWbemSink,
+        CLSID_SWbemDateTime,
+        CLSID_SWbemRefresher,
+        CLSID_SWbemServices,
+        CLSID_SWbemServicesEx,
+        CLSID_SWbemObject,
+        CLSID_SWbemObjectEx,
+        CLSID_SWbemObjectSet,
+        CLSID_SWbemNamedValue,
+        CLSID_SWbemQualifier,
+        CLSID_SWbemQualifierSet,
+        CLSID_SWbemProperty,
+        CLSID_SWbemPropertySet,
+        CLSID_SWbemMethod,
+        CLSID_SWbemMethodSet,
+        CLSID_SWbemEventSource,
+        CLSID_SWbemSecurity,
+        CLSID_SWbemPrivilege,
+        CLSID_SWbemPrivilegeSet,
+        CLSID_SWbemRefreshableItem,
+        CLSID_WbemAdministrativeLocator,
+        CLSID_WbemAuthenticatedLocator,
+        CLSID_WbemUnauthenticatedLocator,
+        CLSID_WbemDecoupledRegistrar,
+        CLSID_WbemDecoupledBasicEventProvider,
+        CLSID_WbemLevel1Login,
+        CLSID_WbemLocalAddrRes,
+        CLSID_WbemUninitializedClassObject,
+        CLSID_WbemDCOMTransport,
+    };
+
     CommonFuncsObject::_proc_type CommonFuncsObject::m_proc_type = CommonFuncsObject::proc_type_invalid;
     CommonFuncsObject::_os_type CommonFuncsObject::m_os_type = CommonFuncsObject::os_type_invalid;
     CommonFuncsObject::IsWow64Process_Define CommonFuncsObject::m_lpfn_IsWow64Process = nullptr;
     CommonFuncsObject::GetNativeSystemInfo_Define CommonFuncsObject::m_lpfn_GetNativeSystemInfo = nullptr;
     bool CommonFuncsObject::m_is_dotnet_owner = false;
-
-    const std::vector<std::pair<std::string, std::pair<NativeObject::_native_type, std::string>>> NativeObject::m_native_funcs = {
-        {"ntdll", {native_sdt_func, "NtAllocateVirtualMemory"}},
-        {"ntdll", {native_sdt_func, "NtFreeVirtualMemory"}},
-        {"ntdll", {native_sdt_func, "NtProtectVirtualMemory"}},
-        {"ntdll", {native_sdt_func, "NtReadVirtualMemory"}},
-        {"ntdll", {native_sdt_func, "NtQueryVirtualMemory"}},
-    };
-    NativeObject::NtAllocateVirtualMemory_Define NativeObject::_pfn_ntallocatevirtualmemory = nullptr;
-    NativeObject::NtFreeVirtualMemory_Define NativeObject::_pfn_ntfreevirtualmemory = nullptr;
 
     void CategoryObject::InitGetCategory()
     {
@@ -317,7 +358,8 @@ namespace cchips {
     {
         if (hHeap == nullptr ||
             base == nullptr ||
-            size == 0)
+            size == 0 ||
+            m_heap_block_table.size() == 0)
             return false;
 
         CheckExploitFuncs::heap_block* block;
@@ -495,135 +537,89 @@ namespace cchips {
         return m_is_dotnet_owner;
     }
 
-    NativeObject::NativeObject()
+    bool CommonFuncsObject::IsKnownWMIClsid(const GUID& clsid)
     {
-        if (!cchips::GetCapstoneImplment().IsValid())
-            return;
-
-        std::for_each(m_native_funcs.begin(), m_native_funcs.end(), [&](const auto& func_pair) {
-            HMODULE hmodule = GetModuleHandle(func_pair.first.c_str());
-            if (hmodule) {
-                NativeObject::_native_type type = func_pair.second.first;
-                std::uint8_t* proc_address = reinterpret_cast<std::uint8_t*>(GetProcAddress(hmodule, func_pair.second.second.c_str()));
-                if (proc_address) {
-
-                    switch (type) {
-                    case native_sdt_func:
-                    {
-                        AddNativeSDTFuncToList(func_pair.second.second, proc_address);
-                    }
-                    break;
-                    default:
-                        ;
-                    }
-
-                    
-                }
-            }
-        });
-        _pfn_ntallocatevirtualmemory = reinterpret_cast<NtAllocateVirtualMemory_Define>(GetNativeFunc("NtAllocateVirtualMemory"));
-        _pfn_ntfreevirtualmemory = reinterpret_cast<NtFreeVirtualMemory_Define>(GetNativeFunc("NtFreeVirtualMemory"));
-        return;
+        if (!_known_wmi_clsid_def.size())
+            return false;
+        const auto& it = _known_wmi_clsid_def.find(clsid);
+        if (it == _known_wmi_clsid_def.end())
+            return false;
+        return true;
     }
 
-    bool NativeObject::AddNativeSDTFuncToList(std::string_view func_name, std::uint8_t* proc_address)
+    std::string CommonFuncsObject::GetLocalServer32FromClsid(const std::string& clsid)
     {
-        uint8_t *code = proc_address;
-        size_t code_size = 100;
-        size_t insn_size_sum = 0;
-        uint64_t address = reinterpret_cast<std::uint64_t>(proc_address);
-        std::unique_ptr<CapInsn> insn = std::make_unique<CapInsn>(cchips::GetCapstoneImplment().GetCapHandle());
-        while (cchips::GetCapstoneImplment().CsDisasmIter(const_cast<const std::uint8_t**>(reinterpret_cast<std::uint8_t**>(&code)), &code_size, &address, insn)) {
-            insn_size_sum += insn->size();
-            if (insn->GetInsnId() == X86_INS_JNE) {
-                if (cchips::GetCapstoneImplment().OpInCount(insn, X86_OP_IMM)) {
-                    int index = cchips::GetCapstoneImplment().OpInIndex(insn, X86_OP_IMM, 1);
-                    if (insn->self()->detail) {
-                        cs_x86* x86 = &insn->self()->detail->x86;
-                        insn_size_sum += (x86->operands[index].imm - address);
-                        code_size -= (x86->operands[index].imm - address);
-                        code = reinterpret_cast<std::uint8_t*>(x86->operands[index].imm);
-                        address = x86->operands[index].imm;
+        if (!clsid.length()) return {};
+        std::stringstream root_key_str;
+        root_key_str << "SOFTWARE\\Classes\\CLSID\\" << clsid << "\\LocalServer32";
+        HKEY key_handle;
+        LSTATUS status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, root_key_str.str().c_str(), 0, KEY_QUERY_VALUE | KEY_WOW64_64KEY, &key_handle);
+        if (status == ERROR_SUCCESS) {
+            DWORD cbData = 0;
+            DWORD Type = 0;
+            status = RegQueryValueEx(key_handle, NULL, NULL, NULL, NULL, &cbData);
+            if ((status == ERROR_SUCCESS || status == ERROR_MORE_DATA) && cbData > 0) {
+                std::unique_ptr<BYTE[]> buffer(new BYTE[cbData]);
+                if (buffer) {
+                    status = RegQueryValueEx(key_handle, NULL, NULL, &Type, buffer.get(), &cbData);
+                    if (status == ERROR_SUCCESS) {
+                        if (Type == REG_SZ) {
+                            RegCloseKey(key_handle);
+                            return std::string(reinterpret_cast<char*>(buffer.get()));
+                        }
                     }
                 }
             }
-            else {
-                if (cchips::GetCapstoneImplment().InsnInGroup(insn, X86_GRP_RET)) {
-                    std::unique_ptr<std::uint8_t, CDeleter> ptr(reinterpret_cast<std::uint8_t*>(VirtualAlloc(NULL, insn_size_sum,
-                        MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE)), CDeleter(insn_size_sum));
-                    if (!ptr) return false;
-                    memcpy(ptr.get(), proc_address, insn_size_sum);
-                    unsigned long old_protect;
-                    if (!VirtualProtect(ptr.get(), insn_size_sum, PAGE_EXECUTE_READ, &old_protect))
-                        return false;
-                    if (ptr) m_native_funcs_list[func_name] = std::move(ptr);
-                    return true;
+            RegCloseKey(key_handle);
+        }
+        return {};
+    }
+
+    std::string CommonFuncsObject::GetInprocServer32FromClsid(const std::string& clsid)
+    {
+        if (!clsid.length()) return {};
+        std::stringstream root_key_str;
+        root_key_str << "SOFTWARE\\Classes\\CLSID\\" << clsid << "\\InprocServer32";
+        HKEY key_handle;
+        LSTATUS status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, root_key_str.str().c_str(), 0, KEY_QUERY_VALUE | KEY_WOW64_64KEY, &key_handle);
+        if (status == ERROR_SUCCESS) {
+            DWORD cbData = 0;
+            DWORD Type = 0;
+            status = RegQueryValueEx(key_handle, NULL, NULL, NULL, NULL, &cbData);
+            if ((status == ERROR_SUCCESS || status == ERROR_MORE_DATA) && cbData > 0) {
+                std::unique_ptr<BYTE[]> buffer(new BYTE[cbData]);
+                if (buffer) {
+                    status = RegQueryValueEx(key_handle, NULL, NULL, &Type, buffer.get(), &cbData);
+                    if (status == ERROR_SUCCESS) {
+                        if (Type == REG_SZ) {
+                            RegCloseKey(key_handle);
+                            return std::string(reinterpret_cast<char*>(buffer.get()));
+                        }
+                    }
                 }
             }
+            RegCloseKey(key_handle);
         }
-        return false;
+        return {};
     }
 
-    void* NativeObject::mem_malloc(size_t size)
+    std::string CommonFuncsObject::GetComServicePath(const std::string& local_server32)
     {
-        if (size == 0) {
-            return nullptr;
-        }
-        size_t real_length = size + sizeof(uintptr_t);
-        ASSERT(_pfn_ntallocatevirtualmemory);
-        void *ptr = nullptr;
-        if (NT_SUCCESS(_pfn_ntallocatevirtualmemory(GetCurrentProcess(), &ptr, 0, reinterpret_cast<SIZE_T*>(&real_length), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE))) {
-            if (ptr == nullptr)
-                return nullptr;
-        }
-        memset(ptr, 0, real_length);
-        *(uintptr_t *)ptr = size;
-        return (uintptr_t *)ptr + 1;
-    }
-
-    void* NativeObject::mem_realloc(void *ptr, size_t size)
-    {
-        void *newptr = mem_malloc(size);
-        if (newptr == nullptr) {
-            return nullptr;
+        std::string service_path = local_server32;
+        if (service_path.length()) {
+            // try to delete /automation
+#define STR_TAIL_AUTOMATION " /automation"
+            if (EndsWith(service_path, STR_TAIL_AUTOMATION, false)) {
+                service_path = service_path.substr(0, service_path.length() - sizeof(STR_TAIL_AUTOMATION) + 1);
+            }
+            if (service_path.length() > 2) {
+                if (service_path[0] == '"' && service_path[service_path.length() - 1] == '"') {
+                    service_path = service_path.substr(1, service_path.length()-2);
+                }
+            }
+            return service_path;
         }
 
-        if (ptr != nullptr) {
-            uintptr_t oldlength = *((uintptr_t *)ptr - 1);
-            memcpy(newptr, ptr, std::min(size, oldlength));
-            mem_free(ptr);
-        }
-        return newptr;
-    }
-
-    void NativeObject::mem_free(void *ptr)
-    {
-        if (ptr != NULL) {
-            ASSERT(_pfn_ntfreevirtualmemory);
-            uintptr_t real_size = *(static_cast<uintptr_t*>(ptr) - 1) + sizeof(uintptr_t);
-            void* ptr_ptr = static_cast<uintptr_t*>(ptr) - 1;
-            _pfn_ntfreevirtualmemory(GetCurrentProcess(), const_cast<const void**>(&ptr_ptr),
-                reinterpret_cast<SIZE_T*>(&real_size), MEM_RELEASE);
-        }
-    }
-
-    void* NativeObject::native_malloc(size_t size)
-    {
-        return mem_malloc(size);
-    }
-
-    void* NativeObject::native_calloc(size_t nmemb, size_t size)
-    {
-        return mem_malloc(nmemb * size);
-    }
-
-    void* NativeObject::native_realloc(void *ptr, size_t size)
-    {
-        return mem_realloc(ptr, size);
-    }
-
-    void NativeObject::native_free(void *ptr)
-    {
-        mem_free(ptr);
+        return local_server32;
     }
 } // namespace cchips

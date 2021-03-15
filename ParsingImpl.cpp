@@ -972,6 +972,10 @@ namespace cchips {
 
             ASSERT(param_adress != nullptr);
             std::any anyvalue = plog.second->GetValue(param_adress + arg_offset);
+            if (!anyvalue.has_value() && plog.second->IsCommReference()) {
+                PVOID ret_ptr = nullptr;
+                anyvalue = ret_ptr;
+            }
             std::stringstream ss;
             if (ss = OutputAnyValue(anyvalue); !ss.str().length())
             {
@@ -1023,8 +1027,14 @@ namespace cchips {
                 std::any anyvalue = iden.second->GetValue(param_adress + arg_offset);
                 if (!anyvalue.has_value())
                 {
-                    error_log("Function({}): get argument({}) value failed!", GetName(), iden.first);
-                    return false;
+                    if(iden.second->GetMetadataDef() && iden.second->GetMetadataDef()->IsCommReference()) {
+                        PVOID ret_ptr = nullptr;
+                        anyvalue = ret_ptr;
+                    }
+                    else {
+                        error_log("Function({}): get argument({}) value failed!", GetName(), iden.first);
+                        return false;
+                    }
                 }
                 if (!check->SetIdentifierValue(value_map, CExpParsing::ValuePair(iden.first, anyvalue)))
                 {

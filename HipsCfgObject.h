@@ -22,6 +22,8 @@ namespace cchips {
 #define FL_VERSION "Version"
 #define FL_CREATEDATE "CreateDate"
 #define FL_DESCRIPTION "Description"
+#define FL_CONFIG "Config"
+#define FL_MODE "Mode"
 #define FL_SIGS "Sigs"
 #define FL_COMS "Coms"
 #define FL_WMIS "Wmis"
@@ -37,6 +39,11 @@ namespace cchips {
             mode_normal = 0,
             mode_verifier = 1,
         };
+        using _hips_mode = enum {
+            hips_none_mode = 0,
+            hips_hook_mode = 1,
+            hips_trace_mode = 2,
+        };
         using _hips_info = struct {
             std::string Name;
             std::string Version;
@@ -44,9 +51,11 @@ namespace cchips {
             std::string Description;
         };
 
-        CHipsCfgObject(_cfg_mode mode = mode_normal) : m_bValid(false), m_cfg_mode(mode) { }
+        CHipsCfgObject(_cfg_mode mode = mode_normal) : m_bValid(false), m_cfg_mode(mode), m_hips_mode(hips_none_mode) { }
         ~CHipsCfgObject() = default;
 
+        bool IsHookMode() const { return m_hips_mode & hips_hook_mode; }
+        bool IsTraceMode() const { return m_hips_mode & hips_trace_mode; }
         bool InitializeFlagsObjects(const HMODULE handle, const CRapidJsonWrapper& document); // initialize flags array.
         bool InitializeSignsObjects(const HMODULE handle, const CRapidJsonWrapper& document); // initialize sigs array.
         bool InitializeWmisObjects(const HMODULE handle, const CRapidJsonWrapper& document); // initialize wmis array.
@@ -57,6 +66,7 @@ namespace cchips {
     private:
         bool m_bValid;
         _cfg_mode m_cfg_mode;
+        _hips_mode m_hips_mode;
         _hips_info m_Info;
         std::vector<std::unique_ptr<CSigsCfgObject>> m_SigsObjects;
         std::vector<std::unique_ptr<CComsCfgObject>> m_ComsObjects;

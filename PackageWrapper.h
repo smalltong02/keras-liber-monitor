@@ -6,6 +6,8 @@
 #include <queue>
 #include <any>
 #include <optional>
+#include <atomic>
+#include <chrono>
 #include "rapidjson\document.h"
 #include "rapidjson\writer.h"
 #include "crc.h"

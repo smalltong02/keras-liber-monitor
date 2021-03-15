@@ -8,6 +8,7 @@
 #include <memory>
 #include <functional>
 #include <variant>
+#include <set>
 #include "Psapi.h"
 #include "re2\re2.h"
 #include "utils.h"
@@ -109,6 +110,14 @@ namespace cchips {
             proc_type_x32 = 1,
             proc_type_x64 = 2,
         };
+
+        typedef struct {
+            bool operator()(const GUID& lhs, const GUID& rhs) const {
+                return (memcmp(&lhs, &rhs, sizeof(GUID)) > 0 ? true : false);
+            }
+        }guid_compare;
+        typedef std::set<GUID, guid_compare> SetGUID;
+
         CommonFuncsObject() = delete;
         ~CommonFuncsObject() = delete;
 
@@ -120,6 +129,10 @@ namespace cchips {
         static bool IsMatchCurrentOS(const std::string& platform_pattern);
         static bool IsMatchProcType(const std::string& type_pattern);
         static bool IsDotnetOwner(void);
+        static bool IsKnownWMIClsid(const GUID& clsid);
+        static std::string GetComServicePath(const std::string& local_server32);
+        static std::string GetLocalServer32FromClsid(const std::string& clsid);
+        static std::string GetInprocServer32FromClsid(const std::string& clsid);
     private:
         static _proc_type m_proc_type;
         static _os_type m_os_type;
@@ -128,76 +141,6 @@ namespace cchips {
         static GetNativeSystemInfo_Define m_lpfn_GetNativeSystemInfo;
         static std::vector<std::pair<_os_type, std::string>> _os_type_def;
         static std::vector<std::pair<_proc_type, std::string>> _proc_type_def;
+        static SetGUID _known_wmi_clsid_def;
     };
-
-    class NativeObject {
-    public:
-        using _native_type = enum {
-            native_sdt_func = 0,
-        };
-        struct CDeleter
-        {
-            SIZE_T data_size = 0;
-            CDeleter() = default;
-            CDeleter(size_t size) : CDeleter() { data_size = static_cast<SIZE_T>(size); }
-            __forceinline void operator()(void* data)
-            {
-                //if (data_size) {
-                //    VirtualFree(static_cast<LPVOID>(data), data_size, MEM_RELEASE);
-                //}
-            }
-        };
-
-        using NtQueryVirtualMemory_Define = NTSTATUS(WINAPI*)(HANDLE ProcessHandle,CONST VOID *BaseAddress, ULONG MemoryInformationClass, VOID *MemoryInformation, SIZE_T MemoryInformationLength, SIZE_T *ReturnLength);
-        using NtAllocateVirtualMemory_Define = NTSTATUS(WINAPI*)(HANDLE ProcessHandle, VOID **BaseAddress, ULONG_PTR ZeroBits, SIZE_T *RegionSize, ULONG AllocationType, ULONG Protect);
-        using NtFreeVirtualMemory_Define = NTSTATUS(WINAPI*)(HANDLE ProcessHandle, CONST VOID **BaseAddress, SIZE_T *RegionSize, ULONG FreeType);
-        using NtProtectVirtualMemory_Define = NTSTATUS(WINAPI*)(HANDLE ProcessHandle, CONST VOID **BaseAddress, SIZE_T *NumberOfBytesToProtect, ULONG NewAccessProtection, ULONG *OldAccessProtection);
-        using NtReadVirtualMemory_Define = NTSTATUS(WINAPI*)(HANDLE ProcessHandle, PVOID BaseAddress, PVOID Buffer, SIZE_T NumberOfBytesToRead, PSIZE_T NumberOfBytesReaded);
-
-        static NativeObject& GetInstance()
-        {
-            static NativeObject m_instance;
-            return m_instance;
-        }
-
-        static void *native_malloc(size_t size);
-        static void *native_calloc(size_t nmemb, size_t size);
-        static void *native_realloc(void *ptr, size_t size);
-        static void native_free(void *ptr);
-
-        std::uint8_t* GetNativeFunc(std::string_view func_name) {
-            if (m_native_funcs_list.size() == 0) return nullptr;
-            auto it = m_native_funcs_list.find(func_name);
-            if (it == m_native_funcs_list.end())
-                return nullptr;
-            return it->second.get();
-        }
-        bool Success() const {
-            if (m_native_funcs_list.size() != m_native_funcs.size())
-                return false;
-            for (const auto& func : m_native_funcs_list) {
-                if (!func.first.length() || func.second == nullptr)
-                    return false;
-            }
-            return true;
-        }
-    private:
-        NativeObject();
-        ~NativeObject() = default;
-        NativeObject(const NativeObject&) = delete;
-        NativeObject& operator=(const NativeObject&) = delete;
-        bool AddNativeSDTFuncToList(std::string_view func_name, std::uint8_t* proc_address);
-
-        static void *mem_malloc(size_t size);
-        static void *mem_realloc(void *ptr, size_t size);
-        static void mem_free(void *ptr);
-
-        std::map<std::string_view, std::unique_ptr<std::uint8_t, CDeleter>> m_native_funcs_list;
-        static const std::vector<std::pair<std::string, std::pair<_native_type, std::string>>> m_native_funcs;
-        static NtAllocateVirtualMemory_Define _pfn_ntallocatevirtualmemory;
-        static NtFreeVirtualMemory_Define _pfn_ntfreevirtualmemory;
-
-    };
-
-#define GetNativeObject() NativeObject::GetInstance()
 } // namespace cchips

@@ -185,6 +185,64 @@ processing_status WINAPI CHookImplementObject::detour_getProcAddress(CHookImplem
     return processing_continue;
 }
 
+void process_com_communication(CHookImplementObject::detour_node* node, REFCLSID rclsid, DWORD dwClsContext)
+{
+    WCHAR *clsid_str, *progid_str;
+    std::string clisid_string, progid_string;
+    std::string local_server32, inproc_server32;
+    HRESULT hr = StringFromCLSID(rclsid, &clsid_str);
+    if (FAILED(hr)) return;
+    ProgIDFromCLSID(rclsid, &progid_str);
+    clisid_string = to_byte_string(clsid_str);
+    local_server32 = CommonFuncsObject::GetLocalServer32FromClsid(clisid_string);
+    if (!local_server32.length()) return;
+    inproc_server32 = CommonFuncsObject::GetInprocServer32FromClsid(clisid_string);
+    if (!inproc_server32.length())
+        inproc_server32 = to_byte_string(progid_str);
+
+    BEGIN_LOG("com_communication");
+    LOGGING("Clsid", clisid_string);
+    LOGGING("LocalServer32", local_server32);
+    LOGGING("CLSCTX", std::to_string(dwClsContext));
+    // add service path to driver
+    DWORD BytesReturned = 0;
+    std::string service_path = CommonFuncsObject::GetComServicePath(local_server32);
+    if (node->hook_implement_object->GetDriverMgr()->IoControl(IOCTL_HIPS_SETTARGETCMD, &service_path[0], sizeof(DWORD), NULL, 0, &BytesReturned))
+    {
+        debug_log("add service path({}) to driver success!", local_server32);
+    }
+    else
+        debug_log("add service path({}) to driver failed!", local_server32);
+    if (inproc_server32.length())
+        LOGGING("InprocServer32", inproc_server32);
+    END_LOG(node->log_entry);
+    if (clsid_str)
+        CoTaskMemFree(clsid_str);
+    if (progid_str)
+        CoTaskMemFree(progid_str);
+    return;
+}
+
+processing_status WINAPI CHookImplementObject::detour_coCreateInstance(detour_node* node, REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext, REFIID riid, LPVOID *ppv)
+{
+    PRE_BEGIN(node)
+    if (pUnkOuter != nullptr || dwClsContext != CLSCTX_LOCAL_SERVER) return processing_continue;
+    if (CommonFuncsObject::IsKnownWMIClsid(rclsid)) return processing_continue;
+    
+    process_com_communication(node, rclsid, dwClsContext);
+    return processing_continue;
+}
+
+processing_status WINAPI CHookImplementObject::detour_coCreateInstanceEx(detour_node* node, REFCLSID Clsid, IUnknown *punkOuter, DWORD dwClsCtx, COSERVERINFO *pServerInfo, DWORD dwCount, MULTI_QI *pResults)
+{
+    PRE_BEGIN(node)
+    if(punkOuter != nullptr || dwClsCtx != CLSCTX_LOCAL_SERVER || pServerInfo != nullptr) return processing_continue;
+    if (CommonFuncsObject::IsKnownWMIClsid(Clsid)) return processing_continue;
+    
+    process_com_communication(node, Clsid, dwClsCtx);
+    return processing_continue;
+}
+
 bool process_log_for_wmiobject(CHookImplementObject::detour_node* node, const std::shared_ptr<CWmiObject>& wmi_object, IWbemClassObject* pwbem_object, std::shared_ptr<CLogHandle>& log_handle)
 {
     HRESULT hr;

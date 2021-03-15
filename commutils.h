@@ -15,10 +15,6 @@ using namespace cchips;
 #define IOCTL_HIPS_GET_INJECT32_CONFIG	(ULONG) CTL_CODE(FILE_DEVICE_FIPS,\
     0xA01, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
 
-// for kernel dll inject service, set cmdline to kernel.
-#define IOCTL_HIPS_SETTARGETCMD		(ULONG) CTL_CODE(FILE_DEVICE_FIPS,\
-    0xA02, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
-
 extern GUID CLSID_idWbemDefPath;
 extern GUID CLSID_idWbemLocator;
 extern GUID IID_idIWbemPath;

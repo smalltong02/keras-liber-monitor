@@ -291,7 +291,7 @@ public:
         g_log_object->DisableDupFlt();
         if (!m_hookImplObject->Initialize(std::move(m_hipsCfgObject)))
             return false;
-        if (!m_hookImplObject->HookAllApis())
+        if (!m_hookImplObject->Running())
             return false;
         m_valid = true;
         return m_valid;

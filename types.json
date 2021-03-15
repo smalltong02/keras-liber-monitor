@@ -54,7 +54,8 @@
     "REFCLSID": "GUID",
     "REFIID": "GUID",
     "IID": "COSERVERINFO",
-    "SC_STATUS_TYPE": "INT"
+    "SC_STATUS_TYPE": "INT",
+    "NET_API_STATUS": "NTSTATUS"
   },
 
   "Structure": {
@@ -422,6 +423,17 @@
         "PAGE_TARGETS_INVALID": 1073741824,
         "PAGE_ENCLAVE_UNVALIDATED": 536870912,
         "PAGE_ENCLAVE_DECOMMIT": 268435456
+      }
+    },
+
+    "NETSETUP_JOIN_STATUS": {
+      "Data": "DWORD",
+      "OPERATION": "OR",
+      "Value": {
+        "NetSetupUnknownStatus": 0,
+        "NetSetupUnjoined": 1,
+        "NetSetupWorkgroupName": 2,
+        "NetSetupDomainName": 3
       }
     }
   }

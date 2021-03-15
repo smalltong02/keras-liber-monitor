@@ -12,6 +12,7 @@
 #include "gmock\gmock.h"
 #include "PeInfo.h"
 #include "PassStructure.h"
+#include "PassSupport.h"
 
 #ifdef _FUNCTION_TEST
 class HookAnalysisInsnTest : public testing::Test
@@ -86,13 +87,37 @@ TEST_F(HookAnalysisInsnTest, FileDetector_GetAsmInstruction)
 // test class Module
 TEST_F(HookAnalysisInsnTest, Module_Class)
 {
+    bool bret = false;
     std::shared_ptr<Module> pe_module = std::make_shared<Module>();
     ASSERT_NE(pe_module, nullptr);
-    pe_module->Initialize(reinterpret_cast<const uint8_t*>(0x10000));
+    pe_module->SetPrecacheAddress(reinterpret_cast<uint8_t*>(0x10000));
+    pe_module->Initialize();
     ASSERT_FALSE(pe_module->Valid());
     HMODULE hmodule = GetModuleHandle("kernel32");
-    pe_module->Initialize(reinterpret_cast<const uint8_t*>(hmodule));
+    pe_module->SetModuleName(std::string("kernel32.dll"));
+    pe_module->SetPrecacheAddress(reinterpret_cast<uint8_t*>(hmodule));
+    bret = GetPassRegistry().run(pe_module);
+    ASSERT_TRUE(bret);
     ASSERT_TRUE(pe_module->Valid());
+#ifdef _X86_
+    pe_module->dump("C:\\work\\test1_x86.json");
+#endif
+#ifdef _AMD64_
+    pe_module->dump("C:\\work\\test1_x64.json");
+#endif
+    HMODULE self_hmod = GetModuleHandle(nullptr);
+    std::shared_ptr<Module> self_module = std::make_shared<Module>();
+    self_module->SetModuleName(std::string("HipsHookTest.exe"));
+    pe_module->SetPrecacheAddress(reinterpret_cast<uint8_t*>(self_hmod));
+    bret = GetPassRegistry().run(self_module);
+    ASSERT_TRUE(bret);
+    ASSERT_TRUE(self_module->Valid());
+#ifdef _X86_
+    self_module->dump("C:\\work\\test2_x86.json");
+#endif
+#ifdef _AMD64_
+    self_module->dump("C:\\work\\test2_x64.json");
+#endif
 }
 #endif
 

@@ -8,6 +8,10 @@
 #include <atomic>
 #include <random>
 #include <powerbase.h>
+#include <Lm.h>
+#include <lmjoin.h>
+#include <lmaccess.h>
+#include <wininet.h>
 #include "utils.h"
 #include "commutils.h"
 #include "LogObject.h"
@@ -38,6 +42,19 @@ public:
     virtual BOOL VirtualProtectEx(HANDLE hProcess, LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, LPDWORD lpflOldProtect) = 0;
     virtual BOOL CreateProcess(LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCSTR lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation) = 0;
     virtual HANDLE CreateFile(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile) = 0;
+    //explore test
+    virtual NET_API_STATUS NetGetJoinInformation(LPCWSTR lpServer, LPWSTR *lpNameBuffer, PNETSETUP_JOIN_STATUS BufferType) = 0;
+    virtual NET_API_STATUS NetUserGetInfo(LPCWSTR servername, LPCWSTR username, DWORD level, LPBYTE *bufptr) = 0;
+    virtual NET_API_STATUS NetUserGetLocalGroups(LPCWSTR servername, LPCWSTR username, DWORD level, DWORD flags, LPBYTE *bufptr, DWORD prefmaxlen, LPDWORD entriesread, LPDWORD totalentries) = 0;
+    virtual NET_API_STATUS NetShareEnum(LPWSTR servername, DWORD level, LPBYTE *bufptr, DWORD prefmaxlen, LPDWORD entriesread, LPDWORD totalentries, LPDWORD resume_handle) = 0;
+    //internet test
+    virtual LPVOID InternetOpen(LPCSTR lpszAgent, DWORD dwAccessType, LPCSTR lpszProxy, LPCSTR lpszProxyBypass, DWORD dwFlags) = 0;
+    virtual LPVOID InternetOpenUrl(HINTERNET hInternet, LPCSTR lpszUrl, LPCSTR lpszHeaders, DWORD dwHeadersLength, DWORD dwFlags, DWORD_PTR dwContext) = 0;
+    virtual BOOL InternetReadFile(HINTERNET hFile, LPVOID lpBuffer, DWORD dwNumberOfBytesToRead, LPDWORD lpdwNumberOfBytesRead) = 0;
+    virtual BOOL InternetCrackUrl(LPCSTR lpszUrl, DWORD dwUrlLength, DWORD dwFlags, LPURL_COMPONENTSA lpUrlComponents) = 0;
+    virtual LPVOID InternetConnect(HINTERNET hInternet, LPCSTR lpszServerName, INTERNET_PORT nServerPort, LPCSTR lpszUserName, LPCSTR lpszPassword, DWORD dwService, DWORD dwFlags, DWORD_PTR dwContext) = 0;
+    virtual LPVOID HttpOpenRequest(HINTERNET hConnect, LPCSTR lpszVerb, LPCSTR lpszObjectName, LPCSTR lpszVersion, LPCSTR lpszReferrer, LPCSTR *lplpszAcceptTypes, DWORD dwFlags, DWORD_PTR dwContext) = 0;
+    virtual BOOL HttpSendRequest(HINTERNET hRequest, LPCSTR lpszHeaders, DWORD dwHeadersLength, LPVOID lpOptional, DWORD dwOptionalLength) = 0;
 };
 
 class ApiHookSystemMock : public ApiHookSystem
@@ -49,12 +66,23 @@ public:
     MOCK_METHOD1(GetPwrCapabilities, BOOLEAN(PSYSTEM_POWER_CAPABILITIES));
     MOCK_METHOD2(ExitWindowsEx, BOOL(UINT, DWORD));
     MOCK_METHOD2(GetProcAddress, FARPROC(HMODULE, LPCSTR));
+    MOCK_METHOD3(NetGetJoinInformation, NET_API_STATUS(LPCWSTR, LPWSTR*, PNETSETUP_JOIN_STATUS));
     MOCK_METHOD4(GetDiskFreeSpaceExW, BOOL(LPCWSTR, ULARGE_INTEGER*, ULARGE_INTEGER*, ULARGE_INTEGER*));
+    MOCK_METHOD4(NetUserGetInfo, NET_API_STATUS(LPCWSTR, LPCWSTR, DWORD, LPBYTE*));
+    MOCK_METHOD4(InternetReadFile, BOOL(HINTERNET, LPVOID, DWORD, LPDWORD));
+    MOCK_METHOD4(InternetCrackUrl, BOOL(LPCSTR, DWORD, DWORD, LPURL_COMPONENTSA));
     MOCK_METHOD5(NtQueryInformationProcess, NTSTATUS(HANDLE, PROCESSINFOCLASS, PVOID, ULONG, PULONG));
     MOCK_METHOD5(NtQueryLicenseValue, NTSTATUS(PUNICODE_STRING, PULONG, PVOID, ULONG, PULONG));
     MOCK_METHOD5(VirtualAllocEx, LPVOID(HANDLE, LPVOID, SIZE_T, DWORD, DWORD));
     MOCK_METHOD5(VirtualProtectEx, BOOL(HANDLE, LPVOID, SIZE_T, DWORD, LPDWORD));
+    MOCK_METHOD5(InternetOpen, LPVOID(LPCSTR, DWORD, LPCSTR, LPCSTR, DWORD));
+    MOCK_METHOD5(HttpSendRequest, BOOL(HINTERNET, LPCSTR, DWORD, LPVOID, DWORD));
+    MOCK_METHOD6(InternetOpenUrl, LPVOID(HINTERNET, LPCSTR, LPCSTR, DWORD, DWORD, DWORD_PTR));
     MOCK_METHOD7(CreateFile, HANDLE(LPCSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE));
+    MOCK_METHOD7(NetShareEnum, NET_API_STATUS(LPWSTR, DWORD, LPBYTE*, DWORD, LPDWORD, LPDWORD, LPDWORD));
+    MOCK_METHOD8(NetUserGetLocalGroups, NET_API_STATUS(LPCWSTR, LPCWSTR, DWORD, DWORD, LPBYTE*, DWORD, LPDWORD, LPDWORD));
+    MOCK_METHOD8(InternetConnect, LPVOID(HINTERNET, LPCSTR, INTERNET_PORT, LPCSTR, LPCSTR, DWORD, DWORD, DWORD_PTR));
+    MOCK_METHOD8(HttpOpenRequest, LPVOID(HINTERNET, LPCSTR, LPCSTR, LPCSTR, LPCSTR, LPCSTR*, DWORD, DWORD_PTR));
     MOCK_METHOD10(CreateProcess, BOOL(LPCSTR, LPSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, BOOL, DWORD, LPVOID, LPCSTR, LPSTARTUPINFOA, LPPROCESS_INFORMATION));
 };
 
@@ -1227,6 +1255,398 @@ TEST_F(HookSystemTest, RtlAllocateHeap_Prelog_Size_Test)
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
+TEST_F(HookSystemTest, NetGetJoinInformation_Postlog_lpServer_Test)
+{
+    NET_API_STATUS pre_bexit_0_lpServer;
+    DWORD pre_error_0_lpServer;
+    NET_API_STATUS hooked_bexit_0_lpServer;
+    DWORD hooked_error_0_lpServer;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    LPWSTR lpNameBuffer = nullptr;
+    NETSETUP_JOIN_STATUS join_status;
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    // test when lpServer is nullptr
+    SetLastError(0); EXPECT_CALL(hook_system_mock, NetGetJoinInformation(testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::NetGetJoinInformation(nullptr, &lpNameBuffer, &join_status)));
+    pre_bexit_0_lpServer = hook_system_mock.NetGetJoinInformation(nullptr, &lpNameBuffer, &join_status);
+    pre_error_0_lpServer = GetLastError();
+
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P92");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    // test when lpServer is nullptr
+    SetLastError(0); EXPECT_CALL(hook_system_mock, NetGetJoinInformation(testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::NetGetJoinInformation(nullptr, &lpNameBuffer, &join_status)));
+    pre_bexit_0_lpServer = hook_system_mock.NetGetJoinInformation(nullptr, &lpNameBuffer, &join_status);
+    pre_error_0_lpServer = GetLastError();
+
+    // compare return result and error code.
+    EXPECT_EQ(pre_bexit_0_lpServer, pre_bexit_0_lpServer);
+    EXPECT_EQ(pre_error_0_lpServer, pre_error_0_lpServer);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, NetUserGetInfo_servername_Test)
+{
+    NET_API_STATUS pre_bexit_0_servername;
+    DWORD pre_error_0_servername;
+    NET_API_STATUS hooked_bexit_0_servername;
+    DWORD hooked_error_0_servername;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    LPBYTE  bufptr = nullptr;
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    // test when servername is nullptr
+    SetLastError(0); EXPECT_CALL(hook_system_mock, NetUserGetInfo(testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::NetUserGetInfo(nullptr, L"Guest", 0, &bufptr)));
+    pre_bexit_0_servername = hook_system_mock.NetUserGetInfo(nullptr, L"Guest", 0, &bufptr);
+    pre_error_0_servername = GetLastError();
+    if (bufptr) NetApiBufferFree(bufptr); bufptr = nullptr;
+
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P93");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    // test when servername is nullptr
+    SetLastError(0); EXPECT_CALL(hook_system_mock, NetUserGetInfo(testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::NetUserGetInfo(nullptr, L"Guest", 0, &bufptr)));
+    hooked_bexit_0_servername = hook_system_mock.NetUserGetInfo(nullptr, L"Guest", 0, &bufptr);
+    hooked_error_0_servername = GetLastError();
+    if (bufptr) NetApiBufferFree(bufptr); bufptr = nullptr;
+
+    // compare return result and error code.
+    EXPECT_EQ(pre_bexit_0_servername, hooked_bexit_0_servername);
+    EXPECT_EQ(pre_error_0_servername, hooked_error_0_servername);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, NetUserGetLocalGroups_servername_Test)
+{
+    NET_API_STATUS pre_bexit_0_servername;
+    DWORD pre_error_0_servername;
+    NET_API_STATUS hooked_bexit_0_servername;
+    DWORD hooked_error_0_servername;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    LPBYTE  bufptr = nullptr;
+    DWORD entriesread = 0;
+    DWORD totalentries = 0;
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    // test when servername is nullptr
+    SetLastError(0); EXPECT_CALL(hook_system_mock, NetUserGetLocalGroups(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::NetUserGetLocalGroups(nullptr, L"Guest", 0, LG_INCLUDE_INDIRECT, &bufptr, MAX_PREFERRED_LENGTH, &entriesread, &totalentries)));
+    pre_bexit_0_servername = hook_system_mock.NetUserGetLocalGroups(nullptr, L"Guest", 0, LG_INCLUDE_INDIRECT, &bufptr, MAX_PREFERRED_LENGTH, &entriesread, &totalentries);
+    pre_error_0_servername = GetLastError();
+    if (bufptr) NetApiBufferFree(bufptr); bufptr = nullptr;
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P94");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    // test when servername is nullptr
+    SetLastError(0); EXPECT_CALL(hook_system_mock, NetUserGetLocalGroups(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::NetUserGetLocalGroups(nullptr, L"Guest", 0, LG_INCLUDE_INDIRECT, &bufptr, MAX_PREFERRED_LENGTH, &entriesread, &totalentries)));
+    hooked_bexit_0_servername = hook_system_mock.NetUserGetLocalGroups(nullptr, L"Guest", 0, LG_INCLUDE_INDIRECT, &bufptr, MAX_PREFERRED_LENGTH, &entriesread, &totalentries);
+    hooked_error_0_servername = GetLastError();
+    if (bufptr) NetApiBufferFree(bufptr); bufptr = nullptr;
+
+    // compare return result and error code.
+    EXPECT_EQ(pre_bexit_0_servername, hooked_bexit_0_servername);
+    EXPECT_EQ(pre_error_0_servername, hooked_error_0_servername);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, NetShareEnum_servername_Test)
+{
+    NET_API_STATUS pre_bexit_0_servername;
+    DWORD pre_error_0_servername;
+    NET_API_STATUS hooked_bexit_0_servername;
+    DWORD hooked_error_0_servername;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    LPBYTE  bufptr = nullptr;
+    DWORD entriesread = 0;
+    DWORD totalentries = 0;
+    DWORD resume_handle = 0;
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    // test when servername is nullptr
+    SetLastError(0); EXPECT_CALL(hook_system_mock, NetShareEnum(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::NetShareEnum(nullptr, 0, &bufptr, MAX_PREFERRED_LENGTH, &entriesread, &totalentries, &resume_handle)));
+    pre_bexit_0_servername = hook_system_mock.NetShareEnum(nullptr, 0, &bufptr, MAX_PREFERRED_LENGTH, &entriesread, &totalentries, &resume_handle);
+    pre_error_0_servername = GetLastError();
+    if (bufptr) NetApiBufferFree(bufptr); bufptr = nullptr;
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P95");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    // test when servername is nullptr
+    SetLastError(0); EXPECT_CALL(hook_system_mock, NetShareEnum(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::NetShareEnum(nullptr, 0, &bufptr, MAX_PREFERRED_LENGTH, &entriesread, &totalentries, &resume_handle)));
+    hooked_bexit_0_servername = hook_system_mock.NetShareEnum(nullptr, 0, &bufptr, MAX_PREFERRED_LENGTH, &entriesread, &totalentries, &resume_handle);
+    hooked_error_0_servername = GetLastError();
+    if (bufptr) NetApiBufferFree(bufptr); bufptr = nullptr;
+
+    // compare return result and error code.
+    EXPECT_EQ(pre_bexit_0_servername, hooked_bexit_0_servername);
+    EXPECT_EQ(pre_error_0_servername, hooked_error_0_servername);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, InternetOpen_lpszAgent_Test)
+{
+    LPVOID pre_bexit_0_lpszAgent;
+    DWORD pre_error_0_lpszAgent;
+    LPVOID hooked_bexit_0_lpszAgent;
+    DWORD hooked_error_0_lpszAgent;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    char lpszAgent[] = {"Mozilla/4.0 (compatible)"};
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    SetLastError(0); EXPECT_CALL(hook_system_mock, InternetOpen(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::InternetOpen(lpszAgent, INTERNET_OPEN_TYPE_PRECONFIG, nullptr, nullptr, 0)));
+    pre_bexit_0_lpszAgent = hook_system_mock.InternetOpen(lpszAgent, INTERNET_OPEN_TYPE_PRECONFIG, nullptr, nullptr, 0);
+    pre_error_0_lpszAgent = GetLastError();
+
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P96");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    SetLastError(0); EXPECT_CALL(hook_system_mock, InternetOpen(testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::InternetOpen(lpszAgent, INTERNET_OPEN_TYPE_PRECONFIG, nullptr, nullptr, 0)));
+    hooked_bexit_0_lpszAgent = hook_system_mock.InternetOpen(lpszAgent, INTERNET_OPEN_TYPE_PRECONFIG, nullptr, nullptr, 0);
+    hooked_error_0_lpszAgent = GetLastError();
+
+    // compare return result and error code.
+    EXPECT_NE(pre_bexit_0_lpszAgent, nullptr);
+    EXPECT_NE(hooked_bexit_0_lpszAgent, nullptr);
+    if (pre_bexit_0_lpszAgent) InternetCloseHandle(pre_bexit_0_lpszAgent);
+    if (hooked_bexit_0_lpszAgent) InternetCloseHandle(hooked_bexit_0_lpszAgent);
+    EXPECT_EQ(pre_error_0_lpszAgent, hooked_error_0_lpszAgent);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, InternetOpenUrl_hInternet_Test)
+{
+    LPVOID pre_bexit_0_hInternet;
+    DWORD pre_error_0_hInternet;
+    LPVOID hooked_bexit_0_hInternet;
+    DWORD hooked_error_0_hInternet;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    char lpszAgent[] = { "Mozilla/4.0 (compatible)" };
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    LPVOID hInternet = InternetOpen(lpszAgent, INTERNET_OPEN_TYPE_PRECONFIG, nullptr, nullptr, 0);
+    if (!hInternet)
+        return;
+    SetLastError(0); EXPECT_CALL(hook_system_mock, InternetOpenUrl(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::InternetOpenUrl(hInternet, "http://www.google.com", 0, 0, INTERNET_FLAG_RAW_DATA, 0)));
+    pre_bexit_0_hInternet = hook_system_mock.InternetOpenUrl(hInternet, "http://www.google.com", 0, 0, INTERNET_FLAG_RAW_DATA, 0);
+    pre_error_0_hInternet = GetLastError();
+
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P97");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    SetLastError(0); EXPECT_CALL(hook_system_mock, InternetOpenUrl(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::InternetOpenUrl(hInternet, "http://www.google.com", 0, 0, INTERNET_FLAG_RAW_DATA, 0)));
+    hooked_bexit_0_hInternet = hook_system_mock.InternetOpenUrl(hInternet, "http://www.google.com", 0, 0, INTERNET_FLAG_RAW_DATA, 0);
+    hooked_error_0_hInternet = GetLastError();
+
+    // compare return result and error code.
+    InternetCloseHandle(hInternet);
+    EXPECT_NE(pre_bexit_0_hInternet, nullptr);
+    EXPECT_NE(hooked_bexit_0_hInternet, nullptr);
+    if (pre_bexit_0_hInternet) InternetCloseHandle(pre_bexit_0_hInternet);
+    if (hooked_bexit_0_hInternet) InternetCloseHandle(hooked_bexit_0_hInternet);
+    EXPECT_EQ(pre_error_0_hInternet, hooked_error_0_hInternet);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, InternetReadFile_hFile_Test)
+{
+    BOOL pre_bexit_0_hFile;
+    DWORD pre_error_0_hFile;
+    BOOL hooked_bexit_0_hFile;
+    DWORD hooked_error_0_hFile;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    char lpszAgent[] = { "Mozilla/4.0 (compatible)" };
+    DWORD nSize = 256;
+    BYTE lpBuffer[256] = { 0 };
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    LPVOID hInternet = InternetOpen(lpszAgent, INTERNET_OPEN_TYPE_PRECONFIG, nullptr, nullptr, 0);
+    if (!hInternet)
+        return;
+    LPVOID hUrl = InternetOpenUrl(hInternet, "http://www.google.com", 0, 0, INTERNET_FLAG_RAW_DATA, 0);
+    if (!hUrl)
+        return;
+    SetLastError(0); EXPECT_CALL(hook_system_mock, InternetReadFile(testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::InternetReadFile(hUrl, lpBuffer, nSize, &nSize)));
+    pre_bexit_0_hFile = hook_system_mock.InternetReadFile(hUrl, lpBuffer, nSize, &nSize);
+    pre_error_0_hFile = GetLastError();
+
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P98");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    SetLastError(0); EXPECT_CALL(hook_system_mock, InternetReadFile(testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::InternetReadFile(hUrl, lpBuffer, nSize, &nSize)));
+    hooked_bexit_0_hFile = hook_system_mock.InternetReadFile(hUrl, lpBuffer, nSize, &nSize);
+    hooked_error_0_hFile = GetLastError();
+
+    // compare return result and error code.
+    InternetCloseHandle(hInternet);
+    InternetCloseHandle(hUrl);
+    EXPECT_EQ(pre_bexit_0_hFile, hooked_bexit_0_hFile);
+    EXPECT_EQ(pre_error_0_hFile, hooked_error_0_hFile);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, InternetCrackUrl_lpszUrl_Test)
+{
+    BOOL pre_bexit_0_lpszUrl;
+    DWORD pre_error_0_lpszUrl;
+    BOOL hooked_bexit_0_lpszUrl;
+    DWORD hooked_error_0_lpszUrl;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    URL_COMPONENTS url;
+    memset(&url, 0, sizeof(url));
+    url.dwStructSize = sizeof(url);
+    url.dwHostNameLength = 1;
+    url.dwUserNameLength = 1;
+    url.dwPasswordLength = 1;
+    url.dwUrlPathLength = 1;
+    char lpszUrl[] = { "https://docs.microsoft.com/en-us/windows/win32/api/wininet/nf-wininet-internetcrackurla" };
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    SetLastError(0); EXPECT_CALL(hook_system_mock, InternetCrackUrl(testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::InternetCrackUrl(lpszUrl, sizeof(lpszUrl), 0, &url)));
+    pre_bexit_0_lpszUrl = hook_system_mock.InternetCrackUrl(lpszUrl, sizeof(lpszUrl), 0, &url);
+    pre_error_0_lpszUrl = GetLastError();
+
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P100");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    memset(&url, 0, sizeof(url));
+    url.dwStructSize = sizeof(url);
+    url.dwHostNameLength = 1;
+    url.dwUserNameLength = 1;
+    url.dwPasswordLength = 1;
+    url.dwUrlPathLength = 1;
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    SetLastError(0); EXPECT_CALL(hook_system_mock, InternetCrackUrl(testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::InternetCrackUrl(lpszUrl, sizeof(lpszUrl), 0, &url)));
+    hooked_bexit_0_lpszUrl = hook_system_mock.InternetCrackUrl(lpszUrl, sizeof(lpszUrl), 0, &url);
+    hooked_error_0_lpszUrl = GetLastError();
+
+    // compare return result and error code.
+    EXPECT_EQ(pre_bexit_0_lpszUrl, hooked_bexit_0_lpszUrl);
+    EXPECT_EQ(pre_error_0_lpszUrl, hooked_error_0_lpszUrl);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, InternetConnect_hInternet_Test)
+{
+    LPVOID pre_bexit_0_hInternet, pre_bexit_0_request;
+    DWORD pre_error_0_hInternet, pre_error_0_request;
+    LPVOID hooked_bexit_0_hInternet, hooked_bexit_0_request;
+    DWORD hooked_error_0_hInternet, hooked_error_0_request;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    char lpszAgent[] = { "Mozilla/4.0 (compatible)" };
+    char lpszUrl[] = { "https://docs.microsoft.com/en-us/windows/win32/api/wininet/nf-wininet-internetcrackurla" };
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    LPVOID hInternet = InternetOpen(lpszAgent, INTERNET_OPEN_TYPE_PRECONFIG, nullptr, nullptr, 0);
+    if (!hInternet)
+        return;
+    SetLastError(0); EXPECT_CALL(hook_system_mock, InternetConnect(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::InternetConnect(hInternet, lpszUrl, 0, nullptr, nullptr, INTERNET_SERVICE_HTTP, 0, 0)));
+    pre_bexit_0_hInternet = hook_system_mock.InternetConnect(hInternet, lpszUrl, 0, nullptr, nullptr, INTERNET_SERVICE_HTTP, 0, 0);
+    pre_error_0_hInternet = GetLastError();
+
+    if (pre_bexit_0_hInternet) {
+        LPCSTR lplpszAcceptTypes[] = { _T("text/*"), NULL };
+        SetLastError(0); EXPECT_CALL(hook_system_mock, HttpOpenRequest(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::HttpOpenRequest(pre_bexit_0_hInternet, nullptr, lpszUrl, nullptr, nullptr, lplpszAcceptTypes, INTERNET_FLAG_NO_UI, 0)));
+        pre_bexit_0_request = hook_system_mock.HttpOpenRequest(pre_bexit_0_hInternet, nullptr, lpszUrl, nullptr, nullptr, lplpszAcceptTypes, INTERNET_FLAG_NO_UI, 0);
+        pre_error_0_request = GetLastError();
+    }
+
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P101");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    SetLastError(0); EXPECT_CALL(hook_system_mock, InternetConnect(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::InternetConnect(hInternet, lpszUrl, 0, nullptr, nullptr, INTERNET_SERVICE_HTTP, 0, 0)));
+    hooked_bexit_0_hInternet = hook_system_mock.InternetConnect(hInternet, lpszUrl, 0, nullptr, nullptr, INTERNET_SERVICE_HTTP, 0, 0);
+    hooked_error_0_hInternet = GetLastError();
+
+    if (hooked_bexit_0_hInternet) {
+        LPCSTR lplpszAcceptTypes[] = { _T("text/*"), NULL };
+        SetLastError(0); EXPECT_CALL(hook_system_mock, HttpOpenRequest(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::HttpOpenRequest(pre_bexit_0_hInternet, nullptr, lpszUrl, nullptr, nullptr, lplpszAcceptTypes, INTERNET_FLAG_NO_UI, 0)));
+        hooked_bexit_0_request = hook_system_mock.HttpOpenRequest(pre_bexit_0_hInternet, nullptr, lpszUrl, nullptr, nullptr, lplpszAcceptTypes, INTERNET_FLAG_NO_UI, 0);
+        hooked_error_0_request = GetLastError();
+    }
+
+    // compare return result and error code.
+    InternetCloseHandle(hInternet);
+    EXPECT_NE(pre_bexit_0_hInternet, nullptr);
+    EXPECT_NE(hooked_bexit_0_hInternet, nullptr);
+    if (pre_bexit_0_hInternet)InternetCloseHandle(pre_bexit_0_hInternet);
+    if (hooked_bexit_0_hInternet)InternetCloseHandle(hooked_bexit_0_hInternet);
+    EXPECT_EQ(pre_error_0_hInternet, hooked_error_0_hInternet);
+    EXPECT_NE(pre_bexit_0_request, nullptr);
+    EXPECT_NE(hooked_bexit_0_request, nullptr);
+    if (pre_bexit_0_request)InternetCloseHandle(pre_bexit_0_request);
+    if (hooked_bexit_0_request)InternetCloseHandle(hooked_bexit_0_request);
+    EXPECT_EQ(pre_error_0_request, hooked_error_0_request);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
 
 #endif
 

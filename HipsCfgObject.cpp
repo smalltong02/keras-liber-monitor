@@ -51,6 +51,13 @@ namespace cchips {
         if (auto anyvalue(document.GetMember(std::vector<std::string>{FL_DESCRIPTION}));
             anyvalue.has_value() && anyvalue.type() == typeid(std::string_view))
             m_Info.Description = std::any_cast<std::string_view>(anyvalue);
+        if (auto anyvalue(document.GetMember(std::vector<std::string>{FL_CONFIG}));
+            anyvalue.has_value() && anyvalue.type() == typeid(ConstRapidObject)) {
+            if (auto modevalue(document.GetMember(std::vector<std::string>{FL_CONFIG, FL_MODE}));
+                modevalue.has_value() && modevalue.type() == typeid(int)) {
+                m_hips_mode = (_hips_mode)std::any_cast<int>(modevalue);
+            }
+        }
 
         if (!InitializeFlagsObjects(module_handle, document))
             return false;

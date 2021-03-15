@@ -362,3 +362,23 @@ VOID GetStackRange(ULONG_PTR* base, ULONG_PTR* limit)
     *base = (ULONG_PTR)teb->tib.StackBase;
     *limit = (ULONG_PTR)teb->tib.StackLimit;
 }
+
+bool StartsWith(const std::string& str, const std::string& search,
+    bool case_sensitive) {
+    return StartsWithT(str, search, case_sensitive);
+}
+
+bool StartsWith(const std::wstring& str, const std::wstring& search,
+    bool case_sensitive) {
+    return StartsWithT(str, search, case_sensitive);
+}
+
+bool EndsWith(const std::string& str, const std::string& search,
+    bool case_sensitive) {
+    return EndsWithT(str, search, case_sensitive);
+}
+
+bool EndsWith(const std::wstring& str, const std::wstring& search,
+    bool case_sensitive) {
+    return EndsWithT(str, search, case_sensitive);
+}

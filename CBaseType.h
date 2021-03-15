@@ -164,5 +164,4 @@ namespace cchips {
         }
         return false;
     }
-
 } // namespace cchips

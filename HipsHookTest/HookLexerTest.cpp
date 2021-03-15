@@ -876,7 +876,7 @@ TEST_F(HookLexerTest, CTupleObject_Success_Test)
     test_vr_struct = lexer_vr_object.GetIdentifier("test_vr_struct2.hr");
     ASSERT_TRUE(test_vr_struct != nullptr);
     ASSERT_TRUE(test_vr_struct->GetObType() == CObObject::ob_tuple);
-    EXPECT_TRUE(test_vr_struct->Failed((char*)&test_ts_struct.Data4[1]));
+    EXPECT_TRUE(test_vr_struct->Success((char*)&test_ts_struct.Data4[1]));
 }
 
 TEST_F(HookLexerTest, CExpParsing_ParsingAndEval_Test)

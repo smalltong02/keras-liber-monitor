@@ -10,6 +10,8 @@ namespace cchips {
 // for kernel dll inject service, set target pid to kernel.
 #define IOCTL_HIPS_SETTARGETPID         (ULONG) CTL_CODE(FILE_DEVICE_FIPS,\
     0x809, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
+#define IOCTL_HIPS_SETTARGETCMD         (ULONG) CTL_CODE(FILE_DEVICE_FIPS,\
+    0xAA0, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
 
     class CDriverMgr
     {

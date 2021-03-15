@@ -85,6 +85,40 @@ namespace cchips {
             return nullptr;
         }
         static LONG WINAPI VehHandler(struct _EXCEPTION_POINTERS *ep);
+        static __forceinline bool IsCplusplusException(struct _EXCEPTION_POINTERS *ep) {
+            if (!ep) return false;
+            if (!ep->ExceptionRecord) return false;
+            if (ep->ExceptionRecord->ExceptionCode == cplusplus_exception_code &&
+                ep->ExceptionRecord->NumberParameters >= 3 &&
+                ep->ExceptionRecord->ExceptionInformation[0] == ms_eh_magic_number)
+                return true;
+            return false;
+        }
+        static __forceinline bool IsAccessViolation(DWORD e_code) {
+            if (e_code == STATUS_ACCESS_VIOLATION)
+                return true;
+            return false;
+        }
+        static __forceinline bool IsPageGuardViolation(DWORD e_code) {
+            if (e_code == STATUS_GUARD_PAGE_VIOLATION)
+                return true;
+            return false;
+        }
+        static __forceinline bool IsPageError(DWORD e_code) {
+            if (e_code == EXCEPTION_IN_PAGE_ERROR)
+                return true;
+            return false;
+        }
+        static __forceinline bool IsSingleStep(DWORD e_code) {
+            if (e_code == STATUS_SINGLE_STEP)
+                return true;
+            return false;
+        }
+        static __forceinline bool IsBreakPoint(DWORD e_code) {
+            if (e_code == EXCEPTION_BREAKPOINT)
+                return true;
+            return false;
+        }
         static const ULONG cplusplus_exception_code = 0xe06d7363;
         static const ULONG ms_eh_magic_number = 0x19930520;
         static const int exception_sleep_wait_timeout = 100;

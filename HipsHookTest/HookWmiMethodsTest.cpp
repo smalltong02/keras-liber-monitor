@@ -21,7 +21,8 @@ protected:
     virtual void SetUp() override {
         HRESULT hr;
         ASSERT_TRUE(g_hook_test_object->EnableAllApis());
-        CoInitialize(nullptr);
+        hr = CoInitialize(nullptr);
+        ASSERT_TRUE(SUCCEEDED(hr));
         hr = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&m_wbemLoc);
         ASSERT_TRUE(SUCCEEDED(hr));
         hr = m_wbemLoc->ConnectServer(CComBSTR(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &m_wbemSvc);
@@ -993,31 +994,174 @@ TEST_F(HookWmiMethodsTest, Win32ProcessTest)
     VariantClear(&vtProp);
 
     // call create method
-    //IWbemClassObject* pMethod = nullptr;
-    //IWbemClassObject* pInParams = nullptr;
-    //IWbemClassObject* pOutParams = nullptr;
-    //IWbemClassObject* pClass = nullptr;
-    //hr = m_wbemSvc->GetObject(L"Win32_Process", 0, NULL, &pClass, NULL);
-    //ASSERT_TRUE(SUCCEEDED(hr));
-    //hr = pClass->GetMethod(L"Create", 0, &pMethod, NULL);
-    //ASSERT_TRUE(SUCCEEDED(hr));
-    //hr = pMethod->SpawnInstance(0, &pInParams);
-    //ASSERT_TRUE(SUCCEEDED(hr));
-    //vtProp.vt = VT_BSTR;
-    //vtProp.bstrVal = L"notepad.exe";
-    //hr = pInParams->Put(L"CommandLine", 0, &vtProp, 0);
-    //ASSERT_TRUE(SUCCEEDED(hr));
-    //hr = m_wbemSvc->ExecMethod(L"Win32_Process", L"Create", 0, NULL, pInParams, &pOutParams, NULL);
-    //ASSERT_TRUE(SUCCEEDED(hr));
-    //VARIANT varReturnValue;
-    //hr = pOutParams->Get(L"ReturnValue", 0, &varReturnValue, NULL, 0);
-    //ASSERT_TRUE(SUCCEEDED(hr));
-    //ASSERT_TRUE(GetValueString(varReturnValue, chRetValue));
-    //hr = pOutParams->Get(L"ProcessId", 0, &varReturnValue, NULL, 0);
-    //ASSERT_TRUE(SUCCEEDED(hr));
-    //ASSERT_TRUE(GetValueString(varReturnValue, chRetValue));
-    //pWbemClsObj->Release();
-    //pEnumClsObj->Release();
+    IWbemClassObject* pMethod = nullptr;
+    IWbemClassObject* pInParams = nullptr;
+    IWbemClassObject* pOutParams = nullptr;
+    IWbemClassObject* pClass = nullptr;
+    hr = m_wbemSvc->GetObject(L"Win32_Process", 0, NULL, &pClass, NULL);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    hr = pClass->GetMethod(L"Create", 0, &pMethod, NULL);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    hr = pMethod->SpawnInstance(0, &pInParams);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    vtProp.vt = VT_BSTR;
+    vtProp.bstrVal = L"notepad.exe";
+    hr = pInParams->Put(L"CommandLine", 0, &vtProp, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    hr = m_wbemSvc->ExecMethod(L"Win32_Process", L"Create", 0, NULL, pInParams, &pOutParams, NULL);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    VARIANT varReturnValue;
+    hr = pOutParams->Get(L"ReturnValue", 0, &varReturnValue, NULL, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(varReturnValue, chRetValue));
+    hr = pOutParams->Get(L"ProcessId", 0, &varReturnValue, NULL, 0);
+    ASSERT_TRUE(SUCCEEDED(hr));
+    ASSERT_TRUE(GetValueString(varReturnValue, chRetValue));
+    pWbemClsObj->Release();
+    pEnumClsObj->Release();
+}
+
+// Excel COM Object test.
+TEST_F(HookWmiMethodsTest, Excel_Application)
+{
+    CLSID clsid;
+    HRESULT hr;
+    
+    std::vector<std::string> action_list;
+    action_list.push_back("O0");
+    g_server_object->AddLogCountMap(action_list);
+
+    LPCOLESTR prog_id = L"Excel.Application";
+    hr = CLSIDFromProgID(prog_id, &clsid);
+    if (FAILED(hr))
+        return;
+    IDispatch *excel_app = nullptr;
+    hr = CoCreateInstance(
+        clsid,                    // CLSID of the server
+        nullptr,
+        CLSCTX_LOCAL_SERVER,    // Outlook.Application is a local server
+        IID_IDispatch,            // Query the IDispatch interface
+        (void **)&excel_app);    // Output
+    ASSERT_EQ(hr, S_OK);
+    ASSERT_NE(excel_app, nullptr);
+    excel_app->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+//// IExplore COM Object test.
+//TEST_F(HookWmiMethodsTest, IExplore_Application)
+//{
+//    CLSID clsid;
+//    HRESULT hr;
+//
+//    std::vector<std::string> action_list;
+//    action_list.push_back("O0");
+//    g_server_object->AddLogCountMap(action_list);
+//
+//    LPCOLESTR prog_id = L"InternetExplorer.Application";
+//    hr = CLSIDFromProgID(prog_id, &clsid);
+//    if (FAILED(hr))
+//        return;
+//    IDispatch *ie_app = nullptr;
+//    hr = CoCreateInstance(
+//        clsid,                    // CLSID of the server
+//        nullptr,
+//        CLSCTX_LOCAL_SERVER,    // Outlook.Application is a local server
+//        IID_IDispatch,            // Query the IDispatch interface
+//        (void **)&ie_app);    // Output
+//    ASSERT_EQ(hr, S_OK);
+//    ASSERT_NE(ie_app, nullptr);
+//
+//    VARIANT x;
+//    x.vt = VT_BSTR;
+//    x.bstrVal = SysAllocString(L"www.google.com");
+//    LPOLESTR func_name = L"Navigate";
+//    VARIANT result;
+//    VariantInit(&result);
+//    DISPPARAMS dp = {};
+//    DISPID dispidNamed = DISPID_PROPERTYPUT;
+//    DISPID dispID;
+//    // Get DISPID for name passed
+//    hr = ie_app->GetIDsOfNames(IID_NULL, &func_name, 1, LOCALE_USER_DEFAULT, &dispID);
+//    ASSERT_EQ(hr, S_OK);
+//    // Build DISPPARAMS
+//    dp.cArgs = 1;
+//    dp.rgvarg = &x;
+//    // Make the call
+//    EXCEPINFO excepInfo;
+//    memset(&excepInfo, 0, sizeof excepInfo);
+//    hr = ie_app->Invoke(dispID, IID_NULL, LOCALE_SYSTEM_DEFAULT,
+//        DISPATCH_METHOD, &dp, &result, &excepInfo, NULL);
+//    ASSERT_EQ(hr, S_OK);
+//    VariantClear(&result);
+//    VariantClear(&x);
+//    ie_app->Release();
+//    // wait for all logs received.
+//    std::vector<int> count_list;
+//    count_list.push_back(1);
+//    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+//}
+
+// Outlook COM Object test.
+TEST_F(HookWmiMethodsTest, Outlook_Application)
+{
+    CLSID clsid;
+    HRESULT hr;
+
+    std::vector<std::string> action_list;
+    action_list.push_back("O0");
+    g_server_object->AddLogCountMap(action_list);
+    
+    LPCOLESTR prog_id = L"Outlook.Application";
+    hr = CLSIDFromProgID(prog_id, &clsid);
+    if (FAILED(hr))
+        return;
+
+    IDispatch *outlook_app = nullptr;
+    hr = CoCreateInstance(
+        clsid,                    // CLSID of the server
+        nullptr,
+        CLSCTX_LOCAL_SERVER,    // Outlook.Application is a local server
+        IID_IDispatch,            // Query the IDispatch interface
+        (void **)&outlook_app);    // Output
+    ASSERT_EQ(hr, S_OK);
+    ASSERT_NE(outlook_app, nullptr);
+    
+    IDispatch *p_gns_ptr = nullptr;
+    VARIANT x;
+    x.vt = VT_BSTR;
+    x.bstrVal = SysAllocString(L"MAPI");
+    LPOLESTR func_name = L"GetNamespace";
+    VARIANT result;
+    VariantInit(&result);
+    DISPPARAMS dp = {};
+    DISPID dispidNamed = DISPID_PROPERTYPUT;
+    DISPID dispID;
+    // Get DISPID for name passed
+    hr = outlook_app->GetIDsOfNames(IID_NULL, &func_name, 1, LOCALE_USER_DEFAULT, &dispID);
+    ASSERT_EQ(hr, S_OK);
+    // Build DISPPARAMS
+    dp.cArgs = 1;
+    dp.rgvarg = &x;
+    // Make the call
+    EXCEPINFO excepInfo;
+    memset(&excepInfo, 0, sizeof excepInfo);
+    hr = outlook_app->Invoke(dispID, IID_NULL, LOCALE_SYSTEM_DEFAULT,
+        DISPATCH_METHOD, &dp, &result, &excepInfo, NULL);
+    ASSERT_EQ(hr, S_OK);
+    p_gns_ptr = result.pdispVal;
+    ASSERT_NE(p_gns_ptr, nullptr);
+    VariantClear(&result);
+    VariantClear(&x);
+    outlook_app->Release();
+    p_gns_ptr->Release();
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
 #endif

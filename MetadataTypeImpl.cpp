@@ -64,7 +64,7 @@ namespace cchips {
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_handle)] = make_metadata_j_ptr<HANDLE>(CBaseDef::type_handle, nullptr, CObObject::op_n_equal);
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_hmodule)] = make_metadata_j_ptr<HMODULE>(CBaseDef::type_hmodule, nullptr, CObObject::op_n_equal);
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_hinstance)] = make_metadata_j_ptr<HINSTANCE>(CBaseDef::type_hinstance, nullptr, CObObject::op_n_equal);
-        m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_hresult)] = make_metadata_j_ptr<HRESULT>(CBaseDef::type_hresult, S_OK, CObObject::op_equal);
+        m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_hresult)] = make_metadata_j_ptr<HRESULT>(CBaseDef::type_hresult, S_OK, CObObject::op_greater_e);
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_schandle)] = make_metadata_j_ptr<SC_HANDLE>(CBaseDef::type_schandle, nullptr, CObObject::op_n_equal);
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_ntstatus)] = make_metadata_j_ptr<NTSTATUS>(CBaseDef::type_ntstatus, 0, CObObject::op_greater_e);
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_string)] = make_metadata_j_ptr<std::string>(CBaseDef::type_string, {}, CObObject::op_n_equal);

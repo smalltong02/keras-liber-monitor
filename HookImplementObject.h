@@ -14,6 +14,8 @@
 #include "asmfunction.h"
 #include "ExceptionThrow.h"
 #include "UniversalObject.h"
+#include "NativeObject.h"
+#include "PassManager.h"
 #include "drivermgr.h"
 #include "ntapi.h"
 
@@ -293,6 +295,7 @@ if (DWORD index_; !CheckExploitFuncs::ValidStackPointer(reinterpret_cast<ULONG_P
             DWORD last_error;
         };
 
+        bool Running();
         bool InitializeErrorOffset();
         bool InitializeSpecialModuleInfo();
         bool InitializeSelfModuleInfo();
@@ -328,6 +331,7 @@ if (DWORD index_; !CheckExploitFuncs::ValidStackPointer(reinterpret_cast<ULONG_P
                 return true;
             return false;
         }
+        bool TraceModule();
         const std::unique_ptr<CDriverMgr>& GetDriverMgr() const { return m_drivermgr; }
         const std::unique_ptr<CategoryObject>& GetCategoryPtr() const { return m_category_ob_ptr; }
         bool ShouldbeHooked(const std::shared_ptr<CFunction>& function);
@@ -402,6 +406,9 @@ if (DWORD index_; !CheckExploitFuncs::ValidStackPointer(reinterpret_cast<ULONG_P
         static processing_status WINAPI detour_coInitializeSecurity(detour_node* node, PSECURITY_DESCRIPTOR pSecDesc, LONG cAuthSvc, SOLE_AUTHENTICATION_SERVICE *asAuthSvc, void *pReserved1, DWORD dwAuthnLevel, DWORD dwImpLevel, void *pAuthList, DWORD dwCapabilities, void *pReserved3);
         static processing_status WINAPI detour_coUninitialize(detour_node* node);
         static processing_status WINAPI detour_getProcAddress(detour_node* node, HMODULE hModule, LPCSTR  lpProcName);
+        static processing_status WINAPI detour_coCreateInstance(detour_node* node, REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext, REFIID riid, LPVOID *ppv);
+        static processing_status WINAPI detour_coCreateInstanceEx(detour_node* node,REFCLSID Clsid, IUnknown *punkOuter, DWORD dwClsCtx, COSERVERINFO *pServerInfo, DWORD dwCount, MULTI_QI *pResults);
+
         // define static detour for wmi object
         static processing_status STDMETHODCALLTYPE detour_IEnumWbemClassObject_Next(detour_node* node, IEnumWbemClassObject* This, long lTimeout, ULONG uCount, IWbemClassObject **apObjects, ULONG *puReturned);
         static processing_status STDMETHODCALLTYPE detour_IWbemClassObject_Get(detour_node* node, IWbemClassObject* This, LPCWSTR wszName, long lFlags, VARIANT *pVal, long *pType, long *plFlavor);
@@ -444,6 +451,16 @@ if (DWORD index_; !CheckExploitFuncs::ValidStackPointer(reinterpret_cast<ULONG_P
         static BOOLEAN WINAPI detour_rtlFreeHeap(PVOID HeapHandle, ULONG Flags, PVOID BaseAddress);
         static PVOID WINAPI detour_rtlDestroyHeap(PVOID HeapHandle);
 
+        bool IsHookMode() const { 
+            if (m_configObject)
+                return m_configObject->IsHookMode();
+            return false;
+        }
+        bool IsTraceMode() const {
+            if (m_configObject)
+                return m_configObject->IsTraceMode();
+            return false;
+        }
     private:
         MH_STATUS HookNormalApi(hook_node& node);
         MH_STATUS HookSpecialApi(hook_node& node);

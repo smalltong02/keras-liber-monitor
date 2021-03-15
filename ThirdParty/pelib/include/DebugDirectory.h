@@ -138,10 +138,10 @@ namespace PeLib
 				return ERROR_INVALID_FILE;
 			}
 
-			inStream_w.seekg(currDebugInfo[i].idd.PointerToRawData, std::ios::beg);
-			currDebugInfo[i].data.resize(currDebugInfo[i].idd.SizeOfData);
-			inStream_w.read(reinterpret_cast<char*>(currDebugInfo[i].data.data()), currDebugInfo[i].idd.SizeOfData);
-			if (!inStream_w) return ERROR_INVALID_FILE;
+			//inStream_w.seekg(currDebugInfo[i].idd.PointerToRawData, std::ios::beg);
+			//currDebugInfo[i].data.resize(currDebugInfo[i].idd.SizeOfData);
+			//inStream_w.read(reinterpret_cast<char*>(currDebugInfo[i].data.data()), currDebugInfo[i].idd.SizeOfData);
+			//if (!inStream_w) return ERROR_INVALID_FILE;
 
 			if (currDebugInfo[i].idd.SizeOfData > 0)
 			{

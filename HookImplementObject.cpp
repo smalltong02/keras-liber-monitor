@@ -4,6 +4,8 @@
 #include "exploitmpl.h"
 #include "CapstoneImpl.h"
 #include "UniversalObject.h"
+#include "PassSupport.h"
+#include "Passes.h"
 
 namespace cchips {
 
@@ -208,6 +210,26 @@ namespace cchips {
             }
         }
         return m_bValid;
+    }
+
+    bool CHookImplementObject::Running()
+    {
+        bool bsuccess = false;
+        if (IsHookMode())
+            bsuccess = HookAllApis();
+        if (IsTraceMode())
+            bsuccess = TraceModule();
+        return bsuccess;
+    }
+
+    bool CHookImplementObject::TraceModule()
+    {
+        GetPassRegistry().sequence();
+        std::shared_ptr<Module> pe_module = std::make_shared<Module>();
+        if (!pe_module) return false;
+        pe_module->SetModuleName(std::string("cur_process"));
+        bool bret = GetPassRegistry().run(pe_module);
+        return bret;
     }
 
     MH_STATUS CHookImplementObject::HookApi(hook_node& node)
@@ -598,6 +620,8 @@ namespace cchips {
         ADD_PRE_PROCESSING(WSAStartup, detour_WSAStartup);
         ADD_PRE_PROCESSING(socket, detour_socket);
         ADD_PRE_PROCESSING(connect, detour_connect);
+        ADD_PRE_PROCESSING(CoCreateInstance, detour_coCreateInstance);
+        ADD_PRE_PROCESSING(CoCreateInstanceEx, detour_coCreateInstanceEx);
         // processing post hook
         ADD_POST_PROCESSING(CoInitializeEx, detour_coInitializeEx);
         ADD_POST_PROCESSING(GetProcAddress, detour_getProcAddress);
@@ -649,6 +673,8 @@ namespace cchips {
         DEL_PRE_PROCESSING(WSAStartup, detour_WSAStartup);
         DEL_PRE_PROCESSING(socket, detour_socket);
         DEL_PRE_PROCESSING(connect, detour_connect);
+        DEL_PRE_PROCESSING(CoCreateInstance, detour_coCreateInstance);
+        DEL_PRE_PROCESSING(CoCreateInstanceEx, detour_coCreateInstanceEx);
         // processing post hook
         DEL_POST_PROCESSING(CoInitializeEx, detour_coInitializeEx);
         DEL_POST_PROCESSING(CoInitializeSecurity, detour_coInitializeSecurity);

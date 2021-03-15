@@ -49,6 +49,39 @@
     "Logging": true
   },
 
+  "CoCreateInstance": {
+    "Signature": {
+      "Library": "ole32.dll",
+      "Return": "HRESULT",
+      "Feature": "O0"
+    },
+
+    "Parameters": {
+      "rclsid": "REFCLSID*",
+      "pUnkOuter": "LPVOID",
+      "dwClsContext": "DWORD",
+      "riid": "REFIID*",
+      "ppv": "LPVOID*"
+    }
+  },
+
+  "CoCreateInstanceEx": {
+    "Signature": {
+      "Library": "ole32.dll",
+      "Return": "HRESULT",
+      "Feature": "O0"
+    },
+
+    "Parameters": {
+      "rclsid": "REFCLSID*",
+      "punkOuter": "LPVOID",
+      "dwClsContext": "DWORD",
+      "pServerInfo": "COSERVERINFO*",
+      "dwCount": "DWORD",
+      "pResults": "MULTI_QI*"
+    }
+  },
+
   "IEnumWbemClassObject_Next": {
     "Signature": {
       "Library": "ole32.dll",

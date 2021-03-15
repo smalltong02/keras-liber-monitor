@@ -693,5 +693,499 @@
     "Parameters": {
       "dwFlags": "DWORD"
     }
+  },
+
+  "NetGetJoinInformation": {
+    "Signature": {
+      "Library": "Netapi32.dll",
+      "Return": "NET_API_STATUS",
+      "Feature": "P92"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "lpServer": "LPCWSTR",
+      "lpNameBuffer": "LPWSTR*",
+      "BufferType": "LPNETSETUP_JOIN_STATUS"
+    },
+
+    "PostCheck": {
+      "0": {
+        "Check": {
+          "lpServer": "%var0 == 'nullptr'"
+        },
+
+        "Log": [
+          "*lpNameBuffer",
+          "*BufferType"
+        ]
+      }
+    }
+  },
+
+  "NetUserGetInfo": {
+    "Signature": {
+      "Library": "Netapi32.dll",
+      "Return": "NET_API_STATUS",
+      "Feature": "P93"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "servername": "LPCWSTR",
+      "username": "LPCWSTR",
+      "level": "DWORD",
+      "bufptr": "LPBYTE*"
+    },
+
+    "PreLog": [
+      "servername",
+      "username"
+    ]
+  },
+
+  "NetUserGetLocalGroups": {
+    "Signature": {
+      "Library": "Netapi32.dll",
+      "Return": "NET_API_STATUS",
+      "Feature": "P94"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "servername": "LPCWSTR",
+      "username": "LPCWSTR",
+      "level": "DWORD",
+      "flags": "DWORD",
+      "bufptr": "LPBYTE*",
+      "prefmaxlen": "DWORD",
+      "entriesread": "LPDWORD",
+      "totalentries": "LPDWORD"
+    },
+
+    "PreLog": [
+      "servername",
+      "username"
+    ]
+  },
+
+  "NetShareEnum": {
+    "Signature": {
+      "Library": "Netapi32.dll",
+      "Return": "NET_API_STATUS",
+      "Feature": "P95"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "servername": "LPCWSTR",
+      "level": "DWORD",
+      "bufptr": "LPBYTE*",
+      "prefmaxlen": "DWORD",
+      "entriesread": "LPDWORD",
+      "totalentries": "LPDWORD",
+      "resume_handle": "LPDWORD"
+    },
+
+    "PreLog": [
+      "servername",
+      "level"
+    ]
+  },
+
+  "InternetOpenA": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "LPVOID",
+      "Feature": "P96"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "lpszAgent": "LPCSTR",
+      "dwAccessType": "DWORD",
+      "lpszProxy": "LPCSTR",
+      "lpszProxyBypass": "LPCSTR",
+      "dwFlags": "DWORD"
+    },
+
+    "PreLog": [
+      "lpszAgent",
+      "dwAccessType",
+      "lpszProxy",
+      "lpszProxyBypass",
+      "dwFlags"
+    ]
+  },
+
+  "InternetOpenW": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "LPVOID",
+      "Feature": "P96"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "lpszAgent": "LPCWSTR",
+      "dwAccessType": "DWORD",
+      "lpszProxy": "LPCWSTR",
+      "lpszProxyBypass": "LPCWSTR",
+      "dwFlags": "DWORD"
+    },
+
+    "PreLog": [
+      "lpszAgent",
+      "dwAccessType",
+      "lpszProxy",
+      "lpszProxyBypass",
+      "dwFlags"
+    ]
+  },
+
+  "InternetOpenUrlA": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "LPVOID",
+      "Feature": "P97"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "hInternet": "LPVOID",
+      "lpszUrl": "LPCSTR",
+      "lpszHeaders": "LPCSTR",
+      "dwHeadersLength": "DWORD",
+      "dwFlags": "DWORD",
+      "dwContext": "DWORD_PTR"
+    },
+
+    "PreLog": [
+      "hInternet",
+      "lpszUrl",
+      "lpszHeaders",
+      "dwFlags"
+    ]
+  },
+
+  "InternetOpenUrlW": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "LPVOID",
+      "Feature": "P97"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "hInternet": "LPVOID",
+      "lpszUrl": "LPCWSTR",
+      "lpszHeaders": "LPCWSTR",
+      "dwHeadersLength": "DWORD",
+      "dwFlags": "DWORD",
+      "dwContext": "DWORD_PTR"
+    },
+
+    "PreLog": [
+      "hInternet",
+      "lpszUrl",
+      "lpszHeaders",
+      "dwFlags"
+    ]
+  },
+
+  "InternetReadFile": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "BOOL",
+      "Feature": "P98"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "hFile": "LPVOID",
+      "lpBuffer": "LPVOID",
+      "dwNumberOfBytesToRead": "DWORD",
+      "lpdwNumberOfBytesRead": "LPDWORD"
+    },
+
+    "PostLog": [
+      "Return",
+      "hFile"
+    ]
+  },
+
+  "InternetWriteFile": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "BOOL",
+      "Feature": "P99"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "hFile": "LPVOID",
+      "lpBuffer": "LPVOID",
+      "dwNumberOfBytesToWrite": "DWORD",
+      "lpdwNumberOfBytesWritten": "LPDWORD"
+    },
+
+    "PostLog": [
+      "Return",
+      "hFile"
+    ]
+  },
+
+  "InternetCrackUrlA": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "BOOL",
+      "Feature": "P100"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "lpszUrl": "LPCSTR",
+      "dwUrlLength": "DWORD",
+      "dwFlags": "DWORD",
+      "lpUrlComponents": "LPVOID"
+    },
+
+    "PreLog": [
+      "lpszUrl"
+    ]
+  },
+
+  "InternetCrackUrlW": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "BOOL",
+      "Feature": "P100"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "lpszUrl": "LPCWSTR",
+      "dwUrlLength": "DWORD",
+      "dwFlags": "DWORD",
+      "lpUrlComponents": "LPVOID"
+    },
+
+    "PreLog": [
+      "lpszUrl"
+    ]
+  },
+
+  "InternetConnectA": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "LPVOID",
+      "Feature": "P101"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "hInternet": "LPVOID",
+      "lpszServerName": "LPCSTR",
+      "nServerPort": "WORD",
+      "lpszUserName": "LPCSTR",
+      "lpszPassword": "LPCSTR",
+      "dwService": "DWORD",
+      "dwFlags": "DWORD",
+      "dwContext": "DWORD_PTR"
+    },
+
+    "PreLog": [
+      "hInternet",
+      "lpszServerName",
+      "nServerPort",
+      "lpszUserName",
+      "lpszPassword",
+      "dwFlags"
+    ]
+  },
+
+  "InternetConnectW": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "LPVOID",
+      "Feature": "P101"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "hInternet": "LPVOID",
+      "lpszServerName": "LPCWSTR",
+      "nServerPort": "WORD",
+      "lpszUserName": "LPCWSTR",
+      "lpszPassword": "LPCWSTR",
+      "dwService": "DWORD",
+      "dwFlags": "DWORD",
+      "dwContext": "DWORD_PTR"
+    },
+
+    "PreLog": [
+      "hInternet",
+      "lpszServerName",
+      "nServerPort",
+      "lpszUserName",
+      "lpszPassword",
+      "dwFlags"
+    ]
+  },
+
+  "HttpOpenRequestA": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "LPVOID",
+      "Feature": "P102"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "hConnect": "LPVOID",
+      "lpszVerb": "LPCSTR",
+      "lpszObjectName": "LPCSTR",
+      "lpszVersion": "LPCSTR",
+      "lpszReferrer": "LPCSTR",
+      "lplpszAcceptTypes": "LPCSTR*",
+      "dwFlags": "DWORD",
+      "dwContext": "DWORD_PTR"
+    },
+
+    "PreLog": [
+      "hConnect",
+      "lpszVerb",
+      "lpszObjectName",
+      "lpszVersion",
+      "lpszReferrer",
+      "dwFlags"
+    ]
+  },
+
+  "HttpOpenRequestW": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "LPVOID",
+      "Feature": "P102"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "hConnect": "LPVOID",
+      "lpszVerb": "LPCWSTR",
+      "lpszObjectName": "LPCWSTR",
+      "lpszVersion": "LPCWSTR",
+      "lpszReferrer": "LPCWSTR",
+      "lplpszAcceptTypes": "LPCWSTR*",
+      "dwFlags": "DWORD",
+      "dwContext": "DWORD_PTR"
+    },
+
+    "PreLog": [
+      "hConnect",
+      "lpszVerb",
+      "lpszObjectName",
+      "lpszVersion",
+      "lpszReferrer",
+      "dwFlags"
+    ]
+  },
+
+  "HttpSendRequestA": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "BOOL",
+      "Feature": "P103"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "hRequest": "LPVOID",
+      "lpszHeaders": "LPCSTR",
+      "dwHeadersLength": "DWORD",
+      "lpOptional": "LPVOID",
+      "dwOptionalLength": "DWORD"
+    },
+
+    "PreLog": [
+      "hRequest",
+      "lpszHeaders"
+    ]
+  },
+
+  "HttpSendRequestW": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "BOOL",
+      "Feature": "P103"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "hRequest": "LPVOID",
+      "lpszHeaders": "LPCWSTR",
+      "dwHeadersLength": "DWORD",
+      "lpOptional": "LPVOID",
+      "dwOptionalLength": "DWORD"
+    },
+
+    "PreLog": [
+      "hRequest",
+      "lpszHeaders"
+    ]
   }
 }

@@ -79,6 +79,7 @@
     "REFIID": "GUID",
     "IID": "COSERVERINFO",
     "SC_STATUS_TYPE": "INT",
+    "NET_API_STATUS": "NTSTATUS",
     "TEST_ADT1": "TEST_STRUCT1",
     "TEST_ADT2": "EXITFLAGS*",
     "TEST_ADT3": "LPCOAUTHINFO[100]",
@@ -466,6 +467,17 @@
         "PAGE_TARGETS_INVALID": 1073741824,
         "PAGE_ENCLAVE_UNVALIDATED": 536870912,
         "PAGE_ENCLAVE_DECOMMIT": 268435456
+      }
+    },
+
+    "NETSETUP_JOIN_STATUS": {
+      "Data": "DWORD",
+      "OPERATION": "OR",
+      "Value": {
+        "NetSetupUnknownStatus": 0,
+        "NetSetupUnjoined": 1,
+        "NetSetupWorkgroupName": 2,
+        "NetSetupDomainName": 3
       }
     }
   }
