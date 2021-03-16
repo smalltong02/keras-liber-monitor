@@ -389,9 +389,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugger|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Passes\bbcheck\bbcheck.cpp" />
     <ClCompile Include="Passes\bbinit\bbinit.cpp" />
     <ClCompile Include="Passes\funcinit\funcinit.cpp" />
-    <ClCompile Include="Passes\insninit\insninit.cpp" />
+    <ClCompile Include="Passes\insnfree\insnfree.cpp" />
     <ClCompile Include="Passes\modinit\modinit.cpp" />
     <ClCompile Include="PassManager.cpp" />
     <ClCompile Include="PassStructure.cpp" />
@@ -503,9 +504,10 @@
     <ClInclude Include="ntapi.h" />
     <ClInclude Include="ParsingImpl.h" />
     <ClInclude Include="Passes.h" />
+    <ClInclude Include="Passes\bbcheck\bbcheck.h" />
     <ClInclude Include="Passes\bbinit\bbinit.h" />
     <ClInclude Include="Passes\funcinit\funcinit.h" />
-    <ClInclude Include="Passes\insninit\insninit.h" />
+    <ClInclude Include="Passes\insnfree\insnfree.h" />
     <ClInclude Include="Passes\modinit\modinit.h" />
     <ClInclude Include="PassManager.h" />
     <ClInclude Include="PassStructure.h" />

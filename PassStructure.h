@@ -176,6 +176,8 @@ namespace cchips {
         GlobalVariable() : CBaseStruc(base_globalvariable) {}
         ~GlobalVariable() = default;
         const std::string& GetName() const { return m_name; }
+        std::uint64_t address() const { return 0; }
+        std::uint64_t GetBaseAddress() const { return address(); }
     private:
         std::string m_name;
         std::weak_ptr<Module> m_parent;
@@ -228,6 +230,7 @@ namespace cchips {
             m_block_type = type; 
             return true;
         }
+        block_type GetBlockType() const { return m_block_type; }
         std::string getBlockType() const {
             switch (m_block_type)
             {
@@ -263,6 +266,7 @@ namespace cchips {
         unsigned int getBlockNo() const { return m_block_no; }
         std::uint8_t* getAddress() const { return m_block_address; }
         std::uint8_t* getEndAddress() const { return m_block_address + m_size; }
+        std::uint64_t GetBaseAddress() const { return reinterpret_cast<std::uint64_t>(getAddress()); }
         std::size_t getBlockSize() const { return m_size; }
         bool AddCapInsn(std::shared_ptr<CapInsn> cap_insn) {
             if (!cap_insn) return false;
@@ -298,6 +302,9 @@ namespace cchips {
         std::shared_ptr<BasicBlock> splitBasicBlockAtAddress(std::uint8_t* address);
         void dump(RapidValue& json_object, rapidjson::MemoryPoolAllocator<>& allocator, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const;
         std::shared_ptr<Function> GetParent() { return m_parent.lock(); }
+        const std::vector<std::weak_ptr<BasicBlock>>& GetPreBlockList() const { return pre_block_list; }
+        std::shared_ptr<BasicBlock> GetNextBlock() const { return next_block.lock(); }
+        std::shared_ptr<BasicBlock> GetBranchBlock() const { return branch_block.lock(); }
     private:
         unsigned int m_block_no;
         block_type m_block_type;
@@ -342,6 +349,7 @@ namespace cchips {
         
         const std::string& GetFuncName() const { return m_func_name; }
         unsigned long long GetFuncAddress() const { return reinterpret_cast<unsigned long long>(m_func_address); }
+        std::uint64_t GetBaseAddress() const { return GetFuncAddress(); }
         std::string GetFuncType() const {
             switch (m_func_type)
             {
@@ -418,6 +426,11 @@ namespace cchips {
         std::string GetFullName() const { return m_func_pointer->file_name + std::string("!") + m_func_pointer->func_name; }
         void dump(RapidValue json_object, rapidjson::MemoryPoolAllocator<> allocator, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const { ; }
         std::shared_ptr<Module> GetParent() { return m_parent.lock(); }
+        std::uint64_t GetBaseAddress() const { 
+            if(m_func_pointer)
+                return reinterpret_cast<std::uint64_t>(m_func_pointer->to_address); 
+            return 0;
+        }
     private:
         std::unique_ptr<func_struc> m_func_pointer = nullptr;
         std::weak_ptr<Module> m_parent;
@@ -500,6 +513,36 @@ namespace cchips {
             const std::uint8_t* GetEndAddress() const { return end_address; }
         };
 
+        class ReportObject {
+        public:
+            struct report_object {
+                CBaseStruc::base_type type;
+                std::uint64_t address;
+                std::weak_ptr<CBaseStruc> object;
+                bool operator<(const report_object& rr) const {
+                    if (type == rr.type)
+                        return address < rr.address;
+                    return type < rr.type;
+                }
+                bool operator>(const report_object& rr) const {
+                    if (type == rr.type)
+                        return address > rr.address;
+                    return type > rr.type;
+                }
+                bool operator==(const report_object& rr) const {
+                    if (type == rr.type)
+                        return address == rr.address;
+                    return false;
+                }
+            };
+            using REPORT_TABLE = std::map<report_object, std::string>;
+            void CreateReport(std::shared_ptr<CBaseStruc> object, std::string& desc);
+            void dump(RapidValue& json_object, rapidjson::MemoryPoolAllocator<>& allocator, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const;
+            void GenerateJsonReport(int count, std::shared_ptr<CBaseStruc> object, std::string desc, RapidValue& json_object, rapidjson::MemoryPoolAllocator<>& allocator, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const;
+        private:
+            REPORT_TABLE m_report_list;
+        };
+
         Module() : CBaseStruc(base_module) {}
         ~Module() {
             m_module_context = nullptr;
@@ -544,9 +587,15 @@ namespace cchips {
             }
             return {};
         }
+        std::uint64_t GetBaseAddress() const { 
+            if(m_module_context)
+                return reinterpret_cast<std::uint64_t>(m_module_context->GetBaseAddress());
+            return 0;
+        }
         std::shared_ptr<CBaseStruc> GetBaseObjectAtAddress(std::uint8_t* address) const;
         bool AddGlobalIFunc(std::unique_ptr<GlobalIFunc::func_struc> func_st);
         const GLOBALIFUNC_SYMBOLTABLE& GetGlobalIFuncs() const { return m_globalifunc_list; }
+        ReportObject& GetReportObject() { return m_report_object; }
     private:
         std::string m_name;
         std::uint8_t* m_precache_address = 0;
@@ -555,5 +604,6 @@ namespace cchips {
         GLOBAL_SYMBOLTABLE m_globalvariable_list;
         FUNCTION_SYMBOLTABLE m_function_list;
         GLOBALIFUNC_SYMBOLTABLE m_globalifunc_list;
+        ReportObject m_report_object;
     };
 } // namespace cchips

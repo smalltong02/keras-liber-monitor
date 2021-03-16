@@ -22,17 +22,12 @@ namespace cchips {
     {
         if (!Block) return false;
         if (!Block->IsUnknown() && !Block->IsStart()) return false;
-        size_t block_sizes = 0;
         for (auto& insn : *Block) {
             if (!insn) return false;
             if (cchips::GetCapstoneImplment().InCallGroup(*insn)) {
                 processCallInstruction(*insn);
             }
-            block_sizes += insn->size();
         }
-        if (block_sizes != Block->getBlockSize())
-            return false;
-
         std::shared_ptr<CapInsn> end_insn = Block->getEndInsn();
         if (!end_insn) return false;
         return processEndBlock(*end_insn);

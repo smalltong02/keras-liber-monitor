@@ -1,22 +1,22 @@
-#include "insninit.h"
+#include "insnfree.h"
 #include "PassSupport.h"
 
 namespace cchips {
 
-    char InsnInit::ID = 0;
+    char InsnFree::ID = 0;
 
-    static RegisterPass<InsnInit> X(
-        "InsnInit",
-        "Instruction initializing"
+    static RegisterPass<InsnFree> X(
+        "InsnFree",
+        "Instruction free"
     );
 
-    bool InsnInit::runOnInstruction(std::shared_ptr<CapInsn> Insn)
+    bool InsnFree::runOnInstruction(std::shared_ptr<CapInsn> Insn)
     {
         if (!Insn) return false;
         return run(Insn);
     }
 
-    bool InsnInit::run(std::shared_ptr<CapInsn>& Insn)
+    bool InsnFree::run(std::shared_ptr<CapInsn>& Insn)
     {
         if (Insn->address() == 0)
             return false;

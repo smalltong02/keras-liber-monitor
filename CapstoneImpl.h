@@ -22,6 +22,7 @@ namespace cchips {
         CBaseStruc(base_type type) : m_type(type) {}
         ~CBaseStruc() = default;
         base_type GetBaseType() const { return m_type; }
+        virtual std::uint64_t GetBaseAddress() const = 0;
     private:
         base_type m_type = base_invalid;
     };
@@ -73,6 +74,7 @@ namespace cchips {
             }
             return 0;
         }
+        std::uint64_t GetBaseAddress() const { return address(); }
         const std::string& dump() const { return m_mnemonic_str; }
         cs_insn* self() const { return m_insn; }
         void free_insn() {

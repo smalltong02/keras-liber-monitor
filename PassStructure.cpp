@@ -157,6 +157,109 @@ namespace cchips {
         return false;
     }
 
+    void Module::ReportObject::CreateReport(std::shared_ptr<CBaseStruc> object, std::string& desc)
+    {
+        if (!object) return;
+        if (!desc.length()) return;
+        report_object obj = { object->GetBaseType(), object->GetBaseAddress(), object};
+        auto find = m_report_list.find(obj);
+        if (find == m_report_list.end()) {
+            m_report_list.emplace(obj, desc);
+        }
+        return;
+    }
+
+    void Module::ReportObject::dump(RapidValue& json_object, rapidjson::MemoryPoolAllocator<>& allocator, Cfg_view_flags flags) const
+    {
+        RapidValue report_value;
+        report_value.SetObject();
+        report_value.AddMember("reports", m_report_list.size(), allocator);
+
+        int count = 0;
+        for (auto& report : m_report_list) {
+            if (!report.first.object.lock() || !report.second.length())
+                continue;
+            GenerateJsonReport(count, report.first.object.lock(), report.second, report_value, allocator, flags);
+        }
+
+        json_object.AddMember("ErrorReport", report_value, allocator);
+        return;
+    }
+
+    void Module::ReportObject::GenerateJsonReport(int count, std::shared_ptr<CBaseStruc> object, std::string desc, RapidValue& json_object, rapidjson::MemoryPoolAllocator<>& allocator, Cfg_view_flags flags) const
+    {
+        if (!object) return;
+        RapidValue report_value;
+        report_value.SetObject();
+
+        switch (object->GetBaseType())
+        {
+        case base_module:
+        {
+            std::shared_ptr<Module> cur_module = std::static_pointer_cast<Module>(object);
+            std::stringstream ss;
+            ss << "0x" << std::hex << reinterpret_cast<unsigned long long>(cur_module->GetContext()->GetBaseAddress());
+            report_value.AddMember("object_type", "module", allocator);
+            report_value.AddMember("name", RapidValue(cur_module->GetModuleName().c_str(), allocator), allocator);
+            report_value.AddMember("address", RapidValue(ss.str().c_str(), allocator), allocator);
+            report_value.AddMember("description", RapidValue(desc.c_str(), allocator), allocator);
+        }
+        break;
+        case base_function:
+        {
+            std::shared_ptr<Function> function = std::static_pointer_cast<Function>(object);
+            std::stringstream ss;
+            ss << "0x" << std::hex << function->GetFuncAddress();
+            report_value.AddMember("object_type", "function", allocator);
+            report_value.AddMember("name", RapidValue(function->GetFuncName().c_str(), allocator), allocator);
+            report_value.AddMember("address", RapidValue(ss.str().c_str(), allocator), allocator);
+            report_value.AddMember("description", RapidValue(desc.c_str(), allocator), allocator);
+        }
+        break;
+        case base_globalifunc:
+        {
+            std::shared_ptr<GlobalIFunc> ifunc = std::static_pointer_cast<GlobalIFunc>(object);
+            report_value.AddMember("object_type", "globalifunc", allocator);
+            report_value.AddMember("name", RapidValue(ifunc->GetFullName().c_str(), allocator), allocator);
+            report_value.AddMember("description", RapidValue(desc.c_str(), allocator), allocator);
+        }
+        break;
+        case base_basicblock:
+        {
+            std::shared_ptr<BasicBlock> block = std::static_pointer_cast<BasicBlock>(object);
+            std::stringstream ss;
+            ss << "0x" << std::hex << reinterpret_cast<unsigned long long>(block->getAddress());
+            report_value.AddMember("object_type", "BasicBlock", allocator);
+            report_value.AddMember("name", RapidValue(block->GetName().c_str(), allocator), allocator);
+            report_value.AddMember("address", RapidValue(ss.str().c_str(), allocator), allocator);
+            report_value.AddMember("description", RapidValue(desc.c_str(), allocator), allocator);
+        }
+        break;
+        case base_globalvariable:
+        {
+            return;
+        }
+        break;
+        case base_instruction:
+        {
+            std::shared_ptr<CapInsn> insn = std::static_pointer_cast<CapInsn>(object);
+            std::stringstream ss;
+            ss << "0x" << std::hex << insn->address();
+            report_value.AddMember("object_type", "BasicBlock", allocator);
+            report_value.AddMember("object_type", "Instruction", allocator);
+            report_value.AddMember("name", RapidValue(insn->dump().c_str(), allocator), allocator);
+            report_value.AddMember("address", RapidValue(ss.str().c_str(), allocator), allocator);
+            report_value.AddMember("description", RapidValue(desc.c_str(), allocator), allocator);
+        }
+        break;
+        default:
+            return;
+        }
+        std::stringstream ss;
+        ss << "report-" << count;
+        json_object.AddMember(RapidValue(ss.str().c_str(), allocator), report_value, allocator);
+    }
+
     void Module::ModuleContext::InitializePeStructure(std::unique_ptr<PeLib::PeFile> pe_file)
     {
         ASSERT(pe_file);
@@ -319,6 +422,7 @@ namespace cchips {
                 func.second->dump(module_value, allocator, flags);
             }
         }
+        m_report_object.dump(module_value, allocator);
         document.AddMember("module", module_value, allocator);
 
         rapidjson::StringBuffer buf;

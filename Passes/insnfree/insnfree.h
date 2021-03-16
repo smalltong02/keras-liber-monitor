@@ -8,12 +8,12 @@
 
 namespace cchips {
 
-    class InsnInit : public InstructionPass
+    class InsnFree : public InstructionPass
     {
     public:
         static char ID;
-        InsnInit() : InstructionPass(ID) {}
-        ~InsnInit() {}
+        InsnFree() : InstructionPass(ID) {}
+        ~InsnFree() {}
 
         virtual bool runOnInstruction(std::shared_ptr<CapInsn> Insn) override;
 

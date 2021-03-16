@@ -61,8 +61,11 @@
     <Filter Include="Passes\bbinit">
       <UniqueIdentifier>{553434d5-d4b2-479d-bf1c-a14623e4044a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Passes\insninit">
+    <Filter Include="Passes\insnfree">
       <UniqueIdentifier>{9eccd0ff-cfe7-475d-87e5-6d125798c25e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Passes\bbcheck">
+      <UniqueIdentifier>{3d9ea87e-2aca-4c18-9c07-bf169bb75159}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -312,8 +315,11 @@
     <ClCompile Include="Passes\bbinit\bbinit.cpp">
       <Filter>Passes\bbinit</Filter>
     </ClCompile>
-    <ClCompile Include="Passes\insninit\insninit.cpp">
-      <Filter>Passes\insninit</Filter>
+    <ClCompile Include="Passes\insnfree\insnfree.cpp">
+      <Filter>Passes\insnfree</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\bbcheck\bbcheck.cpp">
+      <Filter>Passes\bbcheck</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -671,8 +677,11 @@
     <ClInclude Include="Passes\bbinit\bbinit.h">
       <Filter>Passes\bbinit</Filter>
     </ClInclude>
-    <ClInclude Include="Passes\insninit\insninit.h">
-      <Filter>Passes\insninit</Filter>
+    <ClInclude Include="Passes\insnfree\insnfree.h">
+      <Filter>Passes\insnfree</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\bbcheck\bbcheck.h">
+      <Filter>Passes\bbcheck</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
