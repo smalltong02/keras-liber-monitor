@@ -642,7 +642,7 @@ namespace cchips {
         }
         unsigned int GetElementOffset(unsigned int dim) {
             if (!GetData()) return InvalidOffset;
-            return GetData()->GetObSize() * dim;
+            return (unsigned int)GetData()->GetObSize() * dim;
         }
         virtual bool Success(char* pdata) const override {
             return true;

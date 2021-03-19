@@ -15,13 +15,13 @@ namespace cchips {
         {
         case 32:
         {
-            m_abi = std::make_unique<AbiX86>();
+            m_abi = std::make_shared<AbiX86>();
         }
         break;
 
         case 64:
         {
-            m_abi = std::make_unique<AbiX64>();
+            m_abi = std::make_shared<AbiX64>();
         }
         break;
 
@@ -31,10 +31,26 @@ namespace cchips {
         return (m_abi != nullptr);
     }
 
+    bool Module::InitializeCommonRegister()
+    {
+        if (!Valid()) return false;
+        if (!m_abi) return false;
+        std::uint8_t* address = 0;
+        for (auto& reg : m_abi->getReg2Size()) {
+            std::string name = GetCapstoneImplment().GetRegName(reg.first);
+            if (!name.length()) continue;
+            std::stringstream ss;
+            ss << GLOBAL_REG_PREFIX << name;
+            std::shared_ptr<GlobalVariable> reg_ptr = std::make_shared<GlobalVariable>(shared_from_this(), ss.str(), address, GlobalVariable::variable_reg, reg.second/BYTES_SIZE);
+            m_globalvariable_list.emplace(address, std::move(reg_ptr));
+            address++;
+        }
+        return true;
+    }
+
     bool Module::InitializeGlobalIFunction()
     {
         if (!Valid()) return false;
-
         const std::unique_ptr<ImportTable>& import_table = m_module_context->GetPeFormat()->getImportTable();
         if (import_table) {
             int num_funcs = import_table->getNumberOfImports();
@@ -92,6 +108,7 @@ namespace cchips {
         m_module_context = std::make_unique<ModuleContext>(m_precache_address);
         if (m_module_context && m_module_context->Valid()) {
             InitializeAbi();
+            InitializeCommonRegister();
             InitializeGlobalIFunction();
             return true;
         }
@@ -413,8 +430,11 @@ namespace cchips {
         module_value.SetObject();
         std::string module_name = GetModuleName();
         if (!module_name.length()) module_name = "unknown_module";
+        std::stringstream ss;
+        ss << "0x" << std::hex << GetBaseAddress();
         module_value.AddMember("module_name", RapidValue(module_name.c_str(), allocator), allocator);
         module_value.AddMember("architecture", RapidValue(GetArchitecture().c_str(), allocator), allocator);
+        module_value.AddMember("address", RapidValue(ss.str().c_str(), allocator), allocator);
         module_value.AddMember("functions", size(), allocator);
 
         for (auto& func : m_function_list) {
@@ -621,6 +641,13 @@ namespace cchips {
                 if (jmp_block) {
                     JumpTarget target(jmp_addr, JumpTarget::jmp_type::JMP_NORMAL, JumpTarget::from_type(insn_code, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_TRUE));
                     splitBasicBlockAtAddress(target);
+                    if (jmp_block->getAddress() == cur_block->getAddress()) {
+                        std::shared_ptr<BasicBlock> new_block = getBasicBlockAtAddress(jmp_addr);
+                        if (new_block) {
+                            new_block->AddCapInsn(std::move(std::shared_ptr<CapInsn>(cap_insn.release())));
+                            return;
+                        }
+                    }
                 } 
                 else if (std::shared_ptr<CBaseStruc> jmpto_base; jmpto_base = parent->GetBaseObjectAtAddress(jmp_addr)) {
                 }
@@ -787,5 +814,19 @@ namespace cchips {
         ss << "block-" << getBlockNo();
         json_object.AddMember(RapidValue(ss.str().c_str(), allocator), block_value, allocator);
         return;
+    }
+
+    Variable::Variable(std::shared_ptr<Module> parent, std::string& name, std::uint8_t* address, variable_type type, std::uint8_t bytes, base_type btype)
+        : m_parent(parent),
+        CBaseStruc(btype),
+        m_address(address), 
+        m_type(type)
+    {
+        std::shared_ptr<CMetadataTypeObject> byte_ptr = make_metadata_j_ptr<BYTE>(CBaseDef::type_byte, INVALID_VARIABLE_VALUE, CObObject::op_n_equal);
+        if (!byte_ptr) return;
+        std::unique_ptr<CArrayObject> array_ptr = std::make_unique<CArrayObject>(name);
+        if (!array_ptr) return;
+        array_ptr->AddArray(byte_ptr, bytes);
+        m_object = std::move(array_ptr);
     }
 } // namespace cchips

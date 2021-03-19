@@ -84,7 +84,7 @@ namespace cchips {
     std::string_view Pass::getPassName() const {
         static char uname_pass[] = "Unnamed pass: implement Pass::getPassName()";
         AnalysisID AID = getPassID();
-        std::unique_ptr<Pass> PI = GetPassRegistry().getPassInfo(AID);
+        std::unique_ptr<Pass> PI = GetPassRegistry().getPass(AID);
         if (PI)
             return PI->getPassName();
         return uname_pass;
@@ -121,16 +121,24 @@ namespace cchips {
     }
 
     bool PassManagerImpl::Run(std::shared_ptr<Module> M) {
-        bool Changed = false;
+        bool Changed = true;
 
         for (auto& pass : modulepasses) {
             if (!pass.second) continue;
-            Changed |= reinterpret_cast<ModulePass*>(pass.second.get())->runOnModule(M);
+            auto info = GetPassRegistry().getPassInfo(pass.first);
+            if (!info || info->getRegHandle() != PassInfo::passreg_pre) continue;
+            Changed &= reinterpret_cast<ModulePass*>(pass.second.get())->runOnModule(M);
         }
 
         if (Changed) {
             for (auto& func : *M) {
                 GetPassRegistry().run(func.second);
+            }
+            for (auto& pass : modulepasses) {
+                if (!pass.second) continue;
+                auto info = GetPassRegistry().getPassInfo(pass.first);
+                if (!info || info->getRegHandle() != PassInfo::passreg_post) continue;
+                reinterpret_cast<ModulePass*>(pass.second.get())->runOnModule(M);
             }
         }
 
@@ -181,16 +189,24 @@ namespace cchips {
 
     bool FunctionPassManagerImpl::Run(std::shared_ptr<Function> F)
     {
-        bool Changed = false;
+        bool Changed = true;
 
         for (auto& pass : functionpasses) {
             if (!pass.second) continue;
-            Changed |= reinterpret_cast<FunctionPass*>(pass.second.get())->runOnFunction(F);
+            auto info = GetPassRegistry().getPassInfo(pass.first);
+            if (!info || info->getRegHandle() != PassInfo::passreg_pre) continue;
+            Changed &= reinterpret_cast<FunctionPass*>(pass.second.get())->runOnFunction(F);
         }
 
         if (Changed) {
             for (auto& bb : *F) {
                 GetPassRegistry().run(bb.second);
+            }
+            for (auto& pass : functionpasses) {
+                if (!pass.second) continue;
+                auto info = GetPassRegistry().getPassInfo(pass.first);
+                if (!info || info->getRegHandle() != PassInfo::passreg_post) continue;
+                reinterpret_cast<FunctionPass*>(pass.second.get())->runOnFunction(F);
             }
         }
 
@@ -241,16 +257,24 @@ namespace cchips {
 
     bool BBPassManagerImpl::Run(std::shared_ptr<BasicBlock> BB)
     {
-        bool Changed = false;
+        bool Changed = true;
 
         for (auto& pass : bbpasses) {
             if (!pass.second) continue;
-            Changed |= reinterpret_cast<BasicBlockPass*>(pass.second.get())->runOnBasicBlock(BB);
+            auto info = GetPassRegistry().getPassInfo(pass.first);
+            if (!info || info->getRegHandle() != PassInfo::passreg_pre) continue;
+            Changed &= reinterpret_cast<BasicBlockPass*>(pass.second.get())->runOnBasicBlock(BB);
         }
 
         if (Changed) {
             for (auto& insn : *BB) {
                 GetPassRegistry().run(insn);
+            }
+            for (auto& pass : bbpasses) {
+                if (!pass.second) continue;
+                auto info = GetPassRegistry().getPassInfo(pass.first);
+                if (!info || info->getRegHandle() != PassInfo::passreg_post) continue;
+                reinterpret_cast<BasicBlockPass*>(pass.second.get())->runOnBasicBlock(BB);
             }
         }
 
@@ -301,11 +325,22 @@ namespace cchips {
 
     bool InsnPassManagerImpl::Run(std::shared_ptr<CapInsn> insn)
     {
-        bool Changed = false;
+        bool Changed = true;
 
         for (auto& pass : insnpasses) {
             if (!pass.second) continue;
-            Changed |= reinterpret_cast<InstructionPass*>(pass.second.get())->runOnInstruction(insn);
+            auto info = GetPassRegistry().getPassInfo(pass.first);
+            if (!info || info->getRegHandle() != PassInfo::passreg_pre) continue;
+            Changed &= reinterpret_cast<InstructionPass*>(pass.second.get())->runOnInstruction(insn);
+        }
+
+        if (Changed) {
+            for (auto& pass : insnpasses) {
+                if (!pass.second) continue;
+                auto info = GetPassRegistry().getPassInfo(pass.first);
+                if (!info || info->getRegHandle() != PassInfo::passreg_post) continue;
+                reinterpret_cast<InstructionPass*>(pass.second.get())->runOnInstruction(insn);
+            }
         }
 
         return Changed;

@@ -7,7 +7,8 @@ namespace cchips {
 
     static RegisterPass<FuncInit> X(
         "FuncInit",
-        "Function initializing"
+        "Function initializing",
+        PassInfo::passreg_pre
     );
 
     bool FuncInit::runOnFunction(std::shared_ptr<Function> Func)

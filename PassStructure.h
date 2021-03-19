@@ -9,6 +9,7 @@
 #include "Abix86.h"
 #include "Abix64.h"
 #include "PackageWrapper.h"
+#include "MetadataTypeImpl.h"
 
 namespace cchips {
 
@@ -161,26 +162,67 @@ namespace cchips {
 
     class Address {
     public:
+#define USER_ADDRESS_SPACE_START 0x10000
         Address() = delete;
         ~Address() = delete;
 
         static bool validAddress(std::uint8_t* address) {
             if (address == nullptr || address == reinterpret_cast<std::uint8_t*>(-1))
                 return false;
+            if (address < reinterpret_cast <std::uint8_t*>(USER_ADDRESS_SPACE_START))
+                return false;
             return true;
         }
     };
 
-    class GlobalVariable : public CBaseStruc {
+    class Variable : public CBaseStruc {
     public:
-        GlobalVariable() : CBaseStruc(base_globalvariable) {}
-        ~GlobalVariable() = default;
-        const std::string& GetName() const { return m_name; }
-        std::uint64_t address() const { return 0; }
+#define INVALID_VARIABLE_VALUE (BYTE)0xcc
+        using variable_type = enum {
+            variable_unknown,
+            variable_reg,
+            variable_mem,
+            variable_stack,
+        };
+        Variable(std::shared_ptr<Module> parent, std::string& name, std::uint8_t* address, variable_type type, std::uint8_t bytes, base_type btype);
+        ~Variable() = default;
+        bool valid() const {
+            if (!m_object || !m_parent.lock())
+                return false;
+            return true;
+        }
+        std::string GetName() const {
+            if (valid())
+                return m_object->GetName();
+            return {};
+        }
+        std::uint64_t address() const { return reinterpret_cast<std::uint64_t>(m_address); }
         std::uint64_t GetBaseAddress() const { return address(); }
+
     private:
-        std::string m_name;
+        std::uint8_t* m_address;
+        variable_type m_type;
         std::weak_ptr<Module> m_parent;
+        std::unique_ptr<CObObject> m_object;
+    };
+
+    class LocalVariable : public Variable {
+    public:
+#define LOCAL_PREFIX "stack_"
+        LocalVariable(std::shared_ptr<Module> parent, std::string& name, std::uint8_t* address, variable_type type, std::uint8_t bytes)
+            : Variable(parent, name, address, type, bytes, base_localvariable) {}
+        ~LocalVariable() = default;
+    private:
+    };
+
+    class GlobalVariable : public Variable {
+    public:
+#define GLOBAL_REG_PREFIX "gal_reg_"
+#define GLOBAL_MEM_PREFIX "gal_mem_"
+        GlobalVariable(std::shared_ptr<Module> parent, std::string& name, std::uint8_t* address, variable_type type, std::uint8_t bytes) 
+            : Variable(parent, name, address, type, bytes, base_globalvariable){}
+        ~GlobalVariable() = default;
+    private:
     };
 
     class BasicBlock : public CBaseStruc, public std::enable_shared_from_this<BasicBlock> {
@@ -364,13 +406,18 @@ namespace cchips {
             }
             return "unknown";
         }
+        void SetFuncType(func_type type) { m_func_type = type; }
+        bool IsUnknown() const { if (m_func_type != func_oep && m_func_type != func_normal && m_func_type != func_linkage) return true; return false; }
+        bool IsOep() const { if (m_func_type == func_oep) return true; return false; }
+        bool IsNormal() const { if (m_func_type == func_normal) return true; return false; }
+        bool IsLinkage() const { if (m_func_type == func_linkage) return true; return false; }
         bool Decode(JumpTargets& jump_targets);
         bool getJumpTarget(JumpTargets& jump_targets, JumpTarget& jt);
         void decodeJumpTarget(JumpTargets& jump_targets, const JumpTarget& jt);
         std::shared_ptr<BasicBlock> CreateBasicBlock(const JumpTarget& jt);
         std::shared_ptr<BasicBlock> getBasicBlockAtAddress(std::uint8_t* address);
         std::shared_ptr<BasicBlock> getBasicBlockAfter(std::uint8_t* address);
-        int getCurrentBlockNo() const { return m_basicblocks.size(); }
+        int getCurrentBlockNo() const { return (int)m_basicblocks.size(); }
         bool splitBasicBlockAtAddress(const JumpTarget& jt);
         void linktoFromBasicBlock(std::shared_ptr<BasicBlock> cur_block, const JumpTarget& jt);
         bool linkBasicBlock(std::shared_ptr<BasicBlock>& pre_block, std::shared_ptr<BasicBlock>& post_block, JumpTarget::jmp_type type) {
@@ -576,6 +623,7 @@ namespace cchips {
             return false;
         }
         bool InitializeAbi();
+        bool InitializeCommonRegister();
         bool InitializeGlobalIFunction();
         bool GetLinkageFuncName(std::string& func_name, std::uint8_t* func_address) const;
         bool AddFunction(std::string& func_name, std::uint8_t* func_address);
@@ -599,7 +647,7 @@ namespace cchips {
     private:
         std::string m_name;
         std::uint8_t* m_precache_address = 0;
-        std::unique_ptr<Abi> m_abi = nullptr;
+        std::shared_ptr<Abi> m_abi = nullptr;
         std::unique_ptr<ModuleContext> m_module_context = nullptr;
         GLOBAL_SYMBOLTABLE m_globalvariable_list;
         FUNCTION_SYMBOLTABLE m_function_list;

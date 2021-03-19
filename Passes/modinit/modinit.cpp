@@ -7,7 +7,8 @@ namespace cchips {
 
     static RegisterPass<ModInit> X(
         "ModInit",
-        "Module initializing"
+        "Module initializing",
+        PassInfo::passreg_pre
     );
 
     bool ModInit::runOnModule(std::shared_ptr<Module> m)

@@ -67,6 +67,12 @@
     <Filter Include="Passes\bbcheck">
       <UniqueIdentifier>{3d9ea87e-2aca-4c18-9c07-bf169bb75159}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Passes\funccheck">
+      <UniqueIdentifier>{c51aa527-9e2a-47ae-90dd-fffde0ef12c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Passes\modcheck">
+      <UniqueIdentifier>{a4b8dd77-7268-4f9c-a885-c0fda26345ac}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HipsHookLib.cpp">
@@ -320,6 +326,12 @@
     </ClCompile>
     <ClCompile Include="Passes\bbcheck\bbcheck.cpp">
       <Filter>Passes\bbcheck</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\funccheck\funccheck.cpp">
+      <Filter>Passes\funccheck</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\modcheck\modcheck.cpp">
+      <Filter>Passes\modcheck</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -682,6 +694,12 @@
     </ClInclude>
     <ClInclude Include="Passes\bbcheck\bbcheck.h">
       <Filter>Passes\bbcheck</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\funccheck\funccheck.h">
+      <Filter>Passes\funccheck</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\modcheck\modcheck.h">
+      <Filter>Passes\modcheck</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

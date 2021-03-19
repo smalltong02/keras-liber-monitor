@@ -633,6 +633,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='BenchmarkRelease|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="HipsHookTest.cpp" />
+    <ClCompile Include="TraceDebuggerTest.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>

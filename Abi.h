@@ -13,6 +13,34 @@ namespace cchips {
     class Abi
     {
     public:
+#define BYTES_SIZE 8
+        using x86_reg_eflags = enum {
+            X86_REG_CF = X86_REG_ENDING + 1, // 0
+            // reserved 1
+            X86_REG_PF, // 2
+            // reserved 3
+            X86_REG_AF, // 4
+            // reserved 5
+            X86_REG_ZF, // 6
+            X86_REG_SF, // 7
+            X86_REG_TF, // 8
+            X86_REG_IF, // 9
+            X86_REG_DF, // 10
+            X86_REG_OF, // 11
+            X86_REG_IOPL, // 12-13
+            X86_REG_NT, // 14
+            // reserved 15
+            // EFLAGS
+            X86_REG_RF, // 16
+            X86_REG_VM, // 17
+            X86_REG_AC, // 18
+            X86_REG_VIF, // 19
+            X86_REG_VIP, // 20
+            X86_REG_ID // 21
+            // reserved 22-31
+            // RFLAGS
+            // reserved 32-63
+        };
 
         // Ctors, dtors.
         Abi() = default;
@@ -33,6 +61,7 @@ namespace cchips {
 
         // Instructions.
     public:
+        virtual const std::vector<std::pair<x86_reg, uint32_t>>& getReg2Size() const = 0;
         virtual bool isNopInstruction(const CapInsn& insn) const = 0;
 
         // Private data - registers.

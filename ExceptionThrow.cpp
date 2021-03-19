@@ -1,6 +1,7 @@
 #include "ExceptionThrow.h"
 #include "LogObject.h"
 #include "utils.h"
+#include "Debugger.h"
 #include <ehdata.h>
 
 namespace cchips {
@@ -13,6 +14,7 @@ namespace cchips {
         if (!ep) return EXCEPTION_CONTINUE_SEARCH;
         if (!ep->ExceptionRecord) return EXCEPTION_CONTINUE_SEARCH;
         DWORD e_code = ep->ExceptionRecord->ExceptionCode;
+        //std::cout << "VehHandler e_code: " << std::hex << e_code << std::endl;
         if(IsCplusplusException(ep)) {
             ClearThreadTls();
             static ULONG_PTR* exception_vtbl = (reinterpret_cast<ULONG_PTR*>(*reinterpret_cast<ULONG_PTR*>(&g_exception_msg)));
@@ -63,9 +65,13 @@ namespace cchips {
         }
         else if (IsSingleStep(e_code))
         {
+            GetDebugger().Dispatch(ep);
+            return EXCEPTION_CONTINUE_EXECUTION;
         }
         else if (IsBreakPoint(e_code))
         {
+            GetDebugger().Dispatch(ep);
+            return EXCEPTION_CONTINUE_EXECUTION;
         }
 
         return EXCEPTION_CONTINUE_SEARCH;

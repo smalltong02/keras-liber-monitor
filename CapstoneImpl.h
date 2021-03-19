@@ -4,6 +4,8 @@
 #include "PackageWrapper.h"
 #include <string>
 
+std::string hexstring(BYTE byte);
+
 namespace cchips {
 
     class BasicBlock;
@@ -17,6 +19,7 @@ namespace cchips {
             base_globalifunc,
             base_basicblock,
             base_globalvariable,
+            base_localvariable,
             base_instruction,
         };
         CBaseStruc(base_type type) : m_type(type) {}
@@ -40,6 +43,8 @@ namespace cchips {
         CapInsn(cs_insn* insn, size_t count = 1) : CBaseStruc(base_instruction), m_insn(std::move(insn)), m_count(count) {
             if (m_insn) {
                 m_mnemonic_str = std::string(m_insn->mnemonic) + std::string(" ") + std::string(m_insn->op_str);
+                m_mnemonic_bytes.resize(m_insn->size);
+                memcpy(&m_mnemonic_bytes[0], m_insn->bytes, m_insn->size);
             }
         }
         ~CapInsn() { 
@@ -75,7 +80,17 @@ namespace cchips {
             return 0;
         }
         std::uint64_t GetBaseAddress() const { return address(); }
+        const std::vector<BYTE>& getBytes() const { return m_mnemonic_bytes; }
         const std::string& dump() const { return m_mnemonic_str; }
+        std::string dumpbytes() const { 
+            if (!m_mnemonic_bytes.size()) return {};
+            std::stringstream ss;
+            for (int count = 0; count < m_mnemonic_bytes.size() - 1; count++) {
+                ss << std::hex << hexstring(m_mnemonic_bytes[count]) << " ";
+            }
+            ss << std::hex << hexstring(m_mnemonic_bytes[m_mnemonic_bytes.size() - 1]);
+            return ss.str();
+        }
         cs_insn* self() const { return m_insn; }
         void free_insn() {
             if (m_insn) {
@@ -119,6 +134,7 @@ namespace cchips {
         cs_insn* m_insn = nullptr;
         size_t m_count = 0;
         std::string m_mnemonic_str;
+        std::vector<BYTE> m_mnemonic_bytes;
         std::weak_ptr<BasicBlock> m_parent;
         std::weak_ptr<CBaseStruc> m_pobject;
     };
@@ -206,17 +222,17 @@ namespace cchips {
         bool InJmpGroup(CapInsn& insn) const {
             return InsnInGroup(insn, X86_GRP_JUMP);
         }
+        bool InBranchGroup(CapInsn& insn) const {
+            return _branchInsnIds.count(insn.GetInsnId());
+        }
+        bool InCondBranchGroup(CapInsn& insn) const {
+            return _condBranchInsnIds.count(insn.GetInsnId());
+        }
         bool InCallGroup(CapInsn& insn) const {
             return InsnInGroup(insn, X86_GRP_CALL);
         }
         bool InLoopGroup(CapInsn& insn) const {
-            if ((insn.GetInsnId() == X86_INS_LOOP ||
-                insn.GetInsnId() == X86_INS_LOOPE ||
-                insn.GetInsnId() == X86_INS_LOOPNE))
-            {
-                return true;
-            }
-            return false;
+            return _loopInsnIds.count(insn.GetInsnId());
         }
         bool InRetGroup(CapInsn& insn) const {
             return InsnInGroup(insn, X86_GRP_RET);
@@ -230,7 +246,7 @@ namespace cchips {
         bool InPriviligeGroup(CapInsn& insn) const {
             return InsnInGroup(insn, X86_GRP_PRIVILEGE);
         }
-        bool InBranchGroup(CapInsn& insn) const {
+        bool InRelativeBranchGroup(CapInsn& insn) const {
             return InsnInGroup(insn, X86_GRP_BRANCH_RELATIVE);
         }
         bool InVmGroup(CapInsn& insn) const {
@@ -325,10 +341,7 @@ namespace cchips {
                     int index = OpInIndex(insn, X86_OP_IMM, 1);
                     if (insn.self()->detail) {
                         cs_x86* x86 = &insn.self()->detail->x86;
-                        if (insn.GetInsnId() == X86_INS_LOOP)
-                            next_addr = nullptr;
-                        else
-                            next_addr = reinterpret_cast<std::uint8_t*>(insn.address()) + insn.size();
+                        next_addr = reinterpret_cast<std::uint8_t*>(insn.address()) + insn.size();
                         loop_addr = reinterpret_cast<std::uint8_t*>(x86->operands[index].imm);
                         op_type = X86_OP_IMM;
                         return true;
@@ -422,6 +435,29 @@ namespace cchips {
         
         csh m_capstone_handle = 0;
         cs_err m_cap_error = CS_ERR_HANDLE;
+        const std::set<unsigned int> _branchInsnIds = { X86_INS_JMP, X86_INS_LJMP, };
+        const std::set<unsigned int> _loopInsnIds = { X86_INS_LOOP, X86_INS_LOOPE, X86_INS_LOOPNE, };
+        const std::set<unsigned int> _condBranchInsnIds = {
+            X86_INS_JCXZ,
+            X86_INS_JECXZ,
+            X86_INS_JRCXZ,
+            X86_INS_JAE,
+            X86_INS_JA,
+            X86_INS_JBE,
+            X86_INS_JB,
+            X86_INS_JE,
+            X86_INS_JGE,
+            X86_INS_JG,
+            X86_INS_JLE,
+            X86_INS_JL,
+            X86_INS_JNE,
+            X86_INS_JNO,
+            X86_INS_JNP,
+            X86_INS_JNS,
+            X86_INS_JO,
+            X86_INS_JP,
+            X86_INS_JS,
+        };
     };
 
 #define GetCapstoneImplment() CapstoneImpl::GetInstance()

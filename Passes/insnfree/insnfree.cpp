@@ -7,7 +7,8 @@ namespace cchips {
 
     static RegisterPass<InsnFree> X(
         "InsnFree",
-        "Instruction free"
+        "Instruction free",
+        PassInfo::passreg_post
     );
 
     bool InsnFree::runOnInstruction(std::shared_ptr<CapInsn> Insn)

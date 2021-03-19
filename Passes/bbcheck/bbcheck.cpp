@@ -9,7 +9,8 @@ namespace cchips {
 
     static RegisterPass<BBCheck> X(
         "BBCheck",
-        "BasicBlock check"
+        "BasicBlock check",
+        PassInfo::passreg_post
     );
 
     const std::map<BBCheck::bberror_code, std::string> BBCheck::_error_code_descs = {

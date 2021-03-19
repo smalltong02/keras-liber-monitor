@@ -382,3 +382,22 @@ bool EndsWith(const std::wstring& str, const std::wstring& search,
     bool case_sensitive) {
     return EndsWithT(str, search, case_sensitive);
 }
+
+char hexbyte(char hex) {
+    if (hex >= '0' && hex <= '9')
+        return (hex - '0');
+    else if (hex >= 'A' && hex <= 'F')
+        return (hex - 'A' + 10);
+    else if (hex >= 'a' && hex <= 'f')
+        return (hex - 'a' + 10);
+    else
+        return 0x0;
+}
+
+std::string hexstring(BYTE byte)
+{
+    static const char hex[16] = { '0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f' };
+    std::stringstream ss;
+    ss << "0x" << hex[(byte & 0xf0) >> 4] << hex[byte & 0x0f];
+    return ss.str();
+}

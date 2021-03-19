@@ -37,6 +37,8 @@ void WalkFrameCurrentChain(std::vector<PVOID>& frame_chain);
 VOID GetStackRange(ULONG_PTR* base, ULONG_PTR* limit);
 int GetCallOpSize(const void* addr);
 void ClearThreadTls();
+char hexbyte(char hex);
+std::string hexstring(BYTE byte);
 
 inline std::wstring to_wide_string(const std::string& input)
 {

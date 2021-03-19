@@ -8,7 +8,8 @@ namespace cchips {
 
     static RegisterPass<BBInit> X(
         "BBInit",
-        "BasicBlock initializing"
+        "BasicBlock initializing",
+        PassInfo::passreg_pre
     );
 
     bool BBInit::runOnBasicBlock(std::shared_ptr<BasicBlock> Block)
@@ -242,20 +243,20 @@ namespace cchips {
                     }
                 }
                 else {
-                    if (image_range.contains(call_addr)) {
-                        if (!cur_module->AddFunction(std::string(""), call_addr)) return;
-                        std::shared_ptr<Function> func = cur_module->GetFunction(call_addr);
-                        if (!func) return;
-                        insn.setPointerObject(func);
-                        insn.updateMnemonic(func->GetFuncName());
-                        std::shared_ptr<FunctionPassManager> funcs_manager = std::static_pointer_cast<FunctionPassManager>(GetPassRegistry().getPassManager(Pass::passmanager_function));
-                        if (!funcs_manager) return;
-                        funcs_manager->Run(func);
-                    }
-                    else {
-                        // report, feature.
-                        // check stack? heap? or other module.
-                    }
+                    //if (image_range.contains(call_addr)) {
+                    //    if (!cur_module->AddFunction(std::string(""), call_addr)) return;
+                    //    std::shared_ptr<Function> func = cur_module->GetFunction(call_addr);
+                    //    if (!func) return;
+                    //    insn.setPointerObject(func);
+                    //    insn.updateMnemonic(func->GetFuncName());
+                    //    std::shared_ptr<FunctionPassManager> funcs_manager = std::static_pointer_cast<FunctionPassManager>(GetPassRegistry().getPassManager(Pass::passmanager_function));
+                    //    if (!funcs_manager) return;
+                    //    funcs_manager->Run(func);
+                    //}
+                    //else {
+                    //    // report, feature.
+                    //    // check stack? heap? or other module.
+                    //}
                 }
             }
         }

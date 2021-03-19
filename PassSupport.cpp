@@ -2,7 +2,27 @@
 
 namespace cchips {
 
-    std::unique_ptr<Pass> PassRegistry::getPassInfo(AnalysisID ID) const
+    const PassInfo* PassRegistry::getPassInfo(AnalysisID ID) const
+    {
+        for (auto& pass_info : passinfos) {
+            if (pass_info.getPassID() == ID) {
+                return &pass_info;
+            }
+        }
+        return nullptr;
+    }
+
+    const PassInfo* PassRegistry::getPassInfo(const std::string& pass_name) const
+    {
+        for (auto& pass_info : passinfos) {
+            if (pass_info.getPassName() == pass_name) {
+                return &pass_info;
+            }
+        }
+        return nullptr;
+    }
+
+    std::unique_ptr<Pass> PassRegistry::getPass(AnalysisID ID) const
     {
         for (auto& pass_info : passinfos) {
             if (pass_info.getPassID() == ID) {
@@ -12,7 +32,7 @@ namespace cchips {
         return nullptr;
     }
 
-    std::unique_ptr<Pass> PassRegistry::getPassInfo(const std::string& pass_name) const
+    std::unique_ptr<Pass> PassRegistry::getPass(const std::string& pass_name) const
     {
         for (auto& pass_info : passinfos) {
             if (pass_info.getPassName() == pass_name) {
@@ -69,7 +89,7 @@ namespace cchips {
     {
         std::map<Pass::passmanager_type, std::vector<AnalysisID>> sequence_types;
         for (auto& sequence : sequence_passes_define) {
-            std::unique_ptr<Pass> pass = getPassInfo(sequence);
+            std::unique_ptr<Pass> pass = getPass(sequence);
             if (!pass) continue;
             sequence_types[pass->getPotentialPassManagerType()].emplace_back(pass->getPassID());
         }

@@ -391,8 +391,10 @@
     </ClCompile>
     <ClCompile Include="Passes\bbcheck\bbcheck.cpp" />
     <ClCompile Include="Passes\bbinit\bbinit.cpp" />
+    <ClCompile Include="Passes\funccheck\funccheck.cpp" />
     <ClCompile Include="Passes\funcinit\funcinit.cpp" />
     <ClCompile Include="Passes\insnfree\insnfree.cpp" />
+    <ClCompile Include="Passes\modcheck\modcheck.cpp" />
     <ClCompile Include="Passes\modinit\modinit.cpp" />
     <ClCompile Include="PassManager.cpp" />
     <ClCompile Include="PassStructure.cpp" />
@@ -506,8 +508,10 @@
     <ClInclude Include="Passes.h" />
     <ClInclude Include="Passes\bbcheck\bbcheck.h" />
     <ClInclude Include="Passes\bbinit\bbinit.h" />
+    <ClInclude Include="Passes\funccheck\funccheck.h" />
     <ClInclude Include="Passes\funcinit\funcinit.h" />
     <ClInclude Include="Passes\insnfree\insnfree.h" />
+    <ClInclude Include="Passes\modcheck\modcheck.h" />
     <ClInclude Include="Passes\modinit\modinit.h" />
     <ClInclude Include="PassManager.h" />
     <ClInclude Include="PassStructure.h" />

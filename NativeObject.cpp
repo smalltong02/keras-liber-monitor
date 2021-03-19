@@ -16,10 +16,15 @@ namespace cchips {
     {"ntdll", {native_sdt_func, "NtFreeVirtualMemory"}},
     {"ntdll", {native_sdt_func, "NtProtectVirtualMemory"}},
     {"ntdll", {native_sdt_func, "NtReadVirtualMemory"}},
+    {"ntdll", {native_sdt_func, "NtWriteVirtualMemory"}},
     {"ntdll", {native_sdt_func, "NtQueryVirtualMemory"}},
     };
     NativeObject::NtAllocateVirtualMemory_Define NativeObject::_pfn_ntallocatevirtualmemory = nullptr;
     NativeObject::NtFreeVirtualMemory_Define NativeObject::_pfn_ntfreevirtualmemory = nullptr;
+    NativeObject::NtQueryVirtualMemory_Define NativeObject::_pfn_ntqueryvirtualmemory = nullptr;
+    NativeObject::NtProtectVirtualMemory_Define NativeObject::_pfn_ntprotectvirtualmemory = nullptr;
+    NativeObject::NtReadVirtualMemory_Define NativeObject::_pfn_ntreadvirtualmemory = nullptr;
+    NativeObject::NtWriteVirtualMemory_Define NativeObject::_pfn_ntwritevirtualmemory = nullptr;
 
     NativeObject::NativeObject()
     {
@@ -47,6 +52,10 @@ namespace cchips {
             });
         _pfn_ntallocatevirtualmemory = reinterpret_cast<NtAllocateVirtualMemory_Define>(GetNativeFunc("NtAllocateVirtualMemory"));
         _pfn_ntfreevirtualmemory = reinterpret_cast<NtFreeVirtualMemory_Define>(GetNativeFunc("NtFreeVirtualMemory"));
+        _pfn_ntqueryvirtualmemory = reinterpret_cast<NtQueryVirtualMemory_Define>(GetNativeFunc("NtQueryVirtualMemory"));
+        _pfn_ntprotectvirtualmemory = reinterpret_cast<NtProtectVirtualMemory_Define>(GetNativeFunc("NtProtectVirtualMemory"));
+        _pfn_ntreadvirtualmemory = reinterpret_cast<NtReadVirtualMemory_Define>(GetNativeFunc("NtReadVirtualMemory"));
+        _pfn_ntwritevirtualmemory = reinterpret_cast<NtWriteVirtualMemory_Define>(GetNativeFunc("NtWriteVirtualMemory"));
         return;
     }
 
@@ -135,6 +144,50 @@ namespace cchips {
         }
     }
 
+    bool NativeObject::mem_query(void *ptr, void* mem_info, size_t length, size_t *return_len)
+    {
+        if (!ptr) return false;
+        ASSERT(_pfn_ntqueryvirtualmemory);
+        NTSTATUS status = _pfn_ntqueryvirtualmemory(GetCurrentProcess(), ptr, MemoryBasicInformation, mem_info, length, (SIZE_T*)return_len);
+        if (NT_SUCCESS(status)) {
+            return true;
+        }
+        return false;
+    }
+
+    bool NativeObject::mem_protect(void *ptr, size_t bytes, unsigned long protection, unsigned long *old_protection)
+    {
+        if (!ptr) return false;
+        ASSERT(_pfn_ntprotectvirtualmemory);
+        NTSTATUS status = _pfn_ntprotectvirtualmemory(GetCurrentProcess(), (const void**)&ptr, (SIZE_T*)&bytes, protection, old_protection);
+        if (NT_SUCCESS(status)) {
+            return true;
+        }
+        return false;
+    }
+
+    bool NativeObject::mem_read(void *ptr, void* buffer, size_t bytes, size_t *return_bytes)
+    {
+        if (!ptr) return false;
+        ASSERT(_pfn_ntreadvirtualmemory);
+        NTSTATUS status = _pfn_ntreadvirtualmemory(GetCurrentProcess(), ptr, buffer, bytes, (SIZE_T*)return_bytes);
+        if (NT_SUCCESS(status)) {
+            return true;
+        }
+        return false;
+    }
+
+    bool NativeObject::mem_write(void *ptr, void* buffer, size_t bytes, size_t *return_bytes)
+    {
+        if (!ptr) return false;
+        ASSERT(_pfn_ntwritevirtualmemory);
+        NTSTATUS status = _pfn_ntwritevirtualmemory(GetCurrentProcess(), ptr, buffer, bytes, (SIZE_T*)return_bytes);
+        if (NT_SUCCESS(status)) {
+            return true;
+        }
+        return false;
+    }
+
     void* NativeObject::native_malloc(size_t size)
     {
         return mem_malloc(size);
@@ -153,5 +206,25 @@ namespace cchips {
     void NativeObject::native_free(void *ptr)
     {
         mem_free(ptr);
+    }
+
+    bool NativeObject::native_query(void *ptr, void* mem_info, size_t length, size_t *return_len)
+    {
+        return mem_query(ptr, mem_info, length, return_len);
+    }
+
+    bool NativeObject::native_protect(void *ptr, size_t bytes, unsigned long protection, unsigned long *old_protection)
+    {
+        return mem_protect(ptr, bytes, protection, old_protection);
+    }
+
+    bool NativeObject::native_read(void *ptr, void* buffer, size_t bytes, size_t *return_bytes)
+    {
+        return mem_read(ptr, buffer, bytes, return_bytes);
+    }
+
+    bool NativeObject::native_write(void *ptr, void* buffer, size_t bytes, size_t *return_bytes)
+    {
+        return mem_write(ptr, buffer, bytes, return_bytes);
     }
 } // namespace cchips
