@@ -407,7 +407,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -427,7 +427,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -448,7 +448,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -469,7 +469,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -490,7 +490,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -511,7 +511,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -532,7 +532,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -553,7 +553,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -579,7 +579,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -605,7 +605,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -633,7 +633,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -656,7 +656,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -679,7 +679,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -698,7 +698,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -717,7 +717,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -739,7 +739,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -761,7 +761,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -782,7 +782,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -803,7 +803,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -825,7 +825,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -847,7 +847,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -865,7 +865,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -882,7 +882,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -899,7 +899,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -918,7 +918,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -937,7 +937,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -963,7 +963,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -981,7 +981,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1000,7 +1000,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1019,7 +1019,7 @@
 
     "Hooks": {
       "Processes": "^(?i)32-bit$",
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1035,7 +1035,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1066,7 +1066,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1090,7 +1090,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1118,7 +1118,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1145,7 +1145,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1173,7 +1173,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1201,7 +1201,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1229,7 +1229,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1257,7 +1257,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1281,7 +1281,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1305,7 +1305,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1328,7 +1328,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1351,7 +1351,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1383,7 +1383,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1415,7 +1415,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1447,7 +1447,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1479,7 +1479,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1504,7 +1504,7 @@
     },
 
     "Hooks": {
-      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
     },
 
     "Parameters": {
@@ -1519,5 +1519,255 @@
       "hRequest",
       "lpszHeaders"
     ]
+  },
+
+  "DnsQuery_A": {
+    "Signature": {
+      "Library": "Dnsapi.dll",
+      "Return": "DNS_STATUS",
+      "Feature": "P104"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "pszName": "LPCSTR",
+      "wType": "WORD",
+      "Options": "DWORD",
+      "pExtra": "LPVOID",
+      "ppQueryResults": "LPVOID*",
+      "pReserved": "LPVOID*"
+    },
+
+    "PreLog": [
+      "pszName",
+      "wType"
+    ]
+  },
+
+  "DnsQuery_UTF8": {
+    "Signature": {
+      "Library": "Dnsapi.dll",
+      "Return": "DNS_STATUS",
+      "Feature": "P104"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "pszName": "LPCSTR",
+      "wType": "WORD",
+      "Options": "DWORD",
+      "pExtra": "LPVOID",
+      "ppQueryResults": "LPVOID*",
+      "pReserved": "LPVOID*"
+    },
+
+    "PreLog": [
+      "pszName",
+      "wType"
+    ]
+  },
+
+  "DnsQuery_W": {
+    "Signature": {
+      "Library": "Dnsapi.dll",
+      "Return": "DNS_STATUS",
+      "Feature": "P104"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "pszName": "LPWSTR",
+      "wType": "WORD",
+      "Options": "DWORD",
+      "pExtra": "LPVOID",
+      "ppQueryResults": "LPVOID*",
+      "pReserved": "LPVOID*"
+    },
+
+    "PreLog": [
+      "pszName",
+      "wType"
+    ]
+  },
+
+  "getaddrinfo": {
+    "Signature": {
+      "Library": "Ws2_32.dll",
+      "Return": "INT",
+      "Feature": "P105"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "pNodeName": "LPCSTR",
+      "pServiceName": "LPCSTR",
+      "pHints": "LPVOID",
+      "ppResult": "LPVOID*"
+    },
+
+    "PreLog": [
+      "pNodeName",
+      "pServiceName"
+    ]
+  },
+
+  "GetAddrInfoW": {
+    "Signature": {
+      "Library": "Ws2_32.dll",
+      "Return": "INT",
+      "Feature": "P105"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "pNodeName": "LPWSTR",
+      "pServiceName": "LPWSTR",
+      "pHints": "LPVOID",
+      "ppResult": "LPVOID*"
+    },
+
+    "PreLog": [
+      "pNodeName",
+      "pServiceName"
+    ]
+  },
+
+  "GetInterfaceInfo": {
+    "Signature": {
+      "Library": "Iphlpapi.dll",
+      "Return": "DNS_STATUS",
+      "Feature": "P106"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "pIfTable": "LPVOID",
+      "dwOutBufLen": "ULONG*"
+    },
+
+    "Logging": true
+  },
+
+  "GetAdaptersInfo": {
+    "Signature": {
+      "Library": "Iphlpapi.dll",
+      "Return": "DNS_STATUS",
+      "Feature": "P107"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "AdapterInfo": "LPVOID",
+      "SizePointer": "ULONG*"
+    },
+
+    "Logging": true
+  },
+
+  "HttpQueryInfoA": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "BOOL",
+      "Feature": "P108"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "hRequest": "LPVOID",
+      "dwInfoLevel": "DWORD",
+      "lpBuffer": "LPVOID",
+      "lpdwBufferLength": "LPDWORD",
+      "lpdwIndex": "LPDWORD"
+    },
+
+    "PreLog": [
+      "hRequest",
+      "dwInfoLevel"
+    ]
+  },
+
+  "HttpQueryInfoW": {
+    "Signature": {
+      "Library": "Wininet.dll",
+      "Return": "BOOL",
+      "Feature": "P108"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "hRequest": "LPVOID",
+      "dwInfoLevel": "DWORD",
+      "lpBuffer": "LPVOID",
+      "lpdwBufferLength": "LPDWORD",
+      "lpdwIndex": "LPDWORD"
+    },
+
+    "PreLog": [
+      "hRequest",
+      "dwInfoLevel"
+    ]
+  },
+
+  "GetStartupInfoA": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "VOID",
+      "Feature": "P109"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "lpStartupInfo": "LPVOID"
+    },
+
+    "Logging": true
+  },
+
+  "GetStartupInfoW": {
+    "Signature": {
+      "Library": "Kernel32.dll",
+      "Return": "VOID",
+      "Feature": "P109"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_powershell|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "lpStartupInfo": "LPVOID"
+    },
+
+    "Logging": true
   }
 }

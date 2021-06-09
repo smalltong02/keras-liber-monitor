@@ -10,6 +10,7 @@ namespace cchips {
 
         virtual bool isGeneralPurposeRegister(cs_x86_op* operand) const override;
         virtual bool isNopInstruction(const CapInsn& insn) const override;
+        virtual std::size_t getRegSize(x86_reg reg_op) const override;
         virtual bool isX86() const override { return false; }
         virtual bool isX64() const override { return true; }
         const std::vector<std::pair<x86_reg, uint32_t>>& getReg2Size() const override { return _reg2SizeMap; }

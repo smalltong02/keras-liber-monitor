@@ -13,8 +13,8 @@ namespace cchips {
     {
         if (!ep) return EXCEPTION_CONTINUE_SEARCH;
         if (!ep->ExceptionRecord) return EXCEPTION_CONTINUE_SEARCH;
-        DWORD e_code = ep->ExceptionRecord->ExceptionCode;
-        //std::cout << "VehHandler e_code: " << std::hex << e_code << std::endl;
+        //DWORD e_code = ep->ExceptionRecord->ExceptionCode;
+        //std::cout << "VehHandler e_code: " << std::hex << e_code << "  addr: " << ep->ExceptionRecord->ExceptionAddress << std::endl;
         if(IsCplusplusException(ep)) {
             ClearThreadTls();
             static ULONG_PTR* exception_vtbl = (reinterpret_cast<ULONG_PTR*>(*reinterpret_cast<ULONG_PTR*>(&g_exception_msg)));
@@ -53,28 +53,7 @@ namespace cchips {
             }
             check_return();
         }
-        else if(IsAccessViolation(e_code))
-        {
-            check_return();
-        }
-        else if (IsPageGuardViolation(e_code))
-        {
-        }
-        else if (IsPageError(e_code))
-        {
-        }
-        else if (IsSingleStep(e_code))
-        {
-            GetDebugger().Dispatch(ep);
-            return EXCEPTION_CONTINUE_EXECUTION;
-        }
-        else if (IsBreakPoint(e_code))
-        {
-            GetDebugger().Dispatch(ep);
-            return EXCEPTION_CONTINUE_EXECUTION;
-        }
-
-        return EXCEPTION_CONTINUE_SEARCH;
+        return GetDebugger().Dispatch(ep);
     }
 
 } // namespace cchips

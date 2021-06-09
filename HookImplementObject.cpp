@@ -171,15 +171,15 @@ namespace cchips {
 
     bool CHookImplementObject::InitializeCapstoneEngine()
     {
-        if (!GetNativeObject().Success())
-            return false;
-        cs_opt_mem cs_mem;
-        cs_mem.malloc = &NativeObject::native_malloc;
-        cs_mem.calloc = &NativeObject::native_calloc;
-        cs_mem.realloc = &NativeObject::native_realloc;
-        cs_mem.free = &NativeObject::native_free;
-        cs_mem.vsnprintf = &vsnprintf;
-        GetCapstoneImplment().Reset(cs_mem);
+        //if (!GetNativeObject().Success())
+        //    return false;
+        //cs_opt_mem cs_mem;
+        //cs_mem.malloc = &NativeObject::native_malloc;
+        //cs_mem.calloc = &NativeObject::native_calloc;
+        //cs_mem.realloc = &NativeObject::native_realloc;
+        //cs_mem.free = &NativeObject::native_free;
+        //cs_mem.vsnprintf = &vsnprintf;
+        //GetCapstoneImplment().Reset(cs_mem);
         return true;
     }
 
@@ -224,11 +224,12 @@ namespace cchips {
 
     bool CHookImplementObject::TraceModule()
     {
-        GetPassRegistry().sequence();
+        GetPassRegistry().sequence(GetPassRegistry().sequence_passes_define);
         std::shared_ptr<Module> pe_module = std::make_shared<Module>();
         if (!pe_module) return false;
         pe_module->SetModuleName(std::string("cur_process"));
         bool bret = GetPassRegistry().run(pe_module);
+        //std::cout << "cur_process: insns(" << pe_module->GetInsnCounts() << ")" << std::endl;
         return bret;
     }
 
@@ -281,8 +282,10 @@ namespace cchips {
         {
         case CPrototype::class_wmi:
         {
-            if (m_wmi_interface_define.size() == 0)
+            if (m_wmi_interface_define.size() == 0) {
+                std::lock_guard<std::recursive_mutex> lock_guard(g_impl_object->GetRecursiveMutex());
                 InitializeWmiMethodsDefine(node.bdelayed);
+            }
             if (!node.function->GetClassProto())
                 break;
             auto it = m_wmi_interface_define.find(node.function->GetClassProto()->GetClassNam());
@@ -629,6 +632,7 @@ namespace cchips {
         ADD_POST_PROCESSING(VirtualAllocEx, detour_virtualAllocEx);
         ADD_POST_PROCESSING(VirtualProtectEx, detour_virtualProtectEx);
         ADD_POST_PROCESSING(RtlAllocateHeap, detour_rtlAllocateHeap);
+        ADD_POST_PROCESSING(CoCreateInstance, detour_coCreateInstance_post);
         // processing wmi hook
         ADD_PRE_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_ExecQuery);
         ADD_POST_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_Post_ExecQuery);
@@ -804,7 +808,7 @@ namespace cchips {
         IWbemClassObject* pWbemClsObj = nullptr;
         IWbemServices* pWbemSvc = nullptr;
         HRESULT hr = m_ole32_api_define.coinitializesecurity_func(NULL, -1, NULL, NULL, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE, NULL);
-        if (SUCCEEDED(hr))
+        if (SUCCEEDED(hr) || hr == RPC_E_TOO_LATE)
         {
             hr = m_ole32_api_define.cocreateinstance_func(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&pWbemLoc);
                 if (SUCCEEDED(hr) && pWbemLoc != nullptr)

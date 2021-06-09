@@ -14,6 +14,7 @@
 #include "utils.h"
 #include "commutils.h"
 #include "R3LogObject.h"
+#include "PassSupport.h"
 #ifdef USING_PIPE_MESSAGE
 #include "PipeJSONServer.h"
 #endif

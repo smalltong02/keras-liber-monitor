@@ -9,6 +9,7 @@
 #include "MetadataTypeImpl.h"
 #include "utils.h"
 #include "ParsingImpl.h"
+#include <windns.h>
 
 namespace cchips {
 
@@ -17,7 +18,7 @@ namespace cchips {
         {type_ushort, sizeof(USHORT)},{type_word, sizeof(WORD)},{type_wchar, sizeof(WCHAR)},{type_int, sizeof(INT)},{type_uint, sizeof(UINT)},{type_long, sizeof(LONG)},{type_long_ptr, sizeof(LONG_PTR)},{type_ulong, sizeof(ULONG)},{type_ulong_ptr,sizeof(ULONG_PTR)},
         {type_dword, sizeof(DWORD)},{type_dword_ptr, sizeof(DWORD_PTR)},{type_float, sizeof(FLOAT)},{type_int64, sizeof(INT64)},{type_uint64, sizeof(UINT64)},{type_longlong, sizeof(LONGLONG)},{type_ulonglong, sizeof(ULONGLONG)},{type_qword, sizeof(ULONGLONG)},
         {type_double, sizeof(double)},{type_large_integer, sizeof(LARGE_INTEGER)},{type_ularge_integer, sizeof(ULARGE_INTEGER)},{type_lpvoid, sizeof(LPVOID)},{type_hmodule, sizeof(HMODULE)},{type_hinstance, sizeof(HINSTANCE)},{type_hresult, sizeof(HRESULT)},
-        {type_schandle, sizeof(SC_HANDLE)},{type_ntstatus, sizeof(NTSTATUS)},{type_string, sizeof(std::string)},{type_wstring, sizeof(std::wstring) }, {type_handle, sizeof(HANDLE)}, {type_guid, sizeof(GUID)},
+        {type_schandle, sizeof(SC_HANDLE)},{type_ntstatus, sizeof(NTSTATUS)},{type_dns_status, sizeof(DNS_STATUS)},{type_string, sizeof(std::string)},{type_wstring, sizeof(std::wstring) }, {type_handle, sizeof(HANDLE)}, {type_guid, sizeof(GUID)},
     };
 
     const std::map<CBaseDef::_standard_type, std::string> CBaseDef::_base_to_str_def = {
@@ -25,7 +26,7 @@ namespace cchips {
             {type_ushort, "USHORT"},{type_word, "WORD"},{type_wchar, "WCHAR"},{type_int, "INT"},{type_uint, "UINT"},{type_long, "LONG"},{type_long_ptr, "LONG_PTR"},{type_ulong, "ULONG"},{type_ulong_ptr, "ULONG_PTR"},
             {type_dword, "DWORD"},{type_dword_ptr, "DWORD_PTR"},{type_float, "FLOAT"},{type_int64, "INT64"},{type_uint64, "UINT64"},{type_longlong, "LONGLONG"},{type_ulonglong, "ULONGLONG"},{type_qword, "QWORD"},
             {type_double, "DOUBLE"},{type_large_integer, "LARGE_INTEGER"},{type_ularge_integer, "ULARGE_INTEGER"},{type_lpvoid, "LPVOID"},{type_hmodule, "HMODULE"},{type_hinstance, "HINSTANCE"},{type_hresult, "HRESULT"},
-            {type_schandle, "SC_HANDLE"},{type_ntstatus, "NTSTATUS"},{type_string, "std::string"},{type_wstring, "std::wstring"},{type_handle, "HANDLE"},{type_guid, "GUID"},
+            {type_schandle, "SC_HANDLE"},{type_ntstatus, "NTSTATUS"},{type_dns_status, "DNS_STATUS"},{type_string, "std::string"},{type_wstring, "std::wstring"},{type_handle, "HANDLE"},{type_guid, "GUID"},
     };
     const std::vector<CBaseDef::_standard_type> CReferenceObject::_str_ref_types = {
         CBaseDef::type_char, CBaseDef::type_uchar, CBaseDef::type_wchar };
@@ -67,6 +68,7 @@ namespace cchips {
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_hresult)] = make_metadata_j_ptr<HRESULT>(CBaseDef::type_hresult, S_OK, CObObject::op_greater_e);
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_schandle)] = make_metadata_j_ptr<SC_HANDLE>(CBaseDef::type_schandle, nullptr, CObObject::op_n_equal);
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_ntstatus)] = make_metadata_j_ptr<NTSTATUS>(CBaseDef::type_ntstatus, 0, CObObject::op_greater_e);
+        m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_dns_status)] = make_metadata_j_ptr<DNS_STATUS>(CBaseDef::type_dns_status, 0, CObObject::op_equal);
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_string)] = make_metadata_j_ptr<std::string>(CBaseDef::type_string, {}, CObObject::op_n_equal);
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_wstring)] = make_metadata_j_ptr<std::wstring>(CBaseDef::type_wstring, {}, CObObject::op_n_equal);
         m_typesymboltable[CBaseDef::GetBaseStr(CBaseDef::type_guid)] = make_metadata_j_ptr<GUID>(CBaseDef::type_guid, {}, CObObject::op_n_equal);

@@ -13,6 +13,8 @@ GUID IID_idIEnumWbemClassObject = {
     0xa3,0x57,0x00,0x00,0x00,0x00,0x00,0x01
 };
 
+extern GUID IID_idIUnknown;
+
 HRESULT STDMETHODCALLTYPE EnumWbemClassObjectQueryInterface(
     idIEnumWbemClassObject * This,
     /* [in] */ REFIID riid,
@@ -22,6 +24,13 @@ HRESULT STDMETHODCALLTYPE EnumWbemClassObjectQueryInterface(
     HRESULT hr = S_OK;
     ASSERT(This->lpVtbl->pItf);
     if (ppvObject == nullptr) return S_FALSE;
+    if (IID_idIUnknown == riid ||
+        IID_idIEnumWbemClassObject == riid) {
+        *ppvObject = This;
+        EnumWbemClassObjectAddRef(This);
+        error_log("EnumWbemClassObjectQueryInterface: *ppvObject == This->lpVtbl->pItf");
+        return S_OK;
+    }
     hr = ((IEnumWbemClassObject*)(This->lpVtbl->pItf))->QueryInterface(riid, ppvObject);
     return hr;
 }
@@ -29,12 +38,14 @@ HRESULT STDMETHODCALLTYPE EnumWbemClassObjectQueryInterface(
 ULONG STDMETHODCALLTYPE EnumWbemClassObjectAddRef(
     idIEnumWbemClassObject * This)
 {
+    error_log("EnumWbemClassObjectQueryInterface: EnumWbemClassObjectAddRef");
     return ((IEnumWbemClassObject*)(This->lpVtbl->pItf))->AddRef();
 }
 
 ULONG STDMETHODCALLTYPE EnumWbemClassObjectRelease(
     idIEnumWbemClassObject * This)
 {
+    error_log("EnumWbemClassObjectQueryInterface: EnumWbemClassObjectRelease");
     ULONG Ref = ((IEnumWbemClassObject*)(This->lpVtbl->pItf))->Release();
     if (Ref <= 1)
     {
@@ -49,6 +60,7 @@ HRESULT STDMETHODCALLTYPE EnumWbemClassObjectReset(
 {
     HRESULT hr = S_OK;
     hr = ((IEnumWbemClassObject*)(This->lpVtbl->pItf))->Reset();
+    error_log("EnumWbemClassObjectQueryInterface: EnumWbemClassObjectReset hr = {}", hr);
     return hr;
 }
 
@@ -61,6 +73,7 @@ HRESULT STDMETHODCALLTYPE EnumWbemClassObjectNext(
 {
     HRESULT hr = S_OK;
     hr = ((IEnumWbemClassObject*)(This->lpVtbl->pItf))->Next(lTimeout, uCount, (IWbemClassObject**)apObjects, puReturned);
+    error_log("Duplicate_IEnumWbemClassObject_Next: hr= {}, m_nItem = {}", hr, This->lpVtbl->m_nItem);
     if (hr != S_OK && This->lpVtbl->m_nItem == 0)
     {
         This->lpVtbl->m_nItem++;
@@ -101,6 +114,20 @@ HRESULT STDMETHODCALLTYPE EnumWbemClassObjectClone(
 {
     HRESULT hr = S_OK;
     hr = ((IEnumWbemClassObject*)(This->lpVtbl->pItf))->Clone((IEnumWbemClassObject **)ppEnum);
+    error_log("EnumWbemClassObjectQueryInterface: EnumWbemClassObjectClone hr = {}", hr);
+    if (hr == S_OK) {
+        idIEnumWbemClassObject* p_IEnumWbemClassObject = (idIEnumWbemClassObject *)malloc(sizeof(idIEnumWbemClassObject));
+        if (p_IEnumWbemClassObject)
+        {
+            p_IEnumWbemClassObject->lpVtbl = (idIEnumWbemClassObjectVtbl *)malloc(sizeof(idIEnumWbemClassObjectVtbl));
+            if (p_IEnumWbemClassObject->lpVtbl)
+            {
+                memset(p_IEnumWbemClassObject->lpVtbl, 0, sizeof(idIEnumWbemClassObjectVtbl));
+                InitializeWin32EnumWbemClassObject(p_IEnumWbemClassObject, *(IEnumWbemClassObject **)ppEnum, This->lpVtbl->m_wmi_object);
+                *ppEnum = p_IEnumWbemClassObject;
+            }
+        }
+    }
     return hr;
 }
 

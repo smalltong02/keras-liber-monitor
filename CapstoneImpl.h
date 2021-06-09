@@ -17,6 +17,7 @@ namespace cchips {
             base_module = 1,
             base_function,
             base_globalifunc,
+            base_loop,
             base_basicblock,
             base_globalvariable,
             base_localvariable,
@@ -52,7 +53,9 @@ namespace cchips {
         }
         CapInsn(const CapInsn&) = delete;
         CapInsn& operator=(const CapInsn&) = delete;
-        
+        bool operator==(const CapInsn& I) const {
+            return address() == I.address();
+        }
         bool valid() const { 
             if (m_insn && m_count > 0) 
                 return true; 
@@ -119,6 +122,7 @@ namespace cchips {
         }
         void SetParent(std::shared_ptr<BasicBlock> parent) { m_parent = parent; }
         void setPointerObject(std::shared_ptr<CBaseStruc> obj) { m_pobject = obj; }
+        std::shared_ptr<CBaseStruc> getPointerObject() const { return m_pobject.lock(); }
         void updateMnemonic(const std::string& op_str) { m_mnemonic_str = std::string(m_insn->mnemonic) + std::string(" ") + op_str; }
         void dump(RapidValue& json_object, rapidjson::MemoryPoolAllocator<>& allocator, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const {
             std::stringstream ss;
@@ -226,7 +230,9 @@ namespace cchips {
             return _branchInsnIds.count(insn.GetInsnId());
         }
         bool InCondBranchGroup(CapInsn& insn) const {
-            return _condBranchInsnIds.count(insn.GetInsnId());
+            if (_condBranchEInsnIds.count(insn.GetInsnId()))
+                return true;
+            return _condBranchNEInsnIds.count(insn.GetInsnId());
         }
         bool InCallGroup(CapInsn& insn) const {
             return InsnInGroup(insn, X86_GRP_CALL);
@@ -288,7 +294,85 @@ namespace cchips {
             }
             return CS_ERR_MODE;
         }
-
+        bool IsCcNE(CapInsn& insn) const {
+            return _condBranchNEInsnIds.count(insn.GetInsnId());
+        }
+        std::uint64_t GetModifyEflags(CapInsn& insn) const {
+            std::uint64_t mflag = 0;
+            if (!insn.self()) return 0;
+            if (!insn.self()->detail) return 0;
+            cs_x86* x86 = &insn.self()->detail->x86;
+            auto eflag = x86->eflags;
+            if (eflag & X86_EFLAGS_TEST_OF) {
+                mflag |= X86_EFLAGS_MODIFY_OF;
+            }
+            if (eflag & X86_EFLAGS_TEST_SF) {
+                mflag |= X86_EFLAGS_MODIFY_SF;
+            }
+            if (eflag & X86_EFLAGS_TEST_ZF) {
+                mflag |= X86_EFLAGS_MODIFY_ZF;
+            }
+            if (eflag & X86_EFLAGS_TEST_PF) {
+                mflag |= X86_EFLAGS_MODIFY_PF;
+            }
+            if (eflag & X86_EFLAGS_TEST_CF) {
+                mflag |= X86_EFLAGS_MODIFY_CF;
+            }
+            if (eflag & X86_EFLAGS_TEST_NT) {
+                mflag |= X86_EFLAGS_MODIFY_NT;
+            }
+            if (eflag & X86_EFLAGS_TEST_DF) {
+                mflag |= X86_EFLAGS_MODIFY_DF;
+            }
+            if (eflag & X86_EFLAGS_TEST_TF) {
+                mflag |= X86_EFLAGS_MODIFY_TF;
+            }
+            if (eflag & X86_EFLAGS_TEST_IF) {
+                mflag |= X86_EFLAGS_MODIFY_IF;
+            }
+            if (eflag & X86_EFLAGS_TEST_AF) {
+                mflag |= X86_EFLAGS_MODIFY_AF;
+            }
+            return mflag;
+        }
+        std::uint32_t GetREflags(CapInsn& insn) const {
+            std::uint32_t rflag = 0;
+            if (!insn.self()) return 0;
+            if (!insn.self()->detail) return 0;
+            cs_x86* x86 = &insn.self()->detail->x86;
+            auto eflag = x86->eflags;
+            if (eflag & X86_EFLAGS_TEST_OF) {
+                rflag |= (1ULL << 11);
+            }
+            if (eflag & X86_EFLAGS_TEST_SF) {
+                rflag |= (1ULL << 7);
+            }
+            if (eflag & X86_EFLAGS_TEST_TF) {
+                rflag |= (1ULL << 8);
+            }
+            if (eflag & X86_EFLAGS_TEST_IF) {
+                rflag |= (1ULL << 9);
+            }
+            if (eflag & X86_EFLAGS_TEST_ZF) {
+                rflag |= (1ULL << 6);
+            }
+            if (eflag & X86_EFLAGS_TEST_AF) {
+                rflag |= (1ULL << 4);
+            }
+            if (eflag & X86_EFLAGS_TEST_PF) {
+                rflag |= (1ULL << 2);
+            }
+            if (eflag & X86_EFLAGS_TEST_CF) {
+                rflag |= (1ULL << 0);
+            }
+            if (eflag & X86_EFLAGS_TEST_NT) {
+                rflag |= (1ULL << 14);
+            }
+            if (eflag & X86_EFLAGS_TEST_DF) {
+                rflag |= (1ULL << 10);
+            }
+            return rflag;
+        }
         bool GetJmpAddress(CapInsn& insn, std::uint8_t*& next_addr, std::uint8_t*& jmp_addr, x86_op_type& op_type) const {
             if (InJmpGroup(insn)) {
                 if (OpInCount(insn, X86_OP_IMM)) {
@@ -322,7 +406,8 @@ namespace cchips {
                         else
                             next_addr = reinterpret_cast<std::uint8_t*>(insn.address()) + insn.size();
                         if (x86->operands[index].mem.segment == X86_REG_INVALID &&
-                            x86->operands[index].mem.base == X86_REG_INVALID) {
+                            x86->operands[index].mem.base == X86_REG_INVALID &&
+                            x86->operands[index].mem.index == X86_REG_INVALID) {
                             jmp_addr = reinterpret_cast<std::uint8_t*>(x86->operands[index].mem.disp);
                         }
                         else {
@@ -361,7 +446,8 @@ namespace cchips {
                         else
                             next_addr = reinterpret_cast<std::uint8_t*>(insn.address()) + insn.size();
                         if (x86->operands[index].mem.segment == X86_REG_INVALID &&
-                            x86->operands[index].mem.base == X86_REG_INVALID) {
+                            x86->operands[index].mem.base == X86_REG_INVALID &&
+                            x86->operands[index].mem.index == X86_REG_INVALID) {
                             loop_addr = reinterpret_cast<std::uint8_t*>(x86->operands[index].mem.disp);
                         }
                         else {
@@ -390,7 +476,8 @@ namespace cchips {
                     if (insn.self()->detail) {
                         cs_x86* x86 = &insn.self()->detail->x86;
                         if (x86->operands[index].mem.segment == X86_REG_INVALID &&
-                            x86->operands[index].mem.base == X86_REG_INVALID) {
+                            x86->operands[index].mem.base == X86_REG_INVALID &&
+                            x86->operands[index].mem.index == X86_REG_INVALID) {
                             jmp_addr = reinterpret_cast<std::uint8_t*>(x86->operands[index].mem.disp);
                         }
                         else {
@@ -437,7 +524,13 @@ namespace cchips {
         cs_err m_cap_error = CS_ERR_HANDLE;
         const std::set<unsigned int> _branchInsnIds = { X86_INS_JMP, X86_INS_LJMP, };
         const std::set<unsigned int> _loopInsnIds = { X86_INS_LOOP, X86_INS_LOOPE, X86_INS_LOOPNE, };
-        const std::set<unsigned int> _condBranchInsnIds = {
+        const std::set<unsigned int> _condBranchNEInsnIds = {
+            X86_INS_JNE,
+            X86_INS_JNO,
+            X86_INS_JNP,
+            X86_INS_JNS,
+        };
+        const std::set<unsigned int> _condBranchEInsnIds = {
             X86_INS_JCXZ,
             X86_INS_JECXZ,
             X86_INS_JRCXZ,
@@ -450,10 +543,6 @@ namespace cchips {
             X86_INS_JG,
             X86_INS_JLE,
             X86_INS_JL,
-            X86_INS_JNE,
-            X86_INS_JNO,
-            X86_INS_JNP,
-            X86_INS_JNS,
             X86_INS_JO,
             X86_INS_JP,
             X86_INS_JS,

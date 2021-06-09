@@ -8,16 +8,16 @@
 
 namespace cchips {
 
-    class InsnFree : public InstructionPass
+    class InsnFree : public FunctionPass
     {
     public:
         static char ID;
-        InsnFree() : InstructionPass(ID) {}
+        InsnFree() : FunctionPass(ID) {}
         ~InsnFree() {}
 
-        virtual bool runOnInstruction(std::shared_ptr<CapInsn> Insn) override;
+        virtual bool runOnFunction(std::shared_ptr<Function> function) override;
 
     private:
-        bool run(std::shared_ptr<CapInsn>& Insn);
+        bool run(std::shared_ptr<Function> function);
     };
 } // namespace cchips

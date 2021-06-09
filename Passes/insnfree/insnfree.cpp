@@ -11,19 +11,24 @@ namespace cchips {
         PassInfo::passreg_post
     );
 
-    bool InsnFree::runOnInstruction(std::shared_ptr<CapInsn> Insn)
+    bool InsnFree::runOnFunction(std::shared_ptr<Function> function)
     {
-        if (!Insn) return false;
-        return run(Insn);
+        if (!function) return false;
+        return run(function);
     }
 
-    bool InsnFree::run(std::shared_ptr<CapInsn>& Insn)
+    bool InsnFree::run(std::shared_ptr<Function> function)
     {
-        if (Insn->address() == 0)
-            return false;
-        if (Insn->size() == 0)
-            return false;
-        Insn->free_insn();
+        for (auto& bb : *function) {
+            if (!bb.second) continue;
+            for (auto& insn : *bb.second) {
+                if (insn->address() == 0)
+                    continue;
+                if (insn->size() == 0)
+                    continue;
+                insn->free_insn();
+            }
+        }
         return true;
     }
 } // namespace cchips

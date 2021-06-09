@@ -281,6 +281,7 @@
       <TreatSpecificWarningsAsErrors>4013;4020;4022;4047;4098;4113;4129;4163;4229;4700;4603;4716;4189</TreatSpecificWarningsAsErrors>
       <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -394,6 +395,7 @@
     <ClCompile Include="Passes\funccheck\funccheck.cpp" />
     <ClCompile Include="Passes\funcinit\funcinit.cpp" />
     <ClCompile Include="Passes\insnfree\insnfree.cpp" />
+    <ClCompile Include="Passes\loopinit\loopinit.cpp" />
     <ClCompile Include="Passes\modcheck\modcheck.cpp" />
     <ClCompile Include="Passes\modinit\modinit.cpp" />
     <ClCompile Include="PassManager.cpp" />
@@ -511,6 +513,7 @@
     <ClInclude Include="Passes\funccheck\funccheck.h" />
     <ClInclude Include="Passes\funcinit\funcinit.h" />
     <ClInclude Include="Passes\insnfree\insnfree.h" />
+    <ClInclude Include="Passes\loopinit\loopinit.h" />
     <ClInclude Include="Passes\modcheck\modcheck.h" />
     <ClInclude Include="Passes\modinit\modinit.h" />
     <ClInclude Include="PassManager.h" />

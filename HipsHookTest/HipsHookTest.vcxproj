@@ -175,7 +175,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\Debug;..\capstone\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>shlwapi.lib;HipsHookLib.lib;capstone_x86_d.lib;PowrProf.lib;Netapi32.lib;Wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shlwapi.lib;HipsHookLib.lib;capstone_x86_d.lib;PowrProf.lib;Netapi32.lib;Wininet.lib;Dnsapi.lib;Ws2_32.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
       <ForceFileOutput>MultiplyDefinedSymbolOnly</ForceFileOutput>
       <AdditionalOptions>/WHOLEARCHIVE:HipsHookLib.lib %(AdditionalOptions)</AdditionalOptions>
@@ -219,14 +219,14 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
-      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zc:__cplusplus /bigobj %(AdditionalOptions)</AdditionalOptions>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\x64\Debug;..\capstone\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>shlwapi.lib;HipsHookLib.lib;capstone_x64_d.lib;PowrProf.lib;Netapi32.lib;Wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shlwapi.lib;HipsHookLib.lib;capstone_x64_d.lib;PowrProf.lib;Netapi32.lib;Wininet.lib;Dnsapi.lib;Ws2_32.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
       <AdditionalOptions>/WHOLEARCHIVE:HipsHookLib.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -271,6 +271,8 @@
       <OmitFramePointers>false</OmitFramePointers>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -278,7 +280,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\Release;..\capstone\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>shlwapi.lib;HipsHookLib.lib;capstone_x86.lib;PowrProf.lib;Netapi32.lib;Wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shlwapi.lib;HipsHookLib.lib;capstone_x86.lib;PowrProf.lib;Netapi32.lib;Wininet.lib;Dnsapi.lib;Ws2_32.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
       <AdditionalOptions>/WHOLEARCHIVE:HipsHookLib.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -323,7 +325,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
-      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zc:__cplusplus /bigobj %(AdditionalOptions)</AdditionalOptions>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
     </ClCompile>
     <Link>
@@ -332,7 +334,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\x64\Release;..\capstone\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>shlwapi.lib;HipsHookLib.lib;capstone_x64.lib;PowrProf.lib;Netapi32.lib;Wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shlwapi.lib;HipsHookLib.lib;capstone_x64.lib;PowrProf.lib;Netapi32.lib;Wininet.lib;Dnsapi.lib;Ws2_32.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
       <AdditionalOptions>/WHOLEARCHIVE:HipsHookLib.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -372,6 +374,7 @@
     <ClInclude Include="..\pipemessage\PipeJSONServer.h" />
     <ClInclude Include="..\pipemessage\PipeMessager.h" />
     <ClInclude Include="..\pipemessage\PipeServer.h" />
+    <ClInclude Include="define.h" />
     <ClInclude Include="packages\benchmark\src\arraysize.h" />
     <ClInclude Include="packages\benchmark\src\benchmark_api_internal.h" />
     <ClInclude Include="packages\benchmark\src\benchmark_register.h" />

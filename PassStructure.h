@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <map>
 #include <vector>
+#include <atomic>
 #include "PeInfo.h"
 #include "PeFormat.h"
 #include "CapstoneImpl.h"
@@ -10,6 +11,7 @@
 #include "Abix64.h"
 #include "PackageWrapper.h"
 #include "MetadataTypeImpl.h"
+#include "Debugger.h"
 
 namespace cchips {
 
@@ -184,16 +186,16 @@ namespace cchips {
             variable_mem,
             variable_stack,
         };
-        Variable(std::shared_ptr<Module> parent, std::string& name, std::uint8_t* address, variable_type type, std::uint8_t bytes, base_type btype);
+        Variable(std::shared_ptr<CBaseStruc> parent, std::string& name, std::uint8_t* address, variable_type type, std::uint8_t bytes, base_type btype);
         ~Variable() = default;
         bool valid() const {
-            if (!m_object || !m_parent.lock())
+            if (!m_data || !m_parent.lock())
                 return false;
             return true;
         }
         std::string GetName() const {
             if (valid())
-                return m_object->GetName();
+                return m_data->GetName();
             return {};
         }
         std::uint64_t address() const { return reinterpret_cast<std::uint64_t>(m_address); }
@@ -202,15 +204,15 @@ namespace cchips {
     private:
         std::uint8_t* m_address;
         variable_type m_type;
-        std::weak_ptr<Module> m_parent;
-        std::unique_ptr<CObObject> m_object;
+        std::weak_ptr<CBaseStruc> m_parent;
+        std::shared_ptr<CObObject> m_data;
     };
 
     class LocalVariable : public Variable {
     public:
 #define LOCAL_PREFIX "stack_"
-        LocalVariable(std::shared_ptr<Module> parent, std::string& name, std::uint8_t* address, variable_type type, std::uint8_t bytes)
-            : Variable(parent, name, address, type, bytes, base_localvariable) {}
+        LocalVariable(std::shared_ptr<Function> func, std::string& name, std::uint8_t* address, variable_type type, std::uint8_t bytes)
+            : Variable(std::static_pointer_cast<CBaseStruc>(func), name, address, type, bytes, base_localvariable) {}
         ~LocalVariable() = default;
     private:
     };
@@ -220,7 +222,7 @@ namespace cchips {
 #define GLOBAL_REG_PREFIX "gal_reg_"
 #define GLOBAL_MEM_PREFIX "gal_mem_"
         GlobalVariable(std::shared_ptr<Module> parent, std::string& name, std::uint8_t* address, variable_type type, std::uint8_t bytes) 
-            : Variable(parent, name, address, type, bytes, base_globalvariable){}
+            : Variable(std::static_pointer_cast<CBaseStruc>(parent), name, address, type, bytes, base_globalvariable){}
         ~GlobalVariable() = default;
     private:
     };
@@ -269,6 +271,8 @@ namespace cchips {
         bool setBlockType(block_type type) { 
             if (type == block_invalid || type > block_unknown)
                 return false;
+            if (m_block_type == block_start)
+                return false;
             m_block_type = type; 
             return true;
         }
@@ -303,21 +307,20 @@ namespace cchips {
         bool IsLinkage() const { return m_block_type == block_linkage; }
         bool IsLoop() const { return m_block_type == block_loop; }
         bool IsEnd() const { return m_block_type == block_end; }
+        bool isAfterBlock(std::shared_ptr<BasicBlock> block, std::shared_ptr<const BasicBlock> first = nullptr) const;
         std::shared_ptr<CapInsn> getBeginInsn() const { return *m_capinsns.begin(); }
         std::shared_ptr<CapInsn> getEndInsn() const { return *m_capinsns.rbegin(); }
+        std::shared_ptr<CapInsn> getInsn(int index) const { 
+            if (index > size())
+                return nullptr;
+            return m_capinsns.at(index);
+        }
         unsigned int getBlockNo() const { return m_block_no; }
         std::uint8_t* getAddress() const { return m_block_address; }
         std::uint8_t* getEndAddress() const { return m_block_address + m_size; }
         std::uint64_t GetBaseAddress() const { return reinterpret_cast<std::uint64_t>(getAddress()); }
         std::size_t getBlockSize() const { return m_size; }
-        bool AddCapInsn(std::shared_ptr<CapInsn> cap_insn) {
-            if (!cap_insn) return false;
-            if (!cap_insn->valid()) return false;
-            m_size += cap_insn->size();
-            cap_insn->SetParent(shared_from_this());
-            m_capinsns.emplace_back(cap_insn);
-            return true;
-        }
+        bool AddCapInsn(std::shared_ptr<CapInsn> cap_insn);
 
         bool addPreBlock(std::shared_ptr<BasicBlock>& pre_block) {
             if (!pre_block) return false;
@@ -360,6 +363,58 @@ namespace cchips {
         std::weak_ptr<BasicBlock> branch_block;
     };
 
+    class Loop : public CBaseStruc
+    {
+    public:
+        using loop_type = enum {
+            loop_unknown,
+            loop_simple,
+            loop_nested,
+        };
+        Loop() = delete;
+        Loop(loop_type type) : CBaseStruc(base_loop), m_type(type) {}
+        loop_type getLoopType() const { return m_type; }
+        virtual std::uint64_t GetBaseAddress() const = 0;
+        static const std::uint64_t invalid_init_value = -1;
+    private:
+        loop_type m_type;
+    };
+
+    //00562356 BF 05 00 00 00       mov         edi,5  
+    //0056235B 0F 1F 44 00 00       nop         dword ptr[eax + eax]
+    //00562360 57                   push        edi
+    //.....
+    //.....
+    //005623B9 E8 89 69 11 00       call        _Thrd_sleep(0678D47h)
+    //005623BE 83 C4 04             add         esp, 4
+    //005623C1 83 EF 01             sub         edi, 1
+    //005623C4 75 9A                jne         0562360h
+    class SimpleLoop : public Loop,  public std::enable_shared_from_this<Loop> {
+    public:
+        using invariant_type = std::variant<x86_reg, std::pair<std::uint64_t, size_t>>;
+        using stepsize_type = std::variant<std::uint64_t, x86_reg>;
+        using value_type = std::uint64_t;
+        SimpleLoop() = delete;
+        SimpleLoop(const invariant_type& invariant, const stepsize_type& stepsize, std::shared_ptr<BasicBlock> block, std::uint64_t init_val = invalid_init_value) 
+            : Loop(Loop::loop_simple), m_stepsize(stepsize), m_invariant(invariant), m_block(block) {}
+        ~SimpleLoop() = default;
+
+        std::uint64_t GetBaseAddress() const { 
+            std::shared_ptr<BasicBlock> block = m_block.lock();
+            if (!block) return 0;
+            return block->GetBaseAddress();
+        }
+        std::uint64_t getInvariant(std::shared_ptr<Debugger::Modifier> ep) const;
+        std::uint64_t getInitValue() const { return invalid_init_value; }
+        bool setInvariant(std::shared_ptr<Debugger::Modifier> ep, std::uint64_t value) const;
+        std::string getInvariantName() const;
+    private:
+        invariant_type m_invariant;
+        stepsize_type m_stepsize;
+        value_type m_init_value;
+        std::weak_ptr<BasicBlock> m_block;
+    };
+
     class Function : public CBaseStruc, public std::enable_shared_from_this<Function> {
     private:
 #define FUNC_NORMAL_SUB "sub_"
@@ -368,6 +423,7 @@ namespace cchips {
 #define FUNC_MAX_BLOCKS 1000
     public:
         using BasicBlockListType = std::map<PVOID, std::shared_ptr<BasicBlock>>;
+        using LoopListType = std::vector<std::shared_ptr<Loop>>;
         using iterator = BasicBlockListType::iterator;
         using const_iterator = BasicBlockListType::const_iterator;
 
@@ -440,10 +496,19 @@ namespace cchips {
         void dump(RapidValue& json_object, rapidjson::MemoryPoolAllocator<>& allocator, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const;
         void viewCFG() {}
         std::shared_ptr<Module> GetParent() { return m_parent.lock(); }
+        bool addSimpleLoop(std::shared_ptr<BasicBlock> block, SimpleLoop::invariant_type invariant, SimpleLoop::value_type value, SimpleLoop::stepsize_type stepsize) {
+            if (!block) return false;
+            std::shared_ptr<SimpleLoop> loop = std::make_shared<SimpleLoop>(invariant, stepsize, std::move(block));
+            if (!loop) return false;
+            m_loops.emplace_back(std::move(loop));
+            return true;
+        }
+        const LoopListType& getLoops() const { return m_loops; }
     private:
         func_type m_func_type;
         std::string m_func_name;
         std::uint8_t* m_func_address;
+        LoopListType m_loops;
         BasicBlockListType m_basicblocks;
         std::weak_ptr<Module> m_parent;
     };
@@ -596,6 +661,7 @@ namespace cchips {
             m_globalvariable_list.clear();
             m_function_list.clear();
             m_globalifunc_list.clear();
+            ClrInsnCounts();
         }
         void SetPrecacheAddress(std::uint8_t* address) { m_precache_address = address; }
         bool Initialize();
@@ -640,10 +706,15 @@ namespace cchips {
                 return reinterpret_cast<std::uint64_t>(m_module_context->GetBaseAddress());
             return 0;
         }
+        std::shared_ptr<Abi> getAbi() const { return m_abi; }
         std::shared_ptr<CBaseStruc> GetBaseObjectAtAddress(std::uint8_t* address) const;
         bool AddGlobalIFunc(std::unique_ptr<GlobalIFunc::func_struc> func_st);
         const GLOBALIFUNC_SYMBOLTABLE& GetGlobalIFuncs() const { return m_globalifunc_list; }
         ReportObject& GetReportObject() { return m_report_object; }
+        std::uint64_t GetInsnCounts() const { return m_insn_counts.load(); }
+        void IncInsnCounts() { m_insn_counts.fetch_add(1); }
+        void DecInsnCounts() { m_insn_counts.fetch_sub(1); }
+        void ClrInsnCounts() { m_insn_counts.exchange(0); }
     private:
         std::string m_name;
         std::uint8_t* m_precache_address = 0;
@@ -653,5 +724,6 @@ namespace cchips {
         FUNCTION_SYMBOLTABLE m_function_list;
         GLOBALIFUNC_SYMBOLTABLE m_globalifunc_list;
         ReportObject m_report_object;
+        static std::atomic_uint64_t m_insn_counts;
     };
 } // namespace cchips

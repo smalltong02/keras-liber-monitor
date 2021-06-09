@@ -1,22 +1,19 @@
 #include "stdafx.h"
 #include <stdio.h>
 #include <windows.h>
+#include <winsock.h>
 #include <string>
 #include <vector>
 #include <functional>
 #include <future>
 #include <atomic>
 #include <random>
-#include <powerbase.h>
-#include <Lm.h>
-#include <lmjoin.h>
-#include <lmaccess.h>
-#include <wininet.h>
 #include "utils.h"
 #include "commutils.h"
 #include "LogObject.h"
 #include "HipsHookTest.h"
 #include "CBaseType.h"
+#include "define.h"
 #include "benchmark\benchmark.h"
 #include "gtest\gtest.h"
 #include "gmock\gmock.h"
@@ -55,6 +52,18 @@ public:
     virtual LPVOID InternetConnect(HINTERNET hInternet, LPCSTR lpszServerName, INTERNET_PORT nServerPort, LPCSTR lpszUserName, LPCSTR lpszPassword, DWORD dwService, DWORD dwFlags, DWORD_PTR dwContext) = 0;
     virtual LPVOID HttpOpenRequest(HINTERNET hConnect, LPCSTR lpszVerb, LPCSTR lpszObjectName, LPCSTR lpszVersion, LPCSTR lpszReferrer, LPCSTR *lplpszAcceptTypes, DWORD dwFlags, DWORD_PTR dwContext) = 0;
     virtual BOOL HttpSendRequest(HINTERNET hRequest, LPCSTR lpszHeaders, DWORD dwHeadersLength, LPVOID lpOptional, DWORD dwOptionalLength) = 0;
+    virtual BOOL HttpQueryInfoA(HINTERNET hRequest, DWORD dwInfoLevel, LPVOID lpBuffer, LPDWORD lpdwBufferLength, LPDWORD lpdwIndex) = 0;
+    virtual BOOL HttpQueryInfoW(HINTERNET hRequest, DWORD dwInfoLevel, LPVOID lpBuffer, LPDWORD lpdwBufferLength, LPDWORD lpdwIndex) = 0;
+    //dns test
+    virtual DNS_STATUS DnsQuery_A(PCSTR pszName, WORD wType, DWORD Options, PVOID pExtra, PDNS_RECORD *ppQueryResults, PVOID *pReserved) = 0;
+    virtual DNS_STATUS DnsQuery_W(PCWSTR pszName, WORD wType, DWORD Options, PVOID pExtra, PDNS_RECORD *ppQueryResults, PVOID *pReserved) = 0;
+    virtual INT getaddrinfo(PCSTR pNodeName, PCSTR pServiceName, const ADDRINFOA *pHints, PADDRINFOA *ppResult) = 0;
+    virtual INT GetAddrInfoW(PCWSTR pNodeName, PCWSTR pServiceName, const ADDRINFOW *pHints, PADDRINFOW *ppResult) = 0;
+    virtual DWORD GetInterfaceInfo(PIP_INTERFACE_INFO pIfTable, PULONG dwOutBufLen) = 0;
+    virtual ULONG GetAdaptersInfo(PIP_ADAPTER_INFO AdapterInfo, PULONG SizePointer) = 0;
+    //system test
+    virtual void GetStartupInfoA(LPSTARTUPINFOA lpStartupInfo) = 0;
+    virtual void GetStartupInfoW(LPSTARTUPINFOW lpStartupInfo) = 0;
 };
 
 class ApiHookSystemMock : public ApiHookSystem
@@ -64,20 +73,30 @@ public:
     MOCK_METHOD1(GetModuleHandleW, HMODULE(LPCWSTR));
     MOCK_METHOD1(GetSystemTime, void(LPSYSTEMTIME));
     MOCK_METHOD1(GetPwrCapabilities, BOOLEAN(PSYSTEM_POWER_CAPABILITIES));
+    MOCK_METHOD1(GetStartupInfoA, void(LPSTARTUPINFOA));
+    MOCK_METHOD1(GetStartupInfoW, void(LPSTARTUPINFOW));
     MOCK_METHOD2(ExitWindowsEx, BOOL(UINT, DWORD));
     MOCK_METHOD2(GetProcAddress, FARPROC(HMODULE, LPCSTR));
+    MOCK_METHOD2(GetInterfaceInfo, DWORD(PIP_INTERFACE_INFO, PULONG));
+    MOCK_METHOD2(GetAdaptersInfo, ULONG(PIP_ADAPTER_INFO, PULONG));
     MOCK_METHOD3(NetGetJoinInformation, NET_API_STATUS(LPCWSTR, LPWSTR*, PNETSETUP_JOIN_STATUS));
     MOCK_METHOD4(GetDiskFreeSpaceExW, BOOL(LPCWSTR, ULARGE_INTEGER*, ULARGE_INTEGER*, ULARGE_INTEGER*));
     MOCK_METHOD4(NetUserGetInfo, NET_API_STATUS(LPCWSTR, LPCWSTR, DWORD, LPBYTE*));
     MOCK_METHOD4(InternetReadFile, BOOL(HINTERNET, LPVOID, DWORD, LPDWORD));
     MOCK_METHOD4(InternetCrackUrl, BOOL(LPCSTR, DWORD, DWORD, LPURL_COMPONENTSA));
+    MOCK_METHOD4(getaddrinfo, INT(PCSTR, PCSTR, const ADDRINFOA*, PADDRINFOA*));
+    MOCK_METHOD4(GetAddrInfoW, INT(PCWSTR, PCWSTR, const ADDRINFOW*, PADDRINFOW*));
     MOCK_METHOD5(NtQueryInformationProcess, NTSTATUS(HANDLE, PROCESSINFOCLASS, PVOID, ULONG, PULONG));
     MOCK_METHOD5(NtQueryLicenseValue, NTSTATUS(PUNICODE_STRING, PULONG, PVOID, ULONG, PULONG));
     MOCK_METHOD5(VirtualAllocEx, LPVOID(HANDLE, LPVOID, SIZE_T, DWORD, DWORD));
     MOCK_METHOD5(VirtualProtectEx, BOOL(HANDLE, LPVOID, SIZE_T, DWORD, LPDWORD));
     MOCK_METHOD5(InternetOpen, LPVOID(LPCSTR, DWORD, LPCSTR, LPCSTR, DWORD));
     MOCK_METHOD5(HttpSendRequest, BOOL(HINTERNET, LPCSTR, DWORD, LPVOID, DWORD));
+    MOCK_METHOD5(HttpQueryInfoA, BOOL(HINTERNET, DWORD, LPVOID, LPDWORD, LPDWORD));
+    MOCK_METHOD5(HttpQueryInfoW, BOOL(HINTERNET, DWORD, LPVOID, LPDWORD, LPDWORD));
     MOCK_METHOD6(InternetOpenUrl, LPVOID(HINTERNET, LPCSTR, LPCSTR, DWORD, DWORD, DWORD_PTR));
+    MOCK_METHOD6(DnsQuery_A, DNS_STATUS(PCSTR, WORD, DWORD, PVOID, PDNS_RECORD*, PVOID*));
+    MOCK_METHOD6(DnsQuery_W, DNS_STATUS(PCWSTR, WORD, DWORD, PVOID, PDNS_RECORD*, PVOID*));
     MOCK_METHOD7(CreateFile, HANDLE(LPCSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE));
     MOCK_METHOD7(NetShareEnum, NET_API_STATUS(LPWSTR, DWORD, LPBYTE*, DWORD, LPDWORD, LPDWORD, LPDWORD));
     MOCK_METHOD8(NetUserGetLocalGroups, NET_API_STATUS(LPCWSTR, LPCWSTR, DWORD, DWORD, LPBYTE*, DWORD, LPDWORD, LPDWORD));
@@ -1589,7 +1608,8 @@ TEST_F(HookSystemTest, InternetCrackUrl_lpszUrl_Test)
 TEST_F(HookSystemTest, InternetConnect_hInternet_Test)
 {
     LPVOID pre_bexit_0_hInternet, pre_bexit_0_request;
-    DWORD pre_error_0_hInternet, pre_error_0_request;
+    BOOL pre_bexit_0_query;
+    DWORD pre_error_0_hInternet, pre_error_0_request, pre_error_0_query;
     LPVOID hooked_bexit_0_hInternet, hooked_bexit_0_request;
     DWORD hooked_error_0_hInternet, hooked_error_0_request;
     ApiHookSystemMock hook_system_mock;
@@ -1597,6 +1617,8 @@ TEST_F(HookSystemTest, InternetConnect_hInternet_Test)
     // test variable
     char lpszAgent[] = { "Mozilla/4.0 (compatible)" };
     char lpszUrl[] = { "https://docs.microsoft.com/en-us/windows/win32/api/wininet/nf-wininet-internetcrackurla" };
+    LPVOID lpOutBuffer = NULL;
+    DWORD dwSize = 0;
     // first call test API when DisableAllApis().
     ASSERT_TRUE(g_hook_test_object->DisableAllApis());
     LPVOID hInternet = InternetOpen(lpszAgent, INTERNET_OPEN_TYPE_PRECONFIG, nullptr, nullptr, 0);
@@ -1629,7 +1651,7 @@ TEST_F(HookSystemTest, InternetConnect_hInternet_Test)
         hooked_bexit_0_request = hook_system_mock.HttpOpenRequest(pre_bexit_0_hInternet, nullptr, lpszUrl, nullptr, nullptr, lplpszAcceptTypes, INTERNET_FLAG_NO_UI, 0);
         hooked_error_0_request = GetLastError();
     }
-
+    
     // compare return result and error code.
     InternetCloseHandle(hInternet);
     EXPECT_NE(pre_bexit_0_hInternet, nullptr);
@@ -1642,6 +1664,320 @@ TEST_F(HookSystemTest, InternetConnect_hInternet_Test)
     if (pre_bexit_0_request)InternetCloseHandle(pre_bexit_0_request);
     if (hooked_bexit_0_request)InternetCloseHandle(hooked_bexit_0_request);
     EXPECT_EQ(pre_error_0_request, hooked_error_0_request);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, DnsQuery_A_Test)
+{
+    DNS_STATUS pre_bexit_0_dnsstatus;
+    DWORD pre_error_0_dnsstatus;
+    DNS_STATUS hooked_bexit_0_dnsstatus;
+    DWORD hooked_error_0_dnsstatus;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    PDNS_RECORD pDnsRecord = nullptr;
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    SetLastError(0); EXPECT_CALL(hook_system_mock, DnsQuery_A(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::DnsQuery_A("www.google.com", DNS_TYPE_A, DNS_QUERY_STANDARD, nullptr, &pDnsRecord, nullptr)));
+    pre_bexit_0_dnsstatus = hook_system_mock.DnsQuery_A("www.google.com", DNS_TYPE_A, DNS_QUERY_STANDARD, nullptr, &pDnsRecord, nullptr);
+    pre_error_0_dnsstatus = GetLastError();
+    if (pDnsRecord) DnsRecordListFree(pDnsRecord, DnsFreeRecordList);
+    pDnsRecord = nullptr;
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P104");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    SetLastError(0); EXPECT_CALL(hook_system_mock, DnsQuery_A(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::DnsQuery_A("www.google.com", DNS_TYPE_A, DNS_QUERY_STANDARD, nullptr, &pDnsRecord, nullptr)));
+    hooked_bexit_0_dnsstatus = hook_system_mock.DnsQuery_A("www.google.com", DNS_TYPE_A, DNS_QUERY_STANDARD, nullptr, &pDnsRecord, nullptr);
+    hooked_error_0_dnsstatus = GetLastError();
+    if (pDnsRecord) DnsRecordListFree(pDnsRecord, DnsFreeRecordList);
+    // compare return result and error code.
+    EXPECT_EQ(pre_bexit_0_dnsstatus, hooked_bexit_0_dnsstatus);
+    EXPECT_EQ(pre_error_0_dnsstatus, hooked_error_0_dnsstatus);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, getaddrinfo_Test)
+{
+    INT pre_bexit_0_int;
+    DWORD pre_error_0_int;
+    INT hooked_bexit_0_int;
+    DWORD hooked_error_0_int;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    DWORD dwRetval;
+    struct addrinfo *result = NULL;
+    struct addrinfo hints;
+    ZeroMemory(&hints, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    SetLastError(0); EXPECT_CALL(hook_system_mock, getaddrinfo(testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::getaddrinfo("www.google.com", "443", &hints, &result)));
+    pre_bexit_0_int = hook_system_mock.getaddrinfo("www.google.com", "443", &hints, &result);
+    pre_error_0_int = GetLastError();
+    if (result) freeaddrinfo(result);
+    result = nullptr;
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P105");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    SetLastError(0); EXPECT_CALL(hook_system_mock, getaddrinfo(testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::getaddrinfo("www.google.com", "443", &hints, &result)));
+    hooked_bexit_0_int = hook_system_mock.getaddrinfo("www.google.com", "443", &hints, &result);
+    hooked_error_0_int = GetLastError();
+    if (result) freeaddrinfo(result);
+    // compare return result and error code.
+    EXPECT_EQ(pre_bexit_0_int, hooked_bexit_0_int);
+    EXPECT_EQ(pre_error_0_int, hooked_error_0_int);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, GetAddrInfoW_Test)
+{
+    INT pre_bexit_0_int;
+    DWORD pre_error_0_int;
+    INT hooked_bexit_0_int;
+    DWORD hooked_error_0_int;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    DWORD dwRetval;
+    struct addrinfoW *result = NULL;
+    struct addrinfoW hints;
+    ZeroMemory(&hints, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    SetLastError(0); EXPECT_CALL(hook_system_mock, GetAddrInfoW(testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::GetAddrInfoW(L"www.google.com", L"443", &hints, &result)));
+    pre_bexit_0_int = hook_system_mock.GetAddrInfoW(L"www.google.com", L"443", &hints, &result);
+    pre_error_0_int = GetLastError();
+    if (result) FreeAddrInfoW(result);
+    result = nullptr;
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P105");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    SetLastError(0); EXPECT_CALL(hook_system_mock, GetAddrInfoW(testing::_, testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::GetAddrInfoW(L"www.google.com", L"443", &hints, &result)));
+    hooked_bexit_0_int = hook_system_mock.GetAddrInfoW(L"www.google.com", L"443", &hints, &result);
+    hooked_error_0_int = GetLastError();
+    if (result) FreeAddrInfoW(result);
+    // compare return result and error code.
+    EXPECT_EQ(pre_bexit_0_int, hooked_bexit_0_int);
+    EXPECT_EQ(pre_error_0_int, hooked_error_0_int);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, GetInterfaceInfo_Test)
+{
+    DWORD pre_bexit_0_dword;
+    DWORD pre_error_0_dword;
+    DWORD hooked_bexit_0_dword;
+    DWORD hooked_error_0_dword;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    DWORD dwRetVal = 0;
+    PIP_INTERFACE_INFO pInfo = NULL;
+    ULONG ulOutBufLen = 0;
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    dwRetVal = GetInterfaceInfo(NULL, &ulOutBufLen);
+    if (dwRetVal == ERROR_INSUFFICIENT_BUFFER) {
+        pInfo = (IP_INTERFACE_INFO *)malloc(ulOutBufLen);
+        if (pInfo == NULL) {
+            return;
+        }
+    }
+    SetLastError(0); EXPECT_CALL(hook_system_mock, GetInterfaceInfo(testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::GetInterfaceInfo(pInfo, &ulOutBufLen)));
+    pre_bexit_0_dword = hook_system_mock.GetInterfaceInfo(pInfo, &ulOutBufLen);
+    pre_error_0_dword = GetLastError();
+    if (pInfo) free(pInfo);
+    pInfo = nullptr;
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P106");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    dwRetVal = GetInterfaceInfo(NULL, &ulOutBufLen);
+    if (dwRetVal == ERROR_INSUFFICIENT_BUFFER) {
+        pInfo = (IP_INTERFACE_INFO *)malloc(ulOutBufLen);
+        if (pInfo == NULL) {
+            return;
+        }
+    }
+    SetLastError(0); EXPECT_CALL(hook_system_mock, GetInterfaceInfo(testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::GetInterfaceInfo(pInfo, &ulOutBufLen)));
+    hooked_bexit_0_dword = hook_system_mock.GetInterfaceInfo(pInfo, &ulOutBufLen);
+    hooked_error_0_dword = GetLastError();
+    if (pInfo) free(pInfo);
+    // compare return result and error code.
+    EXPECT_EQ(pre_bexit_0_dword, hooked_bexit_0_dword);
+    EXPECT_EQ(pre_error_0_dword, hooked_error_0_dword);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, GetAdaptersInfo_Test)
+{
+    DWORD pre_bexit_0_ulong;
+    DWORD pre_error_0_ulong;
+    DWORD hooked_bexit_0_ulong;
+    DWORD hooked_error_0_ulong;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    ULONG dwRetVal = 0;
+    PIP_ADAPTER_INFO pInfo = NULL;
+    ULONG ulOutBufLen = 0;
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    dwRetVal = GetAdaptersInfo(NULL, &ulOutBufLen);
+    if (dwRetVal == ERROR_BUFFER_OVERFLOW) {
+        pInfo = (IP_ADAPTER_INFO *)malloc(ulOutBufLen);
+        if (pInfo == NULL) {
+            return;
+        }
+    }
+    SetLastError(0); EXPECT_CALL(hook_system_mock, GetAdaptersInfo(testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::GetAdaptersInfo(pInfo, &ulOutBufLen)));
+    pre_bexit_0_ulong = hook_system_mock.GetAdaptersInfo(pInfo, &ulOutBufLen);
+    pre_error_0_ulong = GetLastError();
+    if (pInfo) free(pInfo);
+    pInfo = nullptr;
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P107");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    dwRetVal = GetAdaptersInfo(NULL, &ulOutBufLen);
+    if (dwRetVal == ERROR_BUFFER_OVERFLOW) {
+        pInfo = (IP_ADAPTER_INFO *)malloc(ulOutBufLen);
+        if (pInfo == NULL) {
+            return;
+        }
+    }
+    SetLastError(0); EXPECT_CALL(hook_system_mock, GetAdaptersInfo(testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::GetAdaptersInfo(pInfo, &ulOutBufLen)));
+    hooked_bexit_0_ulong = hook_system_mock.GetAdaptersInfo(pInfo, &ulOutBufLen);
+    hooked_error_0_ulong = GetLastError();
+    if (pInfo) free(pInfo);
+    // compare return result and error code.
+    EXPECT_EQ(pre_bexit_0_ulong, hooked_bexit_0_ulong);
+    EXPECT_EQ(pre_error_0_ulong, hooked_error_0_ulong);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, GetStartupInfoA_Test)
+{
+    DWORD pre_error_0_void;
+    DWORD hooked_error_0_void;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    STARTUPINFOA info = {};
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    SetLastError(0);
+    GetStartupInfoA(&info);
+    pre_error_0_void = GetLastError();
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P109");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    SetLastError(0);
+    GetStartupInfoA(&info);
+    hooked_error_0_void = GetLastError();
+    // compare return result and error code.
+    EXPECT_EQ(pre_error_0_void, hooked_error_0_void);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, GetStartupInfoW_Test)
+{
+    DWORD pre_error_0_void;
+    DWORD hooked_error_0_void;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    STARTUPINFOW info = {};
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    SetLastError(0);
+    GetStartupInfoW(&info);
+    pre_error_0_void = GetLastError();
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P109");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    SetLastError(0);
+    GetStartupInfoW(&info);
+    hooked_error_0_void = GetLastError();
+    // compare return result and error code.
+    EXPECT_EQ(pre_error_0_void, hooked_error_0_void);
+    // wait for all logs received.
+    std::vector<int> count_list;
+    count_list.push_back(1);
+    EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
+}
+
+TEST_F(HookSystemTest, GetSystemInfo_Test)
+{
+    DWORD pre_error_0_void;
+    DWORD hooked_error_0_void;
+    ApiHookSystemMock hook_system_mock;
+
+    // test variable
+    SYSTEM_INFO info = {};
+    // first call test API when DisableAllApis().
+    ASSERT_TRUE(g_hook_test_object->DisableAllApis());
+    SetLastError(0);
+    GetSystemInfo(&info);
+    pre_error_0_void = GetLastError();
+    // initialize
+    std::vector<std::string> action_list;
+    action_list.push_back("P110");
+    g_server_object->AddLogCountMap(action_list);
+    // second call test API when EnableAllApis().
+    ASSERT_TRUE(g_hook_test_object->EnableAllApis());
+    SetLastError(0);
+    GetSystemInfo(&info);
+    hooked_error_0_void = GetLastError();
+    // compare return result and error code.
+    EXPECT_EQ(pre_error_0_void, hooked_error_0_void);
     // wait for all logs received.
     std::vector<int> count_list;
     count_list.push_back(1);

@@ -13,67 +13,67 @@
 #include "gtest\gtest.h"
 #include "gmock\gmock.h"
 
-//#ifdef _FUNCTION_TEST
-//class HookInjectDllTest : public testing::Test
-//{
-//protected:
-//    HookInjectDllTest() {
-//        ;
-//    }
-//    ~HookInjectDllTest() override {}
-//
-//    virtual void SetUp() override {
-//        m_injector_object = std::make_unique<CDllInjectorObject>();
-//        ASSERT_TRUE(m_injector_object != nullptr);
-//        std::unique_ptr<CDllInjectorObject::_InjectDllInfo> p_dll_info = std::make_unique<CDllInjectorObject::_InjectDllInfo>(CDllInjectorObject::inject_apc, CDllInjectorObject::dll_type_x32, "HipsHook.dll");
-//        ASSERT_TRUE(p_dll_info != nullptr);
-//        m_injector_object->AddDllInfo(p_dll_info);
-//        p_dll_info = std::make_unique<CDllInjectorObject::_InjectDllInfo>(CDllInjectorObject::inject_apc, CDllInjectorObject::dll_type_x64, "HipsHook.dll");
-//        ASSERT_TRUE(p_dll_info != nullptr);
-//        m_injector_object->AddDllInfo(p_dll_info);
-//        p_dll_info = std::make_unique<CDllInjectorObject::_InjectDllInfo>(CDllInjectorObject::inject_apc, CDllInjectorObject::dll_type_wow64, "HipsHook.dll");
-//        ASSERT_TRUE(p_dll_info != nullptr);
-//        m_injector_object->AddDllInfo(p_dll_info);
-//        m_injector_object->InitializeSamplePath("ServicesTest.exe");
-//        g_server_object->EnableDebugPid();
-//    }
-//
-//    void TearDown() override {
-//        g_server_object->DisableDebugPid();
-//        m_injector_object.reset(nullptr);
-//    }
-//    bool CreateSampleProcess(const std::string& process_path, PROCESS_INFORMATION& proc_info) {
-//        if (!process_path.length()) return false;
-//
-//        STARTUPINFO si = {};
-//        DWORD create_flag = CREATE_DEFAULT_ERROR_MODE | NORMAL_PRIORITY_CLASS | CREATE_SUSPENDED;
-//
-//        memset(&si, 0, sizeof(si));
-//        memset(&proc_info, 0, sizeof(proc_info));
-//        si.cb = sizeof(si);
-//        si.dwFlags = STARTF_FORCEOFFFEEDBACK | STARTF_USESHOWWINDOW;
-//        si.wShowWindow = SW_SHOWDEFAULT;
-//
-//        if (!CreateProcess(
-//            NULL,
-//            (LPSTR)process_path.c_str(),
-//            NULL,
-//            NULL,
-//            FALSE,
-//            create_flag,
-//            NULL,
-//            NULL,
-//            &si,
-//            &proc_info))
-//        {
-//            return false;
-//        }
-//        return true;
-//    }
-//    std::unique_ptr<CDllInjectorObject> m_injector_object = nullptr;
-//};
-//
-////#ifdef _X86_
+#ifdef _FUNCTION_TEST
+class HookInjectDllTest : public testing::Test
+{
+protected:
+    HookInjectDllTest() {
+        ;
+    }
+    ~HookInjectDllTest() override {}
+
+    virtual void SetUp() override {
+        m_injector_object = std::make_unique<CDllInjectorObject>();
+        ASSERT_TRUE(m_injector_object != nullptr);
+        std::unique_ptr<CDllInjectorObject::_InjectDllInfo> p_dll_info = std::make_unique<CDllInjectorObject::_InjectDllInfo>(CDllInjectorObject::inject_apc, CDllInjectorObject::dll_type_x32, "HipsHook.dll");
+        ASSERT_TRUE(p_dll_info != nullptr);
+        m_injector_object->AddDllInfo(p_dll_info);
+        p_dll_info = std::make_unique<CDllInjectorObject::_InjectDllInfo>(CDllInjectorObject::inject_apc, CDllInjectorObject::dll_type_x64, "HipsHook.dll");
+        ASSERT_TRUE(p_dll_info != nullptr);
+        m_injector_object->AddDllInfo(p_dll_info);
+        p_dll_info = std::make_unique<CDllInjectorObject::_InjectDllInfo>(CDllInjectorObject::inject_apc, CDllInjectorObject::dll_type_wow64, "HipsHook.dll");
+        ASSERT_TRUE(p_dll_info != nullptr);
+        m_injector_object->AddDllInfo(p_dll_info);
+        m_injector_object->InitializeSamplePath("ServicesTest.exe");
+        g_server_object->EnableDebugPid();
+    }
+
+    void TearDown() override {
+        g_server_object->DisableDebugPid();
+        m_injector_object.reset(nullptr);
+    }
+    bool CreateSampleProcess(const std::string& process_path, PROCESS_INFORMATION& proc_info) {
+        if (!process_path.length()) return false;
+
+        STARTUPINFO si = {};
+        DWORD create_flag = CREATE_DEFAULT_ERROR_MODE | NORMAL_PRIORITY_CLASS | CREATE_SUSPENDED;
+
+        memset(&si, 0, sizeof(si));
+        memset(&proc_info, 0, sizeof(proc_info));
+        si.cb = sizeof(si);
+        si.dwFlags = STARTF_FORCEOFFFEEDBACK | STARTF_USESHOWWINDOW;
+        si.wShowWindow = SW_SHOWDEFAULT;
+
+        if (!CreateProcess(
+            NULL,
+            (LPSTR)process_path.c_str(),
+            NULL,
+            NULL,
+            FALSE,
+            create_flag,
+            NULL,
+            NULL,
+            &si,
+            &proc_info))
+        {
+            return false;
+        }
+        return true;
+    }
+    std::unique_ptr<CDllInjectorObject> m_injector_object = nullptr;
+};
+
+#ifdef _X86_
 ////TEST_F(HookInjectDllTest, InjectDllTestX32toX32)
 ////{
 ////    PROCESS_INFORMATION pi = { };
@@ -87,7 +87,7 @@
 ////    ASSERT_TRUE(count > 0);
 ////    g_server_object->DelDebugPid(pi.dwProcessId);
 ////}
-//
+
 ////TEST_F(HookInjectDllTest, InjectDllTestX32toX64)
 ////{
 ////    if (!CInjectProcess::Is64BitOS())
@@ -199,9 +199,9 @@
 ////        g_server_object->DelDebugPid(sample_pi.dwProcessId);
 ////    }
 ////}
-////#endif
-////
-////#ifdef _AMD64_
+#endif
+
+#ifdef _AMD64_
 ////TEST_F(HookInjectDllTest, InjectDllTestX64toX32)
 ////{
 ////    // test use inject32 for X32toX64
@@ -266,5 +266,18 @@
 ////    ASSERT_TRUE(count > 0);
 ////    g_server_object->DelDebugPid(pi.dwProcessId);
 ////}
-////#endif
-//#endif
+//TEST_F(HookInjectDllTest, InjectPsTest)
+//{
+//    PROCESS_INFORMATION pi = { };
+//    ASSERT_TRUE(CreateSampleProcess("powershell.exe e:\\test.ps1", pi));
+//    g_server_object->AddDebugPid(pi.dwProcessId);
+//    ASSERT_TRUE(m_injector_object->InjectProcess(pi.dwProcessId));
+//    ResumeThread(pi.hThread);
+//    WaitForSingleObject(pi.hProcess, 1000000);
+//    TerminateProcess(pi.hProcess, 0);
+//    int count = g_server_object->GetCountForDebugPid(pi.dwProcessId);
+//    ASSERT_TRUE(count > 0);
+//    g_server_object->DelDebugPid(pi.dwProcessId);
+//}
+#endif
+#endif

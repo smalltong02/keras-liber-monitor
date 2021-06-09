@@ -56,12 +56,14 @@ namespace cchips {
         std::unique_ptr<Pass> getPass(const std::string& pass_name) const;
         void registerPass(PassInfo &PI);
         std::shared_ptr<PassManagerBase> getPassManager(Pass::passmanager_type type) const;
-        bool sequence();
+        bool sequence(std::vector<std::string>& sequence_list);
         bool run(std::shared_ptr<Module> PM);
         bool run(std::shared_ptr<Function> PF);
         bool run(std::shared_ptr<BasicBlock> PB);
         bool run(std::shared_ptr<CapInsn> PC);
         AnalysisID GetPassID(const std::string& pass_name);
+
+        static std::vector<std::string> sequence_passes_define;
     private:
         PassRegistry() {
             Initialize();
@@ -69,7 +71,6 @@ namespace cchips {
         ~PassRegistry() = default;
         std::vector<PassInfo> passinfos;
         std::vector<std::shared_ptr<PassManagerBase>> passmanagerbases;
-        static std::vector<std::string> sequence_passes_define;
     };
 
     template <typename PassName> std::unique_ptr<Pass> callDefaultCtor() { 

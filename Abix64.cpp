@@ -305,4 +305,13 @@ namespace cchips {
 
         return false;
     }
+
+    std::size_t AbiX64::getRegSize(x86_reg reg_op) const
+    {
+        for (auto& pair : _reg2SizeMap) {
+            if (pair.first == reg_op)
+                return (pair.second / BYTES_SIZE);
+        }
+        return 0;
+    }
 } // namespace cchips

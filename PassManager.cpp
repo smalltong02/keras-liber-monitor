@@ -123,22 +123,26 @@ namespace cchips {
     bool PassManagerImpl::Run(std::shared_ptr<Module> M) {
         bool Changed = true;
 
-        for (auto& pass : modulepasses) {
-            if (!pass.second) continue;
-            auto info = GetPassRegistry().getPassInfo(pass.first);
+        for (auto& id : sequencepass) {
+            auto& pass = modulepasses.find(id);
+            if (pass == modulepasses.end()) continue;
+            if (!pass->second) continue;
+            auto info = GetPassRegistry().getPassInfo(id);
             if (!info || info->getRegHandle() != PassInfo::passreg_pre) continue;
-            Changed &= reinterpret_cast<ModulePass*>(pass.second.get())->runOnModule(M);
+            Changed &= reinterpret_cast<ModulePass*>(pass->second.get())->runOnModule(M);
         }
 
         if (Changed) {
             for (auto& func : *M) {
                 GetPassRegistry().run(func.second);
             }
-            for (auto& pass : modulepasses) {
-                if (!pass.second) continue;
-                auto info = GetPassRegistry().getPassInfo(pass.first);
+            for (auto& id : sequencepass) {
+                auto& pass = modulepasses.find(id);
+                if (pass == modulepasses.end()) continue;
+                if (!pass->second) continue;
+                auto info = GetPassRegistry().getPassInfo(id);
                 if (!info || info->getRegHandle() != PassInfo::passreg_post) continue;
-                reinterpret_cast<ModulePass*>(pass.second.get())->runOnModule(M);
+                reinterpret_cast<ModulePass*>(pass->second.get())->runOnModule(M);
             }
         }
 
@@ -148,11 +152,11 @@ namespace cchips {
     void PassManagerImpl::sequence(const std::vector<AnalysisID>& seq_list)
     {
         sequencepass = seq_list;
-        for (auto& pass : modulepasses) {
-            auto find = std::find(sequencepass.begin(), sequencepass.end(), pass.first);
-            if (find == sequencepass.end())
-                sequencepass.emplace_back(pass.first);
-        }
+        //for (auto& pass : modulepasses) {
+        //    auto find = std::find(sequencepass.begin(), sequencepass.end(), pass.first);
+        //    if (find == sequencepass.end())
+        //        sequencepass.emplace_back(pass.first);
+        //}
         return;
     }
 
@@ -191,22 +195,26 @@ namespace cchips {
     {
         bool Changed = true;
 
-        for (auto& pass : functionpasses) {
-            if (!pass.second) continue;
-            auto info = GetPassRegistry().getPassInfo(pass.first);
+        for (auto& id : sequencepass) {
+            auto& pass = functionpasses.find(id);
+            if (pass == functionpasses.end()) continue;
+            if (!pass->second) continue;
+            auto info = GetPassRegistry().getPassInfo(id);
             if (!info || info->getRegHandle() != PassInfo::passreg_pre) continue;
-            Changed &= reinterpret_cast<FunctionPass*>(pass.second.get())->runOnFunction(F);
+            Changed &= reinterpret_cast<FunctionPass*>(pass->second.get())->runOnFunction(F);
         }
 
         if (Changed) {
             for (auto& bb : *F) {
                 GetPassRegistry().run(bb.second);
             }
-            for (auto& pass : functionpasses) {
-                if (!pass.second) continue;
-                auto info = GetPassRegistry().getPassInfo(pass.first);
+            for (auto& id : sequencepass) {
+                auto& pass = functionpasses.find(id);
+                if (pass == functionpasses.end()) continue;
+                if (!pass->second) continue;
+                auto info = GetPassRegistry().getPassInfo(id);
                 if (!info || info->getRegHandle() != PassInfo::passreg_post) continue;
-                reinterpret_cast<FunctionPass*>(pass.second.get())->runOnFunction(F);
+                reinterpret_cast<FunctionPass*>(pass->second.get())->runOnFunction(F);
             }
         }
 
@@ -216,11 +224,11 @@ namespace cchips {
     void FunctionPassManagerImpl::sequence(const std::vector<AnalysisID>& seq_list)
     {
         sequencepass = seq_list;
-        for (auto& pass : functionpasses) {
-            auto find = std::find(sequencepass.begin(), sequencepass.end(), pass.first);
-            if (find == sequencepass.end())
-                sequencepass.emplace_back(pass.first);
-        }
+        //for (auto& pass : functionpasses) {
+        //    auto find = std::find(sequencepass.begin(), sequencepass.end(), pass.first);
+        //    if (find == sequencepass.end())
+        //        sequencepass.emplace_back(pass.first);
+        //}
         return;
     }
 
@@ -259,22 +267,26 @@ namespace cchips {
     {
         bool Changed = true;
 
-        for (auto& pass : bbpasses) {
-            if (!pass.second) continue;
-            auto info = GetPassRegistry().getPassInfo(pass.first);
+        for (auto& id : sequencepass) {
+            auto& pass = bbpasses.find(id);
+            if (pass == bbpasses.end()) continue;
+            if (!pass->second) continue;
+            auto info = GetPassRegistry().getPassInfo(id);
             if (!info || info->getRegHandle() != PassInfo::passreg_pre) continue;
-            Changed &= reinterpret_cast<BasicBlockPass*>(pass.second.get())->runOnBasicBlock(BB);
+            Changed &= reinterpret_cast<BasicBlockPass*>(pass->second.get())->runOnBasicBlock(BB);
         }
 
         if (Changed) {
             for (auto& insn : *BB) {
                 GetPassRegistry().run(insn);
             }
-            for (auto& pass : bbpasses) {
-                if (!pass.second) continue;
-                auto info = GetPassRegistry().getPassInfo(pass.first);
+            for (auto& id : sequencepass) {
+                auto& pass = bbpasses.find(id);
+                if (pass == bbpasses.end()) continue;
+                if (!pass->second) continue;
+                auto info = GetPassRegistry().getPassInfo(id);
                 if (!info || info->getRegHandle() != PassInfo::passreg_post) continue;
-                reinterpret_cast<BasicBlockPass*>(pass.second.get())->runOnBasicBlock(BB);
+                reinterpret_cast<BasicBlockPass*>(pass->second.get())->runOnBasicBlock(BB);
             }
         }
 
@@ -284,11 +296,11 @@ namespace cchips {
     void BBPassManagerImpl::sequence(const std::vector<AnalysisID>& seq_list)
     {
         sequencepass = seq_list;
-        for (auto& pass : bbpasses) {
-            auto find = std::find(sequencepass.begin(), sequencepass.end(), pass.first);
-            if (find == sequencepass.end())
-                sequencepass.emplace_back(pass.first);
-        }
+        //for (auto& pass : bbpasses) {
+        //    auto find = std::find(sequencepass.begin(), sequencepass.end(), pass.first);
+        //    if (find == sequencepass.end())
+        //        sequencepass.emplace_back(pass.first);
+        //}
         return;
     }
 
@@ -327,19 +339,23 @@ namespace cchips {
     {
         bool Changed = true;
 
-        for (auto& pass : insnpasses) {
-            if (!pass.second) continue;
-            auto info = GetPassRegistry().getPassInfo(pass.first);
+        for (auto& id : sequencepass) {
+            auto& pass = insnpasses.find(id);
+            if (pass == insnpasses.end()) continue;
+            if (!pass->second) continue;
+            auto info = GetPassRegistry().getPassInfo(id);
             if (!info || info->getRegHandle() != PassInfo::passreg_pre) continue;
-            Changed &= reinterpret_cast<InstructionPass*>(pass.second.get())->runOnInstruction(insn);
+            Changed &= reinterpret_cast<InstructionPass*>(pass->second.get())->runOnInstruction(insn);
         }
 
         if (Changed) {
-            for (auto& pass : insnpasses) {
-                if (!pass.second) continue;
-                auto info = GetPassRegistry().getPassInfo(pass.first);
+            for (auto& id : sequencepass) {
+                auto& pass = insnpasses.find(id);
+                if (pass == insnpasses.end()) continue;
+                if (!pass->second) continue;
+                auto info = GetPassRegistry().getPassInfo(id);
                 if (!info || info->getRegHandle() != PassInfo::passreg_post) continue;
-                reinterpret_cast<InstructionPass*>(pass.second.get())->runOnInstruction(insn);
+                reinterpret_cast<InstructionPass*>(pass->second.get())->runOnInstruction(insn);
             }
         }
 
@@ -349,11 +365,11 @@ namespace cchips {
     void InsnPassManagerImpl::sequence(const std::vector<AnalysisID>& seq_list)
     {
         sequencepass = seq_list;
-        for (auto& pass : insnpasses) {
-            auto find = std::find(sequencepass.begin(), sequencepass.end(), pass.first);
-            if (find == sequencepass.end())
-                sequencepass.emplace_back(pass.first);
-        }
+        //for (auto& pass : insnpasses) {
+        //    auto find = std::find(sequencepass.begin(), sequencepass.end(), pass.first);
+        //    if (find == sequencepass.end())
+        //        sequencepass.emplace_back(pass.first);
+        //}
         return;
     }
 } // namespace cchips

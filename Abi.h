@@ -58,6 +58,7 @@ namespace cchips {
 
         x86_reg getRegisterId(cs_x86_op* operand) const;
         std::size_t getRegisterByteSize(cs_x86_op* operand) const;
+        virtual std::size_t getRegSize(x86_reg reg_op) const = 0;
 
         // Instructions.
     public:
@@ -70,6 +71,12 @@ namespace cchips {
         std::vector<std::shared_ptr<GlobalVariable>> _regs;
         std::vector<std::shared_ptr<GlobalVariable>> _id2regs;
         //std::map<const llvm::Value*, uint32_t> _regs2id;
+        static std::map<
+            std::size_t,
+            void (Abi::*)(
+                cs_insn&,
+                cs_x86*,
+                CapInsn&)> _i2fm;
 
         uint32_t _regStackPointerId = REG_INVALID;
         uint32_t _regFunctionReturnId = REG_INVALID;
@@ -77,5 +84,8 @@ namespace cchips {
         uint32_t _regSyscallReturn = REG_INVALID;
         uint32_t _regSyscallId = REG_INVALID;
         uint32_t _regZeroReg = REG_INVALID;
+
+    protected:
+        void translateSub(cs_insn& insn, cs_x86* x86, CapInsn& cap_insn);
     };
 } // namespace cchips

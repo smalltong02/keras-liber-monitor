@@ -261,5 +261,25 @@
     },
 
     "Logging": true
+  },
+
+  "ControlService": {
+    "Signature": {
+      "Library": "advapi32.dll",
+      "Return": "BOOL",
+      "Feature": "S6"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
+    "Parameters": {
+      "hService": "SC_HANDLE",
+      "dwControl": "SC_CONTROL_CODE",
+      "lpServiceStatus": "LPSERVICE_STATUS"
+    },
+
+    "Logging": true
   }
 }

@@ -12,11 +12,12 @@ namespace cchips {
         // add Basicblock pre-pass at here.
         // add Instruction pre-pass at here.
         // add Instruction post-pass at here.
-        "InsnFree",
         "BBCheck",
         // add Basicblock post-pass at here.
         "FuncCheck",
+        "LoopInit",
         // add Function post-pass at here.
+        "InsnFree",
         "ModCheck",
         // add Module post-pass at here.
     };

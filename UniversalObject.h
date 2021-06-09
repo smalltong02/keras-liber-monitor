@@ -24,6 +24,7 @@ namespace cchips {
             category_pdf,
             category_java,
             category_misc,
+            category_ps,
             category_test,
         };
 
@@ -32,6 +33,7 @@ namespace cchips {
         void InitGetCategory();
         bool IsMatchCategory(const std::string& category_pattern) const;
         bool IsDangerousCommand(std::string& command) const;
+        _category_type GetCurrentCategory() const { return m_category; }
     private:
         _category_type m_category;
         std::unique_ptr<RE2> m_category_pattern;

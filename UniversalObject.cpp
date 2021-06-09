@@ -16,6 +16,7 @@ namespace cchips {
         {category_pdf, {"^(?i)acrord32.exe$|^(?i)acrobat.exe$|^(?i)foxit reader.exe$"}},
         {category_java, {"^(?i)java.exe$|^(?i)javaw.exe$|^(?i)javaws.exe$"}},
         {category_misc, {"^(?i)helpctr.exe$|^(?i)hh.exe$|^(?i)wscript.exe$|^(?i)winhlp32.exe$|loaddll.exe$"}},
+        {category_ps, {"^(?i)powershell.exe$"}},
         {category_test, {"^(?i)hipshooktest.exe$"}},
     };
 
@@ -35,6 +36,7 @@ namespace cchips {
         {category_pdf, {"category_pdf"}},
         {category_java, {"category_java"}},
         {category_misc, {"category_misc"}},
+        {category_ps, {"category_powershell"}},
         {category_test, {"category_test"}},
     };
 

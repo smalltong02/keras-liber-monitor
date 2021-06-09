@@ -23,6 +23,11 @@ namespace cchips {
     {
         if (!Block) return false;
         if (!Block->IsUnknown() && !Block->IsStart()) return false;
+        if (!Block->size()) {
+            //std::uint64_t address = (std::uint64_t)Block->getAddress();
+            //std::cout << "Block: " << std::hex << address << " is empty!" << std::endl;
+            return false;
+        }
         for (auto& insn : *Block) {
             if (!insn) return false;
             if (cchips::GetCapstoneImplment().InCallGroup(*insn)) {
@@ -40,6 +45,8 @@ namespace cchips {
         if (!block) return false;
         std::shared_ptr<Function> function = block->GetParent();
         if (!function) return false;
+        if(block->GetBaseAddress() == function->GetBaseAddress())
+            block->setBlockType(BasicBlock::block_start);
         if (cchips::GetCapstoneImplment().InJmpGroup(insn)) {
             return processJmpInstruction(insn);
         }

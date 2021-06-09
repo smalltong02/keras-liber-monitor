@@ -73,6 +73,9 @@
     <Filter Include="Passes\modcheck">
       <UniqueIdentifier>{a4b8dd77-7268-4f9c-a885-c0fda26345ac}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Passes\loopinit">
+      <UniqueIdentifier>{049e5d8f-0e48-46b2-bf71-5b34bcf52328}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HipsHookLib.cpp">
@@ -332,6 +335,9 @@
     </ClCompile>
     <ClCompile Include="Passes\modcheck\modcheck.cpp">
       <Filter>Passes\modcheck</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\loopinit\loopinit.cpp">
+      <Filter>Passes\loopinit</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -700,6 +706,9 @@
     </ClInclude>
     <ClInclude Include="Passes\modcheck\modcheck.h">
       <Filter>Passes\modcheck</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\loopinit\loopinit.h">
+      <Filter>Passes\loopinit</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

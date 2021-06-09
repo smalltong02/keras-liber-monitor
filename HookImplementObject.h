@@ -408,6 +408,7 @@ if (DWORD index_; !CheckExploitFuncs::ValidStackPointer(reinterpret_cast<ULONG_P
         static processing_status WINAPI detour_getProcAddress(detour_node* node, HMODULE hModule, LPCSTR  lpProcName);
         static processing_status WINAPI detour_coCreateInstance(detour_node* node, REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext, REFIID riid, LPVOID *ppv);
         static processing_status WINAPI detour_coCreateInstanceEx(detour_node* node,REFCLSID Clsid, IUnknown *punkOuter, DWORD dwClsCtx, COSERVERINFO *pServerInfo, DWORD dwCount, MULTI_QI *pResults);
+        static processing_status WINAPI detour_coCreateInstance_post(detour_node* node, REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext, REFIID riid, LPVOID *ppv);
 
         // define static detour for wmi object
         static processing_status STDMETHODCALLTYPE detour_IEnumWbemClassObject_Next(detour_node* node, IEnumWbemClassObject* This, long lTimeout, ULONG uCount, IWbemClassObject **apObjects, ULONG *puReturned);

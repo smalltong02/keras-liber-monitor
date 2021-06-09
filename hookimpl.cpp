@@ -65,7 +65,10 @@ processing_status WINAPI CHookImplementObject::detour_coUninitialize(detour_node
             g_impl_object->RemoveApi(g_impl_object->GetHookNodeList()[i]);
         }
     }
-    node->hook_implement_object->ClearWmiInterfaceDefine();
+    {
+        std::lock_guard<std::recursive_mutex> lock_guard(g_impl_object->GetRecursiveMutex());
+        node->hook_implement_object->ClearWmiInterfaceDefine();
+    }
     return processing_continue;
 }
 
@@ -230,6 +233,40 @@ processing_status WINAPI CHookImplementObject::detour_coCreateInstance(detour_no
     if (CommonFuncsObject::IsKnownWMIClsid(rclsid)) return processing_continue;
     
     process_com_communication(node, rclsid, dwClsContext);
+    return processing_continue;
+}
+
+processing_status WINAPI CHookImplementObject::detour_coCreateInstance_post(detour_node* node, REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext, REFIID riid, LPVOID *ppv)
+{
+    POST_BEGIN(node)
+    if (!ppv) return processing_continue;
+    if( !node->hook_implement_object->GetCategoryPtr() ||
+        node->hook_implement_object->GetCategoryPtr()->GetCurrentCategory() != CategoryObject::category_ps)
+        return processing_continue;
+    if (rclsid == CLSID_WbemLocator &&
+        dwClsContext == CLSCTX_INPROC_SERVER &&
+        riid == IID_IWbemLocator) {
+        //processing delay hooks.
+        std::vector<int> ord_list;
+        do {
+            std::lock_guard<std::recursive_mutex> lock_guard(g_impl_object->GetRecursiveMutex());
+            auto& delay_list = g_impl_object->GetDelayNodeList();
+            if (delay_list.find("WMI") == delay_list.end()) break;
+            ord_list = delay_list["WMI"];
+        } while (0);
+
+        for (auto i : ord_list)
+        {
+            if (g_impl_object->GetHookNodeList()[i].bdelayed &&
+                g_impl_object->GetHookNodeList()[i].function &&
+                g_impl_object->GetHookNodeList()[i].function->GetClassProto() &&
+                g_impl_object->GetHookNodeList()[i].function->GetClassProto()->GetClassType() == CPrototype::class_wmi)
+            {
+                g_impl_object->HookApi(g_impl_object->GetHookNodeList()[i]);
+            }
+        }
+    }
+
     return processing_continue;
 }
 
@@ -461,6 +498,7 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemClassObjec
     HRESULT hr;
     VARIANT variant_value;
     std::stringstream class_name;
+    error_log("detour_IWbemClassObject_Get: 11111111111111");
     hr = This->Get(CComBSTR("__CLASS"), 0, &variant_value, 0, 0);
     if (!SUCCEEDED(hr)) return processing_continue;
     if (class_name = OutputAnyValue(GetVariantValue(variant_value)); !class_name.str().length())
@@ -645,7 +683,7 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_P
     POST_BEGIN(node)
     if (ppEnum == nullptr || *ppEnum == nullptr) return processing_skip;
     std::shared_ptr<PVOID> log_handle = node->log_entry;
-
+    error_log("detour_IWbemServices_Post_ExecQuery: 11111111111111");
     if (std::stringstream str_val = OutputAnyValue(std::wstring(strQuery)); str_val.str().length()) {
         if (std::string object_str; RE2::FullMatch(str_val.str().c_str(), "^.*(?i)from (.*)$", &object_str) && object_str.length()) {
             for (const auto& wmi_object : node->hook_implement_object->GetWmiObjects())
@@ -654,6 +692,7 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_P
                 if (wmi_object.second == nullptr) continue;
                 if (_stricmp(wmi_object.first.c_str(), object_str.c_str()) == 0)
                 {
+                    error_log("detour_IWbemServices_Post_ExecQuery: 222222222222222");
                     for (const auto& pcheck : wmi_object.second->GetChecks(false))
                     {
                         ASSERT(pcheck != nullptr);
@@ -670,6 +709,7 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_P
                         }
                         if (duplicate)
                         {
+                            error_log("detour_IWbemServices_Post_ExecQuery: 3333333333333333");
                             idIEnumWbemClassObject* p_IEnumWbemClassObject = (idIEnumWbemClassObject *)malloc(sizeof(idIEnumWbemClassObject));
                             if (p_IEnumWbemClassObject)
                             {
@@ -679,6 +719,7 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_P
                                     memset(p_IEnumWbemClassObject->lpVtbl, 0, sizeof(idIEnumWbemClassObjectVtbl));
                                     InitializeWin32EnumWbemClassObject(p_IEnumWbemClassObject, *ppEnum, wmi_object.second);
                                     *ppEnum = (IEnumWbemClassObject*)p_IEnumWbemClassObject;
+                                    error_log("detour_IWbemServices_Post_ExecQuery: 4444444444444444444");
                                 }
                             }
                             break;

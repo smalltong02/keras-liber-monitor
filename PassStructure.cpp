@@ -7,6 +7,8 @@
 
 namespace cchips {
 
+    std::atomic_uint64_t Module::m_insn_counts = 0;
+
     bool Module::InitializeAbi()
     {
         if (!Valid()) return false;
@@ -41,7 +43,7 @@ namespace cchips {
             if (!name.length()) continue;
             std::stringstream ss;
             ss << GLOBAL_REG_PREFIX << name;
-            std::shared_ptr<GlobalVariable> reg_ptr = std::make_shared<GlobalVariable>(shared_from_this(), ss.str(), address, GlobalVariable::variable_reg, reg.second/BYTES_SIZE);
+            std::shared_ptr<GlobalVariable> reg_ptr = std::make_shared<GlobalVariable>(shared_from_this(), ss.str(), address, GlobalVariable::variable_reg, reg.second / BYTES_SIZE);
             m_globalvariable_list.emplace(address, std::move(reg_ptr));
             address++;
         }
@@ -103,7 +105,7 @@ namespace cchips {
     }
 
     bool Module::Initialize() {
-        if (!m_precache_address) 
+        if (!m_precache_address)
             m_precache_address = reinterpret_cast<std::uint8_t*>(GetModuleHandle(nullptr));
         m_module_context = std::make_unique<ModuleContext>(m_precache_address);
         if (m_module_context && m_module_context->Valid()) {
@@ -132,6 +134,7 @@ namespace cchips {
 
     bool Module::AddFunction(std::string& func_name, std::uint8_t* func_address)
     {
+        if (!Valid()) return false;
         if (!func_address) return false;
         Function::func_type type = Function::func_normal;
         if (func_name.length() == 0) {
@@ -154,7 +157,6 @@ namespace cchips {
             std::shared_ptr<Function> func_ptr = std::make_shared<Function>(shared_from_this(), func_name, func_address, type);
             if (!func_ptr) return false;
             m_function_list[address] = std::move(func_ptr);
-            //m_function_list[address]->Initialize();
             return true;
         }
         return false;
@@ -178,7 +180,7 @@ namespace cchips {
     {
         if (!object) return;
         if (!desc.length()) return;
-        report_object obj = { object->GetBaseType(), object->GetBaseAddress(), object};
+        report_object obj = { object->GetBaseType(), object->GetBaseAddress(), object };
         auto find = m_report_list.find(obj);
         if (find == m_report_list.end()) {
             m_report_list.emplace(obj, desc);
@@ -425,7 +427,7 @@ namespace cchips {
         std::string time_str = date;
         document.SetObject();
         document.AddMember("time", RapidValue(time_str.c_str(), allocator), allocator);
-        
+
         RapidValue module_value;
         module_value.SetObject();
         std::string module_name = GetModuleName();
@@ -540,7 +542,7 @@ namespace cchips {
             jt = jump_targets.top();
             jump_targets.pop();
             return true;
-        } 
+        }
         return false;
     }
 
@@ -648,7 +650,7 @@ namespace cchips {
                             return;
                         }
                     }
-                } 
+                }
                 else if (std::shared_ptr<CBaseStruc> jmpto_base; jmpto_base = parent->GetBaseObjectAtAddress(jmp_addr)) {
                 }
                 else {
@@ -673,7 +675,6 @@ namespace cchips {
         Range<std::uint8_t*> section_range;
         section_range.setStartEnd(reinterpret_cast<std::uint8_t*>(section->getAddress()), reinterpret_cast<std::uint8_t*>(section->getEndAddress()));
         if (x86_op_type op_type; GetCapstoneImplment().GetLoopAddress(*cap_insn, next_addr, loop_addr, op_type)) {
-
             if (section_range.contains(next_addr)) {
                 if (!getBasicBlockAtAddress(next_addr)) {
                     jump_targets.push(next_addr, JumpTarget::jmp_type::JMP_NORMAL, JumpTarget::from_type(insn_code, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_FALSE));
@@ -690,6 +691,13 @@ namespace cchips {
                 if (loop_block) {
                     JumpTarget target(loop_addr, JumpTarget::jmp_type::JMP_NORMAL, JumpTarget::from_type(insn_code, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_TRUE));
                     splitBasicBlockAtAddress(target);
+                    if (loop_block->getAddress() == cur_block->getAddress()) {
+                        std::shared_ptr<BasicBlock> new_block = getBasicBlockAtAddress(loop_addr);
+                        if (new_block) {
+                            new_block->AddCapInsn(std::move(std::shared_ptr<CapInsn>(cap_insn.release())));
+                            return;
+                        }
+                    }
                 }
                 else {
                     jump_targets.push(loop_addr, JumpTarget::jmp_type::JMP_NORMAL, JumpTarget::from_type(insn_code, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_TRUE));
@@ -709,13 +717,13 @@ namespace cchips {
         if (!Address::validAddress(start))
             return;
         std::shared_ptr<Module> parent = m_parent.lock();
-        if (!parent) 
+        if (!parent)
             return;
         size_t predict_size = GetPredictSize(jump_targets, start);
-        if (!predict_size) 
+        if (!predict_size)
             return;
         std::shared_ptr<BasicBlock> current_block = CreateBasicBlock(jt);
-        if (!current_block) 
+        if (!current_block)
             return;
         //linktoFromBasicBlock(current_block, jt);
         std::uint8_t* insn_code = start;
@@ -791,6 +799,17 @@ namespace cchips {
         return split_block;
     }
 
+    bool BasicBlock::AddCapInsn(std::shared_ptr<CapInsn> cap_insn)
+    {
+        if (!cap_insn) return false;
+        if (!cap_insn->valid()) return false;
+        GetParent()->GetParent()->IncInsnCounts();
+        m_size += cap_insn->size();
+        cap_insn->SetParent(shared_from_this());
+        m_capinsns.emplace_back(cap_insn);
+        return true;
+    }
+
     void BasicBlock::dump(RapidValue& json_object, rapidjson::MemoryPoolAllocator<>& allocator, Cfg_view_flags flags) const
     {
         RapidValue block_value;
@@ -816,17 +835,252 @@ namespace cchips {
         return;
     }
 
-    Variable::Variable(std::shared_ptr<Module> parent, std::string& name, std::uint8_t* address, variable_type type, std::uint8_t bytes, base_type btype)
+    bool BasicBlock::isAfterBlock(std::shared_ptr<BasicBlock> block, std::shared_ptr<const BasicBlock> first) const
+    {
+        bool bret = false;
+        if (shared_from_this() == block)
+            return true;
+        if (shared_from_this() == first) {
+            return false;
+        }
+        if (!first) {
+            first = shared_from_this();
+        }
+        if (GetNextBlock() != nullptr) {
+            bret = GetNextBlock()->isAfterBlock(block, shared_from_this());
+            if (bret) return true;
+        }
+        if (GetBranchBlock() != nullptr) {
+            bret = GetBranchBlock()->isAfterBlock(block, shared_from_this());
+            if (bret) return true;
+        }
+        return false;
+    }
+
+    Variable::Variable(std::shared_ptr<CBaseStruc> parent, std::string& name, std::uint8_t* address, variable_type type, std::uint8_t bytes, base_type btype)
         : m_parent(parent),
         CBaseStruc(btype),
-        m_address(address), 
+        m_address(address),
         m_type(type)
     {
-        std::shared_ptr<CMetadataTypeObject> byte_ptr = make_metadata_j_ptr<BYTE>(CBaseDef::type_byte, INVALID_VARIABLE_VALUE, CObObject::op_n_equal);
-        if (!byte_ptr) return;
-        std::unique_ptr<CArrayObject> array_ptr = std::make_unique<CArrayObject>(name);
-        if (!array_ptr) return;
-        array_ptr->AddArray(byte_ptr, bytes);
-        m_object = std::move(array_ptr);
+        switch (bytes) {
+        case 0:
+            break;
+        case 1:
+        {
+            std::shared_ptr<CMetadataTypeObject> byte_ptr = make_metadata_j_ptr<BYTE>(CBaseDef::type_byte, INVALID_VARIABLE_VALUE, CObObject::op_n_equal);
+            if (!byte_ptr) return;
+            std::shared_ptr<CMetadataTypeObject> varint_ptr = std::make_shared<CMetadataTypeObject>(name, byte_ptr);
+            if (!varint_ptr) return;
+            m_data = std::move(varint_ptr);
+        }
+        break;
+        case 2:
+        {
+            std::shared_ptr<CMetadataTypeObject> word_ptr = make_metadata_j_ptr<BYTE>(CBaseDef::type_word, INVALID_VARIABLE_VALUE, CObObject::op_n_equal);
+            if (!word_ptr) return;
+            std::shared_ptr<CMetadataTypeObject> varint_ptr = std::make_shared<CMetadataTypeObject>(name, word_ptr);
+            if (!varint_ptr) return;
+            m_data = std::move(varint_ptr);
+        }
+        break;
+        case 4:
+        {
+            std::shared_ptr<CMetadataTypeObject> dword_ptr = make_metadata_j_ptr<BYTE>(CBaseDef::type_dword, INVALID_VARIABLE_VALUE, CObObject::op_n_equal);
+            if (!dword_ptr) return;
+            std::shared_ptr<CMetadataTypeObject> varint_ptr = std::make_shared<CMetadataTypeObject>(name, dword_ptr);
+            if (!varint_ptr) return;
+            m_data = std::move(varint_ptr);
+        }
+        break;
+        case 8:
+        {
+            std::shared_ptr<CMetadataTypeObject> ulonglong_ptr = make_metadata_j_ptr<BYTE>(CBaseDef::type_ulonglong, INVALID_VARIABLE_VALUE, CObObject::op_n_equal);
+            if (!ulonglong_ptr) return;
+            std::shared_ptr<CMetadataTypeObject> varint_ptr = std::make_shared<CMetadataTypeObject>(name, ulonglong_ptr);
+            if (!varint_ptr) return;
+            m_data = std::move(varint_ptr);
+        }
+        break;
+        default:
+        {
+            std::shared_ptr<CMetadataTypeObject> byte_ptr = make_metadata_j_ptr<BYTE>(CBaseDef::type_byte, INVALID_VARIABLE_VALUE, CObObject::op_n_equal);
+            if (!byte_ptr) return;
+            std::shared_ptr<CArrayObject> array_ptr = std::make_shared<CArrayObject>(name);
+            if (!array_ptr) return;
+            array_ptr->AddArray(byte_ptr, bytes);
+            m_data = std::move(array_ptr);
+        }
+        }
+        return;
+    }
+
+    std::string SimpleLoop::getInvariantName() const
+    {
+        if (m_invariant.index() == 0) {
+            return GetCapstoneImplment().GetRegName(std::get<x86_reg>(m_invariant));
+        }
+        else if(m_invariant.index() == 1) {
+            auto[address, size] = std::get<std::pair<std::uint64_t, size_t>>(m_invariant);
+            std::stringstream ss;
+            ss << "invar-0x" << std::hex << address << "-" << std::dec << size << std::endl;
+            return ss.str();
+        }
+        return "unknown-invar";
+    }
+
+    std::uint64_t SimpleLoop::getInvariant(std::shared_ptr<Debugger::Modifier> ep) const
+    {
+        if (!ep) return 0;
+        if (m_invariant.index() == 0) {
+            x86_reg invariant = std::get<x86_reg>(m_invariant);
+            switch (invariant) {
+            case X86_REG_EAX:
+            case X86_REG_RAX:
+            {
+                return ep->getXax();
+            }
+            break;
+            case X86_REG_EBX:
+            case X86_REG_RBX:
+            {
+                return ep->getXbx();
+            }
+            break;
+            case X86_REG_ECX:
+            case X86_REG_RCX:
+            {
+                return ep->getXcx();
+            }
+            break;
+            case X86_REG_EDX:
+            case X86_REG_RDX:
+            {
+                return ep->getXdx();
+            }
+            break;
+            case X86_REG_EDI:
+            case X86_REG_RDI:
+            {
+                return ep->getXdi();
+            }
+            break;
+            case X86_REG_ESI:
+            case X86_REG_RSI:
+            {
+                return ep->getXsi();
+            }
+            break;
+            default:
+                ;
+            }
+        }
+        else if (m_invariant.index() == 1) {
+            auto[address, size] = std::get<std::pair<std::uint64_t, size_t>>(m_invariant);
+            if (size > sizeof std::uint64_t) {
+                return 0;
+            }
+            std::uint64_t ret_value = 0;
+            tls_check_struct *tls = check_get_tls();
+            if (tls) {
+                tls->active = 1;
+                if (setjmp(tls->jb) == 0) {
+                    memcpy(&ret_value, reinterpret_cast<const void*>(address), size);
+                    tls->active = 0;
+                }
+                else {
+                    //execption occur
+                    tls->active = 0;
+                }
+            }
+        }
+        return 0;
+    }
+
+    bool SimpleLoop::setInvariant(std::shared_ptr<Debugger::Modifier> ep, std::uint64_t value) const
+    {
+        if (!ep) return false;
+        if (m_invariant.index() == 0) {
+            x86_reg invariant = std::get<x86_reg>(m_invariant);
+            switch (invariant) {
+            case X86_REG_AL:
+            case X86_REG_AX:
+            case X86_REG_EAX:
+            case X86_REG_RAX:
+            {
+                ep->setXax(value);
+                return true;
+            }
+            break;
+            case X86_REG_BL:
+            case X86_REG_BX:
+            case X86_REG_EBX:
+            case X86_REG_RBX:
+            {
+                ep->setXbx(value);
+                return true;
+            }
+            break;
+            case X86_REG_CL:
+            case X86_REG_CX:
+            case X86_REG_ECX:
+            case X86_REG_RCX:
+            {
+                ep->setXcx(value);
+                return true;
+            }
+            break;
+            case X86_REG_DL:
+            case X86_REG_DX:
+            case X86_REG_EDX:
+            case X86_REG_RDX:
+            {
+                ep->setXdx(value);
+                return true;
+            }
+            break;
+            case X86_REG_DIL:
+            case X86_REG_DI:
+            case X86_REG_EDI:
+            case X86_REG_RDI:
+            {
+                ep->setXdi(value);
+                return true;
+            }
+            break;
+            case X86_REG_SIL:
+            case X86_REG_SI:
+            case X86_REG_ESI:
+            case X86_REG_RSI:
+            {
+                ep->setXsi(value);
+                return true;
+            }
+            break;
+            default:
+                ;
+            }
+        }
+        else if (m_invariant.index() == 1) {
+            auto[address, size] = std::get<std::pair<std::uint64_t, size_t>>(m_invariant);
+            if (size > sizeof std::uint64_t) {
+                return false;
+            }
+            std::uint64_t ret_value = 0;
+            tls_check_struct *tls = check_get_tls();
+            if (tls) {
+                tls->active = 1;
+                if (setjmp(tls->jb) == 0) {
+                    memcpy(reinterpret_cast<void*>(address), &ret_value, size);
+                    tls->active = 0;
+                    return true;
+                }
+                else {
+                    //execption occur
+                    tls->active = 0;
+                }
+            }
+        }
+        return false;
     }
 } // namespace cchips

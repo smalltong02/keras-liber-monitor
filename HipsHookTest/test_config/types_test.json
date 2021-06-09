@@ -36,6 +36,7 @@
     "HRESULT",
     "SC_HANDLE",
     "NTSTATUS",
+    "DNS_STATUS",
     "STRING",
     "WSTRING",
     "GUID"
@@ -478,6 +479,22 @@
         "NetSetupUnjoined": 1,
         "NetSetupWorkgroupName": 2,
         "NetSetupDomainName": 3
+      }
+    },
+
+    "SC_CONTROL_CODE": {
+      "Data": "DWORD",
+      "OPERATION": "NOT",
+      "Value": {
+        "SERVICE_CONTROL_STOP": 1,
+        "SERVICE_CONTROL_PAUSE": 2,
+        "SERVICE_CONTROL_CONTINUE": 3,
+        "SERVICE_CONTROL_INTERROGATE": 4,
+        "SERVICE_CONTROL_PARAMCHANGE": 6,
+        "SERVICE_CONTROL_NETBINDADD": 7,
+        "SERVICE_CONTROL_NETBINDREMOVE": 8,
+        "SERVICE_CONTROL_NETBINDENABLE": 9,
+        "SERVICE_CONTROL_NETBINDDISABLE": 10
       }
     }
   }

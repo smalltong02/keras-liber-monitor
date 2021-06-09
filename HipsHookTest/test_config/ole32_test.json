@@ -73,6 +73,10 @@
       "Feature": "O1"
     },
 
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
+    },
+
     "Parameters": {
       "pvReserved": "LPVOID",
       "dwCoInit": "DWORD"
@@ -86,6 +90,10 @@
       "Library": "ole32.dll",
       "Return": "VOID",
       "Feature": "O2"
+    },
+
+    "Hooks": {
+      "Category": "^(?i)category_normal$|^(?i)category_browser$|^(?i)category_office$|^(?i)category_pdf$|^(?i)category_java$|^(?i)category_misc$|^(?i)category_test$"
     },
 
     "Logging": true

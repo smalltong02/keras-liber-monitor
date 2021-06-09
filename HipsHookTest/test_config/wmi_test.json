@@ -634,6 +634,21 @@
     }
   },
 
+  "Win32_TemperatureProbe": {
+    "MIDL_INTERFACE": "{464FFABB-946F-11d2-AAE2-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "Win32_TemperatureProbe": "Duplicate"
+        }
+      }
+    }
+  },
+
   "AntiVirusProduct": {
     "MIDL_INTERFACE": "{11111111-1111-1111-1111-111111111111}",
     "Data": {

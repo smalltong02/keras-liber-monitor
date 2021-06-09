@@ -597,6 +597,20 @@ inline bool AssignAnyType(std::any& anyvalue, Ty value) {
             anyvalue = static_cast<ULONGLONG>(value);
             return true;
         }
+        else if (anyvalue.type() == typeid(ULARGE_INTEGER))
+        {
+            ULARGE_INTEGER tmp;
+            tmp.QuadPart = static_cast<ULONGLONG>(value);
+            anyvalue = tmp;
+            return true;
+        }
+        else if (anyvalue.type() == typeid(LARGE_INTEGER))
+        {
+            LARGE_INTEGER tmp;
+            tmp.QuadPart = static_cast<LONGLONG>(value);
+            anyvalue = tmp;
+            return true;
+        }
         else if (anyvalue.type() == typeid(HRESULT))
         {
             anyvalue = static_cast<HRESULT>(value);

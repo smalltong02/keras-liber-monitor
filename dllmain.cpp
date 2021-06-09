@@ -19,6 +19,11 @@ BOOL APIENTRY DllMain(HMODULE hModule,
     case DLL_PROCESS_ATTACH:
     {
         // please don't block the dllmain, We can not do much more here, because it is risky.
+//#ifdef _X86_
+//        __asm int 3
+//#else
+//        BreakInt3();
+//#endif
         g_is_dll_module = true;
         std::shared_ptr<CHipsCfgObject> hipsCfgObject = InitializeConfig();
         if (hipsCfgObject != nullptr)

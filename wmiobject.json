@@ -412,6 +412,7 @@
   "Win32_Fan": {
     "MIDL_INTERFACE": "{464FFAB5-946F-11D2-AAE2-006008C78BC7}",
     "Data": {
+      "__GENUS": "UINT",
       "__CLASS": "BSTR",
       "__PATH": "BSTR"
     },
@@ -419,6 +420,11 @@
       "0": {
         "Handle": {
           "Win32_Fan": "Duplicate"
+        },
+        "Modify": {
+          "__GENUS": "%var0 = 2",
+          "__PATH": "%var1 = '\\\\Administrator\\ROOT\\cimv2:Win32_Fan'",
+          "__CLASS": "%var2 = 'Win32_Fan'"
         }
       }
     }
@@ -629,6 +635,21 @@
       "0": {
         "Handle": {
           "CIM_VoltageSensor": "Duplicate"
+        }
+      }
+    }
+  },
+
+  "Win32_TemperatureProbe": {
+    "MIDL_INTERFACE": "{464FFABB-946F-11d2-AAE2-006008C78BC7}",
+    "Data": {
+      "__CLASS": "BSTR",
+      "__PATH": "BSTR"
+    },
+    "PostCheck": {
+      "0": {
+        "Handle": {
+          "Win32_TemperatureProbe": "Duplicate"
         }
       }
     }

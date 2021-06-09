@@ -85,10 +85,10 @@ namespace cchips {
         return nullptr;
     }
 
-    bool PassRegistry::sequence()
+    bool PassRegistry::sequence(std::vector<std::string>& sequence_list)
     {
         std::map<Pass::passmanager_type, std::vector<AnalysisID>> sequence_types;
-        for (auto& sequence : sequence_passes_define) {
+        for (auto& sequence : sequence_list) {
             std::unique_ptr<Pass> pass = getPass(sequence);
             if (!pass) continue;
             sequence_types[pass->getPotentialPassManagerType()].emplace_back(pass->getPassID());

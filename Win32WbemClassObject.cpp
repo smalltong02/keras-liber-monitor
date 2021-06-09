@@ -10,6 +10,13 @@ GUID IID_idIWbemClassObject = {
     0x88,0x4d,0x00,0xaa,0x00,0x4b,0x2e,0x24
 };
 
+GUID IID_idIUnknown = {
+    0x00000000,
+    0x0000,
+    0x0000,
+    0xc0,0x00,0x00,0x00,0x00,0x00,0x00,0x46
+};
+
 HRESULT STDMETHODCALLTYPE WbemClassObjectQueryInterface(
     idIWbemClassObject * This,
     /* [in] */ REFIID riid,
@@ -17,6 +24,13 @@ HRESULT STDMETHODCALLTYPE WbemClassObjectQueryInterface(
     _COM_Outptr_  void **ppvObject)
 {
     HRESULT hr = S_OK;
+    if (IID_idIUnknown == riid ||
+        IID_idIWbemClassObject == riid)
+    {
+        *ppvObject = This;
+        WbemClassObjectAddRef(This);
+        return S_OK;
+    }
     return hr;
 }
 

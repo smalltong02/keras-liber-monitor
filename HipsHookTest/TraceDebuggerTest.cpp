@@ -19,75 +19,356 @@ protected:
     TraceDebuggerTest() {}
     ~TraceDebuggerTest() override {}
 
-    virtual void SetUp() override {
-    }
+    virtual void SetUp() override {}
 
     void TearDown() override {
     }
-    std::shared_ptr<Module> GetPeModule() { return pe_module; }
+    static std::shared_ptr<Module> GetPeModule() { return pe_module; }
+    std::unique_ptr<std::function<long(std::shared_ptr<Debugger::Modifier>)>> m_md_cb;
 
+    static long md_callback(std::shared_ptr<Debugger::Modifier> ep);
+    static long bp_callback(std::shared_ptr<Debugger::Modifier> ep);
+    static long trace_callback(std::shared_ptr<Debugger::Modifier> ep);
+    static long end_insn_callback(std::shared_ptr<Debugger::Modifier> ep);
+    static long m_test_value;
 private:
-    std::shared_ptr<Module> pe_module = std::make_shared<Module>();
+    static std::shared_ptr<Module> pe_module;
 };
 
-TEST_F(TraceDebuggerTest, Debugger_Test)
-{
-    auto md_callback = [&](PVOID data) ->long {
-        struct _EXCEPTION_POINTERS *ep = reinterpret_cast<struct _EXCEPTION_POINTERS*>(data);
-#ifdef _X86_
-        std::cout << "md_callback modify edi from " << std::hex << ep->ContextRecord->Edi << " to 2." << std::endl;
-        ep->ContextRecord->Edi = 2;
-#endif
-#ifdef _AMD64_
-        std::cout << "md_callback modify rbx from " << std::hex << ep->ContextRecord->Rbx << " to 2." << std::endl;
-        ep->ContextRecord->Rbx = 2;
-#endif
-        return 0;
-    };
+long TraceDebuggerTest::m_test_value = 0;
+std::shared_ptr<Module> TraceDebuggerTest::pe_module = std::make_shared<Module>();
 
-    auto bp_callback = [&](PVOID data) ->long{
-        struct _EXCEPTION_POINTERS *ep = reinterpret_cast<struct _EXCEPTION_POINTERS*>(data);
-#ifdef _X86_
-        static BYTE cmp_bytes[] = { 0x0f, 0x1f, 0x44, 0x00, 0x00 };
-        std::uint64_t address = (std::uint64_t)ep->ContextRecord->Eip;
-#endif
-#ifdef _AMD64_
-        static BYTE cmp_bytes[] = { 0x48, 0xbf, 0xb3, 0x94, 0xd6, 0x26, 0xe8, 0x0b, 0x2e, 0x11 };
-        std::uint64_t address = (std::uint64_t)ep->ContextRecord->Rip;
-#endif
-        std::cout << "breakpoint address = 0x" << std::hex << address << std::endl;
-        std::shared_ptr<Function> function = GetPeModule()->GetFunction(reinterpret_cast<std::uint8_t*>(address));
-        if (!function) return 0;
-        for (auto& block : *function) {
-            if (!block.second) break;
-            std::cout << "  block = " << block.second->getBlockNo() << std::endl;
-            for (auto& insn : *block.second) {
-                if (!insn) break;
-                std::cout << "    0x" << std::hex << insn->address() << ": " << insn->dump() << "    " << insn->dumpbytes() << std::endl;
-                if (insn->getBytes().size() == sizeof(cmp_bytes)) {
-                    if (memcmp(&insn->getBytes()[0], cmp_bytes, sizeof(cmp_bytes)) == 0) {
-                        bool bsuccess = GetDebugger().setBreakPoint(insn->address(), md_callback);
-                        std::cout << "set md_callback: " << bsuccess << std::endl;
-                    }
+long TraceDebuggerTest::end_insn_callback(std::shared_ptr<Debugger::Modifier> ep)
+{
+    if (!ep) return 0;
+    std::uint64_t address = ep->getXip();
+    std::shared_ptr<BasicBlock> block = nullptr;
+    for (auto& func : *GetPeModule()) {
+        if (!func.second) continue;
+        block = func.second->getBasicBlockAtAddress(reinterpret_cast<std::uint8_t*>(address));
+        if (block) {
+            break;
+        }
+    }
+    if (!block) return 0;
+    auto last_insn = block->getEndInsn();
+    if (address != last_insn->address()) {
+        std::cout << "  error end insn address: " << std::hex << address << " , " << last_insn->address() << std::endl;
+    }
+    if (GetCapstoneImplment().InJmpGroup(*last_insn)) {
+        std::uint8_t* next_addr = nullptr;
+        std::uint8_t* jmp_addr = nullptr;
+        if (x86_op_type op_type; GetCapstoneImplment().GetJmpAddress(*last_insn, next_addr, jmp_addr, op_type)) {
+            if (!last_insn->self()) return false;
+            if (!last_insn->self()->detail) return false;
+            cs_detail* detail = last_insn->self()->detail;
+            cs_x86* x86 = &last_insn->self()->detail->x86;
+            std::cout << "    0x" << std::hex << last_insn->address() << ": " << last_insn->dump() << std::endl;
+            if (GetCapstoneImplment().InCondBranchGroup(*last_insn)) {
+                std::uint64_t eflags = GetCapstoneImplment().GetREflags(*last_insn);
+                std::cout << "       eflags: " << std::dec << eflags << "  : " << ep->getEflags() << std::endl;
+                bool bNE = GetCapstoneImplment().IsCcNE(*last_insn);
+                bool bFlag = (std::uint32_t)eflags & ep->getEflags();
+                if ((bNE && !bFlag) ||
+                    (!bNE && bFlag)) {
+                    std::cout << "       jmpto: " << std::hex << reinterpret_cast<std::uint64_t>(jmp_addr) << std::endl;
+                }
+                else {
+                    std::cout << "       jmpto: " << std::hex << reinterpret_cast<std::uint64_t>(next_addr) << std::endl;
                 }
             }
+            else if (GetCapstoneImplment().InBranchGroup(*last_insn)) {
+                std::cout << "       jmpto: " << std::hex << reinterpret_cast<std::uint64_t>(jmp_addr) << std::endl;
+            }
         }
-        std::cout << "bp_callback exit!" << std::endl;
+    }
+    else {
+        std::cout << "    0x" << std::hex << last_insn->address() << ": " << last_insn->dump() << "    " << std::endl;
+    }
+    return 0;
+}
+
+long TraceDebuggerTest::trace_callback(std::shared_ptr<Debugger::Modifier> ep)
+{
+    if (!ep) return 0;
+    std::uint64_t address = ep->getXip();
+    std::shared_ptr<BasicBlock> block = nullptr;
+    for (auto& func : *GetPeModule()) {
+        if (!func.second) continue;
+        block = func.second->getBasicBlockAtAddress(reinterpret_cast<std::uint8_t*>(address));
+        if (block) {
+            break;
+        } 
+    }
+    if (!block) return 0;
+    std::cout << "  block = " << block->getBlockNo() << std::endl;
+    for (int count = 0; count < block->size() - 1; count++) {
+        auto insn = block->getInsn(count);
+        if (!insn) return 0;
+        std::cout << "    0x" << std::hex << insn->address() << ": " << insn->dump() << "    " << std::endl;
+    }
+    auto last_insn = block->getEndInsn();
+    if (!last_insn) return 0;
+    if (block->GetBlockType() == BasicBlock::block_end) {
+        std::cout << "    0x" << std::hex << last_insn->address() << ": " << last_insn->dump() << "    " << std::endl;
         return 0;
-    };
-    void(*ptr) () = []() {
-        int i = 5;
-        while (i) {
-            printf("test number is %d\n", i);
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            i--;
+    }
+    if (address == last_insn->address()) {
+        end_insn_callback(ep);
+    }
+    bool bsuccess = GetDebugger().setBreakPoint(last_insn->address(), end_insn_callback);
+    auto next_block = block->GetNextBlock();
+    auto branch_block = block->GetBranchBlock();
+    if(next_block)
+        bsuccess = GetDebugger().setBreakPoint(next_block->GetBaseAddress(), trace_callback);
+    if(branch_block)
+        bsuccess = GetDebugger().setBreakPoint(branch_block->GetBaseAddress(), trace_callback);
+    return 0;
+}
+
+long TraceDebuggerTest::md_callback(std::shared_ptr<Debugger::Modifier> ep)
+{
+    if (!ep) return 0;
+    std::uint64_t address = ep->getXip();
+    std::shared_ptr<Function> function = nullptr;
+    for (auto& func : *GetPeModule()) {
+        if (!func.second) continue;
+        auto block = func.second->getBasicBlockAtAddress(reinterpret_cast<std::uint8_t*>(address));
+        if (block) {
+            function = func.second;
+            break;
         }
+    }
+    if (!function) return 0;
+    if (function->getLoops().size() != 1)
+        return 0;
+    auto loop = function->getLoops()[0];
+    if (!loop) return 0;
+    if (loop->getLoopType() != Loop::loop_simple)
+        return 0;
+    std::shared_ptr<SimpleLoop> s_loop = std::static_pointer_cast<SimpleLoop>(loop);
+    std::cout << s_loop->getInvariantName() << " setInvariant: " << m_test_value << std::endl;
+    s_loop->setInvariant(ep, m_test_value);
+    return 0;
+};
+
+long TraceDebuggerTest::bp_callback(std::shared_ptr<Debugger::Modifier> ep) {
+    if (!ep) return 0;
+    std::uint64_t address = ep->getXip();
+    if (!address) return 0;
+    //std::cout << "breakpoint address = 0x" << std::hex << address << std::endl;
+    std::shared_ptr<Function> function = GetPeModule()->GetFunction(reinterpret_cast<std::uint8_t*>(address));
+    if (!function) return 0;
+    //for (auto& block : *function) {
+    //    if (!block.second) break;
+    //    std::cout << "  block = " << block.second->getBlockNo() << std::endl;
+    //    for (auto& insn : *block.second) {
+    //        if (!insn) break;
+    //        std::cout << "    0x" << std::hex << insn->address() << ": " << insn->dump() << "    " << insn->dumpbytes() << std::endl;
+    //    }
+    //}
+    if (function->getLoops().size() != 1)
+        return 0;
+    auto loop = function->getLoops()[0];
+    if (!loop) return 0;
+    if (loop->getLoopType() != Loop::loop_simple)
+        return 0;
+    std::uint64_t loop_address = loop->GetBaseAddress();
+    if (!loop_address) return 0;
+    bool bsuccess = GetDebugger().setBreakPoint(loop_address, md_callback);
+    //std::cout << "set md_callback: " << bsuccess << "  addr: " << std::hex << loop_address << std::endl;
+    //std::cout << "bp_callback exit!" << std::endl;
+    return 0;
+};
+
+//TEST_F(TraceDebuggerTest, Debugger_SimpleLoop1_Test)
+//{
+//    void(*ptr) () = []() {
+//        int i = 100;
+//        while (i) {
+//            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+//            i--;
+//            m_test_value++;
+//        }
+//    };
+//    m_test_value = 5;
+//    GetPassRegistry().sequence(GetPassRegistry().sequence_passes_define);
+//    if (!GetPeModule()->Valid()) {
+//        GetPeModule()->SetModuleName(std::string("HipsHookTest.exe"));
+//        ASSERT_TRUE(GetPassRegistry().run(GetPeModule()));
+//    }
+//    //std::cout << "HipsHookTest.exe: insns(" << std::dec << GetPeModule()->GetInsnCounts() << ")" << std::endl;
+//    bool bret = GetPeModule()->AddFunction(std::string(""), reinterpret_cast<std::uint8_t*>(ptr));
+//    ASSERT_TRUE(bret);
+//    std::shared_ptr<Function> function = GetPeModule()->GetFunction(reinterpret_cast<std::uint8_t*>(ptr));
+//    ASSERT_NE(function, nullptr);
+//    std::shared_ptr<FunctionPassManager> funcs_manager = std::static_pointer_cast<FunctionPassManager>(GetPassRegistry().getPassManager(Pass::passmanager_function));
+//    ASSERT_NE(funcs_manager, nullptr);
+//    bret = funcs_manager->Run(function);
+//    ASSERT_TRUE(bret);
+//    bool bsuccess = GetDebugger().setBreakPoint(reinterpret_cast<std::uint64_t>(ptr), bp_callback);
+//    ASSERT_TRUE(bsuccess);
+//    std::thread thread(
+//        ptr);
+//    thread.join();
+//    ASSERT_EQ(m_test_value, 10);
+//}
+//
+//TEST_F(TraceDebuggerTest, Debugger_SimpleLoop2_Test)
+//{
+//    void(*ptr) () = []() {
+//        for (int count = 0; count < 10; count++) {
+//            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+//            m_test_value++;
+//        }
+//    };
+//    m_test_value = 5;
+//    GetPassRegistry().sequence(GetPassRegistry().sequence_passes_define);
+//    if (!GetPeModule()->Valid()) {
+//        GetPeModule()->SetModuleName(std::string("HipsHookTest.exe"));
+//        ASSERT_TRUE(GetPassRegistry().run(GetPeModule()));
+//    }
+//    ASSERT_TRUE(GetPeModule()->Valid());
+//    //std::cout << "HipsHookTest.exe: insns(" << std::dec << GetPeModule()->GetInsnCounts() << ")" << std::endl;
+//    bool bret = GetPeModule()->AddFunction(std::string(""), reinterpret_cast<std::uint8_t*>(ptr));
+//    ASSERT_TRUE(bret);
+//    std::shared_ptr<Function> function = GetPeModule()->GetFunction(reinterpret_cast<std::uint8_t*>(ptr));
+//    ASSERT_NE(function, nullptr);
+//    std::shared_ptr<FunctionPassManager> funcs_manager = std::static_pointer_cast<FunctionPassManager>(GetPassRegistry().getPassManager(Pass::passmanager_function));
+//    ASSERT_NE(funcs_manager, nullptr);
+//    bret = funcs_manager->Run(function);
+//    ASSERT_TRUE(bret);
+//    bool bsuccess = GetDebugger().setBreakPoint(reinterpret_cast<std::uint64_t>(ptr), bp_callback);
+//    ASSERT_TRUE(bsuccess);
+//    std::thread thread(
+//        ptr);
+//    thread.join();
+//    ASSERT_EQ(m_test_value, 10);
+//}
+//
+//TEST_F(TraceDebuggerTest, Debugger_SimpleLoop3_Test)
+//{
+//    void(*ptr) () = []() {
+//        int count = m_test_value + 5;
+//        for (int i = 0; i < count; i++) {
+//            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+//            m_test_value++;
+//        }
+//    };
+//    m_test_value = 5;
+//    GetPassRegistry().sequence(GetPassRegistry().sequence_passes_define);
+//    if (!GetPeModule()->Valid()) {
+//        GetPeModule()->SetModuleName(std::string("HipsHookTest.exe"));
+//        ASSERT_TRUE(GetPassRegistry().run(GetPeModule()));
+//    }
+//    ASSERT_TRUE(GetPeModule()->Valid());
+//    //std::cout << "HipsHookTest.exe: insns(" << std::dec << GetPeModule()->GetInsnCounts() << ")" << std::endl;
+//    bool bret = GetPeModule()->AddFunction(std::string(""), reinterpret_cast<std::uint8_t*>(ptr));
+//    ASSERT_TRUE(bret);
+//    std::shared_ptr<Function> function = GetPeModule()->GetFunction(reinterpret_cast<std::uint8_t*>(ptr));
+//    ASSERT_NE(function, nullptr);
+//    std::shared_ptr<FunctionPassManager> funcs_manager = std::static_pointer_cast<FunctionPassManager>(GetPassRegistry().getPassManager(Pass::passmanager_function));
+//    ASSERT_NE(funcs_manager, nullptr);
+//    bret = funcs_manager->Run(function);
+//    ASSERT_TRUE(bret);
+//    bool bsuccess = GetDebugger().setBreakPoint(reinterpret_cast<std::uint64_t>(ptr), bp_callback);
+//    ASSERT_TRUE(bsuccess);
+//    std::thread thread(
+//        ptr);
+//    thread.join();
+//    ASSERT_EQ(m_test_value, 10);
+//}
+//
+//TEST_F(TraceDebuggerTest, Debugger_SimpleLoop4_Test)
+//{
+//    void(*ptr) () = []() {
+//        int count = m_test_value + 5;
+//        do {
+//            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+//            count--;
+//            m_test_value++;
+//        } while (count);
+//    };
+//    m_test_value = 5;
+//    GetPassRegistry().sequence(GetPassRegistry().sequence_passes_define);
+//    if (!GetPeModule()->Valid()) {
+//        GetPeModule()->SetModuleName(std::string("HipsHookTest.exe"));
+//        ASSERT_TRUE(GetPassRegistry().run(GetPeModule()));
+//    }
+//    ASSERT_TRUE(GetPeModule()->Valid());
+//    //std::cout << "HipsHookTest.exe: insns(" << std::dec << GetPeModule()->GetInsnCounts() << ")" << std::endl;
+//    bool bret = GetPeModule()->AddFunction(std::string(""), reinterpret_cast<std::uint8_t*>(ptr));
+//    ASSERT_TRUE(bret);
+//    std::shared_ptr<Function> function = GetPeModule()->GetFunction(reinterpret_cast<std::uint8_t*>(ptr));
+//    ASSERT_NE(function, nullptr);
+//    std::shared_ptr<FunctionPassManager> funcs_manager = std::static_pointer_cast<FunctionPassManager>(GetPassRegistry().getPassManager(Pass::passmanager_function));
+//    ASSERT_NE(funcs_manager, nullptr);
+//    bret = funcs_manager->Run(function);
+//    ASSERT_TRUE(bret);
+//    bool bsuccess = GetDebugger().setBreakPoint(reinterpret_cast<std::uint64_t>(ptr), bp_callback);
+//    ASSERT_TRUE(bsuccess);
+//    std::thread thread(
+//        ptr);
+//    thread.join();
+//    ASSERT_EQ(m_test_value, 10);
+//}
+//
+//TEST_F(TraceDebuggerTest, Debugger_SimpleLoop5_Test)
+//{
+//    void(*ptr) () = []() {
+//        char count = 100;
+//        do {
+//            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+//            count--;
+//            m_test_value++;
+//        } while (count);
+//    };
+//    m_test_value = 5;
+//    GetPassRegistry().sequence(GetPassRegistry().sequence_passes_define);
+//    if (!GetPeModule()->Valid()) {
+//        GetPeModule()->SetModuleName(std::string("HipsHookTest.exe"));
+//        ASSERT_TRUE(GetPassRegistry().run(GetPeModule()));
+//    }
+//    ASSERT_TRUE(GetPeModule()->Valid());
+//    //std::cout << "HipsHookTest.exe: insns(" << std::dec << GetPeModule()->GetInsnCounts() << ")" << std::endl;
+//    bool bret = GetPeModule()->AddFunction(std::string(""), reinterpret_cast<std::uint8_t*>(ptr));
+//    ASSERT_TRUE(bret);
+//    std::shared_ptr<Function> function = GetPeModule()->GetFunction(reinterpret_cast<std::uint8_t*>(ptr));
+//    ASSERT_NE(function, nullptr);
+//    std::shared_ptr<FunctionPassManager> funcs_manager = std::static_pointer_cast<FunctionPassManager>(GetPassRegistry().getPassManager(Pass::passmanager_function));
+//    ASSERT_NE(funcs_manager, nullptr);
+//    bret = funcs_manager->Run(function);
+//    ASSERT_TRUE(bret);
+//    bool bsuccess = GetDebugger().setBreakPoint(reinterpret_cast<std::uint64_t>(ptr), bp_callback);
+//    ASSERT_TRUE(bsuccess);
+//    std::thread thread(
+//        ptr);
+//    thread.join();
+//    //ASSERT_EQ(m_test_value, 10);
+//}
+
+TEST_F(TraceDebuggerTest, Debugger_TraceMode1_Test)
+{
+    void(*ptr) () = []() {
+        const auto sta = GetTickCount();
+        if (sta % 2) {
+            printf("sta %% 2 == 1, sta = %d\n", sta);
+        }
+        else {
+            std::cout << "sta %% 2 == 0, sta = " << std::dec << sta << std::endl;
+        }
+        return;
     };
-    
-    GetPeModule()->SetModuleName(std::string("HipsHookTest.exe"));
-    bool bret = GetPassRegistry().run(GetPeModule());
-    ASSERT_TRUE(bret);
-    bret = GetPeModule()->AddFunction(std::string(""), reinterpret_cast<std::uint8_t*>(ptr));
+    m_test_value = 5;
+    std::vector<std::string> sequence_vector = { "ModInit", "FuncInit", "BBInit", "BBCheck", "FuncCheck", "LoopInit","ModCheck" };
+    GetPassRegistry().sequence(sequence_vector);
+    if (!GetPeModule()->Valid()) {
+        GetPeModule()->SetModuleName(std::string("HipsHookTest.exe"));
+        ASSERT_TRUE(GetPassRegistry().run(GetPeModule()));
+    }
+    ASSERT_TRUE(GetPeModule()->Valid());
+    //std::cout << "HipsHookTest.exe: insns(" << std::dec << GetPeModule()->GetInsnCounts() << ")" << std::endl;
+    bool bret = GetPeModule()->AddFunction(std::string(""), reinterpret_cast<std::uint8_t*>(ptr));
     ASSERT_TRUE(bret);
     std::shared_ptr<Function> function = GetPeModule()->GetFunction(reinterpret_cast<std::uint8_t*>(ptr));
     ASSERT_NE(function, nullptr);
@@ -95,12 +376,20 @@ TEST_F(TraceDebuggerTest, Debugger_Test)
     ASSERT_NE(funcs_manager, nullptr);
     bret = funcs_manager->Run(function);
     ASSERT_TRUE(bret);
-    Debugger::de_callback step_callback(bp_callback);
-    bool bsuccess = GetDebugger().setBreakPoint(reinterpret_cast<std::uint64_t>(ptr), bp_callback);
+    for (auto& block : *function) {
+        if (!block.second) break;
+        std::cout << "  block = " << block.second->getBlockNo() << "  type: " << block.second->getBlockType() << std::endl;
+        for (auto& insn : *block.second) {
+            if (!insn) break;
+            std::cout << "    0x" << std::hex << insn->address() << ": " << insn->dump() << "    " << insn->dumpbytes() << std::endl;
+        }
+    }
+    bool bsuccess = GetDebugger().setBreakPoint(reinterpret_cast<std::uint64_t>(ptr), trace_callback);
+    ASSERT_TRUE(bsuccess);
     std::thread thread(
         ptr);
-    ASSERT_TRUE(bsuccess);
     thread.join();
+    //ASSERT_EQ(m_test_value, 10);
 }
 
 #endif
