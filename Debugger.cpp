@@ -985,11 +985,17 @@ namespace cchips {
         else if (CExceptionObject::IsPageError(e_code)) {
             detype = de_page_error;
         }
+        if (detype == de_unknown) {
+            check_return();
+            return ret;
+        }
 
         std::shared_ptr<Modifier> modp = std::make_shared<Modifier>(ep->ContextRecord);
         auto& find = m_de_list.find(detype);
-        if (find == m_de_list.end())
+        if (find == m_de_list.end()) {
+            check_return();
             return ret;
+        }
         for (auto& callback : find->second) {
             //std::cout << "Dispatch call! detype: " << detype << std::endl;
             ret |= callback(modp);

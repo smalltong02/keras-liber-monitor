@@ -279,6 +279,10 @@
       "lpSystemInfo"
     ],
 
+    "PostLog": [
+      "lpSystemInfo->dwNumberOfProcessors"
+    ],
+
     "PostCheck": {
       "0": {
         "Check": {
@@ -1748,9 +1752,7 @@
 
     "Parameters": {
       "lpStartupInfo": "LPVOID"
-    },
-
-    "Logging": true
+    }
   },
 
   "GetStartupInfoW": {
@@ -1766,8 +1768,31 @@
 
     "Parameters": {
       "lpStartupInfo": "LPVOID"
+    }
+  },
+
+  "SamplePatch1": {
+    "Signature": {
+      "Library": "",
+      "Return": "ULONG",
+      "Feature": "P500"
     },
 
-    "Logging": true
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_normal$|^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "INLINE",
+      "Name": "SamplePatch1",
+      "Bitmap": "558BEC83EC088B450C53568BDAC745FC050000008D0C8500000000"
+    },
+
+    "Parameters": {
+      "hRequest": "ULONG",
+      "lpszHeaders": "ULONG"
+    }
   }
 }

@@ -667,6 +667,7 @@ namespace cchips {
         struct ClassProto {
             ClassProto() = delete;
             ClassProto(_class_type t, std::string_view name, std::string_view api, unsigned int idx) :type(t), class_name(name), delay_api(api), vtbl_idx(idx) { ; }
+            ClassProto(_class_type t, std::string_view name, std::string_view bm) :type(t), class_name(name), bitmap(bm) { ; }
             _class_type GetClassType() const { return type; }
             std::string GetTypeName() const {
                 for (const auto& it : _class_predefine)
@@ -680,9 +681,19 @@ namespace cchips {
             const std::string& GetClassNam() const { return class_name; }
             const std::string& GetDelayApi() const { return delay_api; }
             unsigned int GetVtblIdx() const { return vtbl_idx; }
+            std::string GetBitmap() const { return bitmap; }
+            std::vector<unsigned char> GetVBitmap() const {
+                if (!bitmap.length() || bitmap.length() % 2 == 1) return {};
+                std::vector<unsigned char> bytes;
+                bytes.resize(bitmap.length() / 2);
+                hexfromstring(&bytes[0], bytes.size(), &bitmap[0], bitmap.length() / 2);
+                if (!bytes.size()) return {};
+                return bytes;
+            }
             _class_type type;
             std::string class_name;
             std::string delay_api;
+            std::string bitmap;
             unsigned int vtbl_idx;
         };
         struct HooksProto {

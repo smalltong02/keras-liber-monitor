@@ -45,7 +45,7 @@ namespace cchips {
     std::unique_ptr<RE2> CExpParsing::_pattern_exp_ptr = std::make_unique<RE2>(_re2_pattern_exp_def, RE2::Quiet);
 
     const std::map<std::string, CPrototype::_class_type> CPrototype::_class_predefine = {
-        {"Normal", CPrototype::class_normal}, {"WMI", CPrototype::class_wmi}, {"VBS", CPrototype::class_vbs}, {"PS", CPrototype::class_ps}, {"KVM", CPrototype::class_kvm}, {"CShape", CPrototype::class_cshape}, {"INLINE", CPrototype::class_inline},
+        {"Normal", CPrototype::class_normal}, {"WMI", CPrototype::class_wmi}, {"VBE", CPrototype::class_vbs}, {"VBS", CPrototype::class_vbs}, {"PS", CPrototype::class_ps}, {"KVM", CPrototype::class_kvm}, {"CShape", CPrototype::class_cshape}, {"INLINE", CPrototype::class_inline},
     };
 
     std::string CLexerTy::GetWordRoot(const std::string_view& iden_str)

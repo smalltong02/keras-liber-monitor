@@ -1187,5 +1187,29 @@
       "hRequest",
       "lpszHeaders"
     ]
+  },
+
+  "SamplePatch1": {
+    "Signature": {
+      "Library": "",
+      "Return": "ULONG",
+      "Feature": "P500"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_normal$"
+    },
+
+    "Class": {
+      "Type": "INLINE",
+      "Bitmap": "558BEC83EC088B450C53568BDAC745FC050000008D0C8500000000"
+    },
+
+    "Parameters": {
+      "hRequest": "ULONG",
+      "lpszHeaders": "ULONG"
+    }
   }
 }

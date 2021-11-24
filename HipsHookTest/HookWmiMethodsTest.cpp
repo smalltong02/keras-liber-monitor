@@ -525,28 +525,12 @@ TEST_F(HookWmiMethodsTest, Win32FanTest)
     if (hr == S_FALSE) return;
     ASSERT_TRUE(GetValueString(vtProp, chRetValue));
     VariantClear(&vtProp);
-    hr = pWbemClsObj->Get(CComBSTR("Caption"), 0, &vtProp, 0, 0);
-    ASSERT_TRUE(SUCCEEDED(hr));
-    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
-    VariantClear(&vtProp);
-    hr = pWbemClsObj->Get(CComBSTR("DeviceID"), 0, &vtProp, 0, 0);
-    ASSERT_TRUE(SUCCEEDED(hr));
-    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
-    VariantClear(&vtProp);
-    hr = pWbemClsObj->Get(CComBSTR("Status"), 0, &vtProp, 0, 0);
-    ASSERT_TRUE(SUCCEEDED(hr));
-    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
-    VariantClear(&vtProp);
-    hr = pWbemClsObj->Get(CComBSTR("SystemName"), 0, &vtProp, 0, 0);
-    ASSERT_TRUE(SUCCEEDED(hr));
-    ASSERT_TRUE(GetValueString(vtProp, chRetValue));
-    VariantClear(&vtProp);
     pWbemClsObj->Release();
     pEnumClsObj->Release();
     // wait for all logs received.
     std::vector<int> count_list;
     count_list.push_back(0);
-    count_list.push_back(5);
+    count_list.push_back(1);
     count_list.push_back(1);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }

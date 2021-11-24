@@ -1300,15 +1300,15 @@ TEST_F(HookSystemTest, NetGetJoinInformation_Postlog_lpServer_Test)
     ASSERT_TRUE(g_hook_test_object->EnableAllApis());
     // test when lpServer is nullptr
     SetLastError(0); EXPECT_CALL(hook_system_mock, NetGetJoinInformation(testing::_, testing::_, testing::_)).Times(1).WillRepeatedly(testing::Return(::NetGetJoinInformation(nullptr, &lpNameBuffer, &join_status)));
-    pre_bexit_0_lpServer = hook_system_mock.NetGetJoinInformation(nullptr, &lpNameBuffer, &join_status);
-    pre_error_0_lpServer = GetLastError();
+    hooked_bexit_0_lpServer = hook_system_mock.NetGetJoinInformation(nullptr, &lpNameBuffer, &join_status);
+    hooked_error_0_lpServer = GetLastError();
 
     // compare return result and error code.
-    EXPECT_EQ(pre_bexit_0_lpServer, pre_bexit_0_lpServer);
-    EXPECT_EQ(pre_error_0_lpServer, pre_error_0_lpServer);
+    EXPECT_EQ(pre_bexit_0_lpServer, hooked_bexit_0_lpServer);
+    EXPECT_EQ(pre_error_0_lpServer, hooked_error_0_lpServer);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1347,7 +1347,7 @@ TEST_F(HookSystemTest, NetUserGetInfo_servername_Test)
     EXPECT_EQ(pre_error_0_servername, hooked_error_0_servername);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1387,7 +1387,7 @@ TEST_F(HookSystemTest, NetUserGetLocalGroups_servername_Test)
     EXPECT_EQ(pre_error_0_servername, hooked_error_0_servername);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1428,7 +1428,7 @@ TEST_F(HookSystemTest, NetShareEnum_servername_Test)
     EXPECT_EQ(pre_error_0_servername, hooked_error_0_servername);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1466,7 +1466,7 @@ TEST_F(HookSystemTest, InternetOpen_lpszAgent_Test)
     EXPECT_EQ(pre_error_0_lpszAgent, hooked_error_0_lpszAgent);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1508,7 +1508,7 @@ TEST_F(HookSystemTest, InternetOpenUrl_hInternet_Test)
     EXPECT_EQ(pre_error_0_hInternet, hooked_error_0_hInternet);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1553,7 +1553,7 @@ TEST_F(HookSystemTest, InternetReadFile_hFile_Test)
     EXPECT_EQ(pre_error_0_hFile, hooked_error_0_hFile);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1601,7 +1601,7 @@ TEST_F(HookSystemTest, InternetCrackUrl_lpszUrl_Test)
     EXPECT_EQ(pre_error_0_lpszUrl, hooked_error_0_lpszUrl);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1666,7 +1666,7 @@ TEST_F(HookSystemTest, InternetConnect_hInternet_Test)
     EXPECT_EQ(pre_error_0_request, hooked_error_0_request);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1702,7 +1702,7 @@ TEST_F(HookSystemTest, DnsQuery_A_Test)
     EXPECT_EQ(pre_error_0_dnsstatus, hooked_error_0_dnsstatus);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1744,7 +1744,7 @@ TEST_F(HookSystemTest, getaddrinfo_Test)
     EXPECT_EQ(pre_error_0_int, hooked_error_0_int);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1786,7 +1786,7 @@ TEST_F(HookSystemTest, GetAddrInfoW_Test)
     EXPECT_EQ(pre_error_0_int, hooked_error_0_int);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1838,7 +1838,7 @@ TEST_F(HookSystemTest, GetInterfaceInfo_Test)
     EXPECT_EQ(pre_error_0_dword, hooked_error_0_dword);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1890,7 +1890,7 @@ TEST_F(HookSystemTest, GetAdaptersInfo_Test)
     EXPECT_EQ(pre_error_0_ulong, hooked_error_0_ulong);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1920,7 +1920,7 @@ TEST_F(HookSystemTest, GetStartupInfoA_Test)
     EXPECT_EQ(pre_error_0_void, hooked_error_0_void);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1950,7 +1950,7 @@ TEST_F(HookSystemTest, GetStartupInfoW_Test)
     EXPECT_EQ(pre_error_0_void, hooked_error_0_void);
     // wait for all logs received.
     std::vector<int> count_list;
-    count_list.push_back(1);
+    count_list.push_back(0);
     EXPECT_EQ(g_server_object->WaitLogCountMap(count_list, 5), TRUE);
 }
 
@@ -1969,7 +1969,7 @@ TEST_F(HookSystemTest, GetSystemInfo_Test)
     pre_error_0_void = GetLastError();
     // initialize
     std::vector<std::string> action_list;
-    action_list.push_back("P110");
+    action_list.push_back("P64");
     g_server_object->AddLogCountMap(action_list);
     // second call test API when EnableAllApis().
     ASSERT_TRUE(g_hook_test_object->EnableAllApis());

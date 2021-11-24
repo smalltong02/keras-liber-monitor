@@ -19,12 +19,13 @@ int main()
         return -1;
     }
 
-    if (argc != 7) {
+    if (argc != 5 && argc != 7) {
         error(
             "Usage: %S <options..>\n"
             "Options:\n"
             "  --pid                     be injected process.\n"
             "  --tid                     be injected thread.\n"
+            "  --path                    be injected process path\n"
             "  --dll                     inject dll path\n",
             argv[0]
         );
@@ -33,7 +34,9 @@ int main()
 
     DWORD_PTR pid = 0;
     DWORD_PTR tid = 0;
+    std::wstring proc_path;
     std::wstring dll_path;
+    cchips::ProcessHelper proc_helper;
     for (int idx = 1; idx < argc; idx++) {
         if (wcscmp(argv[idx], L"--pid") == 0) {
             pid = wcstol(argv[++idx], NULL, 10);
@@ -49,11 +52,33 @@ int main()
             dll_path = argv[++idx];
             continue;
         }
+        if (wcscmp(argv[idx], L"--path") == 0) {
+            proc_path = argv[++idx];
+            continue;
+        }
         error("Found unsupported argument: %S\n", argv[idx]);
         return -1;
     }
 
-    if (pid == 0 || tid == 0 || !dll_path.length())
+    if (!dll_path.length()) {
+        error("Found error argument!\n");
+        return -1;
+    }
+
+    if (pid == 0 && tid == 0) {
+        if (!proc_path.length()) {
+            error("Found error argument!\n");
+            return -1;
+        }
+        if (!proc_helper.StartProcessByFileFullPath(cchips::to_byte_string(proc_path))) {
+            error("Start new process: %ws failed!\n", proc_path.c_str());
+            return -1;
+        }
+        pid = proc_helper.GetPid();
+        tid = proc_helper.GetTid();
+    }
+    
+    if (pid == 0 || tid == 0)
     {
         error("Found error argument!\n");
         return -1;

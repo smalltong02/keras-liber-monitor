@@ -41,7 +41,7 @@ std::string W2AString(const std::wstring& str)
 std::string StringToLower(const std::string& str)
 {
     std::string lower_str = str;
-    transform(lower_str.begin(), lower_str.end(), lower_str.begin(), ::toupper);
+    transform(lower_str.begin(), lower_str.end(), lower_str.begin(), ::tolower);
     return lower_str;
 }
 
@@ -328,7 +328,7 @@ tls_check_struct* check_get_tls()
 void check_return()
 {
     tls_check_struct *tls = check_get_tls();
-
+    if (!tls) return;
     if (tls->active != 0) {
         longjmp(tls->jb, 1);
     }
@@ -394,10 +394,48 @@ char hexbyte(char hex) {
         return 0x0;
 }
 
+bool hexfromstring(BYTE* bytes, int bytes_len, const char* str, int hex_len)
+{
+    if (!bytes || !str) return false;
+    if (hex_len == 0) return false;
+    if (bytes_len < hex_len) return false;
+    for (int i = 0; i < hex_len; i++) {
+        bytes[i] = (hexbyte(str[2 * i]) << 4) | hexbyte(str[2 * i + 1]);
+    }
+    return true;
+}
+
 std::string hexstring(BYTE byte)
 {
     static const char hex[16] = { '0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f' };
     std::stringstream ss;
     ss << "0x" << hex[(byte & 0xf0) >> 4] << hex[byte & 0x0f];
     return ss.str();
+}
+
+void *memmem(const void *buf,
+    size_t buf_len,
+    const void *byte_sequence,
+    size_t byte_sequence_len)
+{
+    BYTE *bf = (BYTE *)buf;
+    BYTE *bs = (BYTE *)byte_sequence;
+    BYTE *p = bf;
+
+    while (byte_sequence_len <= (buf_len - (p - bf)))
+    {
+        UINT b = *bs & 0xFF;
+        if ((p = (BYTE *)memchr(p, b, buf_len - (p - bf))) != NULL)
+        {
+            if ((memcmp(p, byte_sequence, byte_sequence_len)) == 0)
+                return p;
+            else
+                p++;
+        }
+        else
+        {
+            break;
+        }
+    }
+    return NULL;
 }

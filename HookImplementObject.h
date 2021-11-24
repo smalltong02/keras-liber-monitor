@@ -91,6 +91,12 @@ namespace cchips {
         __asm {mov  eax, dword ptr [eax]}       \
         __asm {push eax}                        \
     }                                           \
+    __asm {mov  ebx, __backup_regs.ebx}         \
+    __asm {mov  ecx, __backup_regs.ecx}         \
+    __asm {mov  edx, __backup_regs.edx}         \
+    __asm {mov  esi, __backup_regs.esi}         \
+    __asm {mov  edi, __backup_regs.edi}         \
+    __asm {mov  eax, __backup_regs.eax}         \
     __asm {call __func}                            \
     __asm {mov  __return, eax}                  \
     __asm {cmp  __psize, 0}                     \
@@ -446,7 +452,20 @@ if (DWORD index_; !CheckExploitFuncs::ValidStackPointer(reinterpret_cast<ULONG_P
         static processing_status WINAPI detour_WSAStartup(detour_node* node, WORD wVersionRequired, LPWSADATA lpWSAData);
         static processing_status WINAPI detour_socket(detour_node* node, int af, int type, int protocol);
         static processing_status WINAPI detour_connect(detour_node* node, SOCKET s, const sockaddr *name, int namelen);
-
+        // define static detour for vba
+        static processing_status WINAPI detour_internalFindWindowsExW(detour_node* node, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD param3);
+        static processing_status WINAPI detour_rtcCreateObject2(detour_node* node, DWORD param1, LPCWSTR szName, DWORD param2);
+        static processing_status WINAPI detour_rtcCreateObject2_post(detour_node* node, DWORD param1, LPCWSTR szName, DWORD param2);
+        static processing_status WINAPI detour_rtcCallByName(detour_node* node, LPVOID param1, LPVOID param2, LPCWSTR procName, DWORD callType, LPVOID* args, LPVOID param3);
+        static processing_status WINAPI detour_rtcCallByName_post(detour_node* node, LPVOID param1, LPVOID param2, LPCWSTR procName, DWORD callType, LPVOID* args, LPVOID param3);
+        static processing_status WINAPI detour_rtcGetObject(detour_node* node, LPVOID param1, LPVOID object_var, LPVOID param2);
+        static processing_status WINAPI detour_rtcGetObject_post(detour_node* node, LPVOID param1, LPVOID object_var, LPVOID param2);
+        static processing_status WINAPI detour_rtcShell(detour_node* node, LPVOID shell_var, LPVOID param1);
+        static processing_status WINAPI detour_rtcCallFunction(detour_node* node, LPCWSTR functionName, INT param1);
+        static processing_status WINAPI detour_rtcComCall(detour_node* node, INT param1, INT param2, INT argType, LPDWORD arguments, INT argCount, INT param3);
+        static processing_status WINAPI detour_rtcSetProp(detour_node* node, INT param1, INT param2, LPDWORD arguments, INT param3, INT param4);
+        //sample patch
+        static processing_status WINAPI detour_samplePatch1(detour_node* node, ULONG param1, ULONG param2);
         // Use traditional hooks to handle heap APIs.
         static PVOID WINAPI detour_rtlAllocateHeap(PVOID HeapHandle, ULONG Flags, SIZE_T Size);
         static BOOLEAN WINAPI detour_rtlFreeHeap(PVOID HeapHandle, ULONG Flags, PVOID BaseAddress);
@@ -460,6 +479,16 @@ if (DWORD index_; !CheckExploitFuncs::ValidStackPointer(reinterpret_cast<ULONG_P
         bool IsTraceMode() const {
             if (m_configObject)
                 return m_configObject->IsTraceMode();
+            return false;
+        }
+        bool IsPipeMode() const {
+            if (m_configObject)
+                return m_configObject->IsPipeMode();
+            return false;
+        }
+        bool IsLocalMode() const {
+            if (m_configObject)
+                return m_configObject->IsLocalMode();
             return false;
         }
     private:

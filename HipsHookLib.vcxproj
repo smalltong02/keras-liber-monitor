@@ -437,6 +437,7 @@
     <ClCompile Include="ThirdParty\pelib\src\TlsInfo.cpp" />
     <ClCompile Include="UniversalObject.cpp" />
     <ClCompile Include="utils.cpp" />
+    <ClCompile Include="vbaimpl.cpp" />
     <ClCompile Include="Win32EnumWbemClassObject.cpp" />
     <ClCompile Include="Win32WbemClassObject.cpp" />
   </ItemGroup>
@@ -562,6 +563,7 @@
     <ClInclude Include="ThirdParty\pelib\include\TlsInfo.h" />
     <ClInclude Include="UniversalObject.h" />
     <ClInclude Include="utils.h" />
+    <ClInclude Include="vbaimpl.h" />
     <ClInclude Include="Win32EnumWbemClassObject.h" />
     <ClInclude Include="Win32WbemClassObject.h" />
   </ItemGroup>

@@ -5,7 +5,8 @@
   "Description": "Creating hooks and signature format config information head file",
 
   "Config": {
-    "Mode": 3
+    "HipsMode": 3,
+    "LogMode": 1
   },
 
   "Sigs": [

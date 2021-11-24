@@ -57,6 +57,10 @@ namespace cchips {
                 modevalue.has_value() && modevalue.type() == typeid(int)) {
                 m_hips_mode = (_hips_mode)std::any_cast<int>(modevalue);
             }
+            if (auto modevalue(document.GetMember(std::vector<std::string>{FL_CONFIG, FL_LOGMODE}));
+                modevalue.has_value() && modevalue.type() == typeid(int)) {
+                m_log_mode = (_log_mode)std::any_cast<int>(modevalue);
+            }
         }
 
         if (!InitializeFlagsObjects(module_handle, document))

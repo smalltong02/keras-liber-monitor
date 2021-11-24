@@ -108,7 +108,7 @@ protected:
     }
     bool CreateLocalFile(const std::wstring& file_name) {
         pipe_handle_ = CreateFileW(file_name.c_str(), GENERIC_WRITE | GENERIC_READ,
-            0, NULL, CREATE_ALWAYS, 0, NULL);
+            FILE_SHARE_READ, NULL, CREATE_ALWAYS, 0, NULL);
 
         if (pipe_handle_ != INVALID_HANDLE_VALUE) {
 #ifdef CCHIPS_EXTERNAL_USE

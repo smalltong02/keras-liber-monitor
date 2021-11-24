@@ -1,0 +1,10 @@
+#pragma once
+#pragma once
+#include <stdio.h>
+#include <windows.h>
+#include <guiddef.h>
+#include <WbemCli.h>
+#include <WMIUtils.h>
+#include <OCIdl.h>
+#include <atlbase.h>
+#include <winioctl.h>

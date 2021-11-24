@@ -405,4 +405,94 @@ namespace cchips {
         static FARPROC m_lpfn_GetLastError;
     };
 
+    class ProcessHelper
+    {
+    public:
+        ProcessHelper() {
+            memset(&m_proc_info, 0, sizeof(m_proc_info));
+        }
+        ~ProcessHelper() {
+            ProcessExit();
+        }
+
+        DWORD_PTR GetPid() const {
+            if (IsRunning()) {
+                return m_proc_info.dwProcessId;
+            }
+            return 0;
+        }
+        DWORD_PTR GetTid() const {
+            if (IsRunning()) {
+                return m_proc_info.dwThreadId;
+            }
+            return 0;
+        }
+        HANDLE GetNativeHandle() const {
+            if (IsRunning()) {
+                return m_proc_info.hProcess;
+            }
+            return nullptr;
+        }
+
+        bool IsRunning() const {
+            if( m_proc_info.hProcess != nullptr &&
+                m_proc_info.hThread != nullptr &&
+                m_proc_info.dwProcessId != 0 &&
+                m_proc_info.dwThreadId != 0 ) { 
+                return true;
+            }
+            return false;
+        }
+        bool StartProcessByName(const std::string& proc_name) {
+            bool bret = false;
+            if (!IsRunning())
+            {
+                char str_directory[MAX_PATH] = {};
+                if (GetCurrentDirectory(MAX_PATH, str_directory) != 0) {
+                    STARTUPINFOA start_info;
+                    ZeroMemory(&start_info, sizeof(start_info));
+                    start_info.cb = sizeof(start_info);
+                    auto fullPathFile = std::string(str_directory) + "\\" + proc_name;
+                    PROCESS_INFORMATION proc_info = {};
+                    bret = CreateProcessA(nullptr, (LPSTR)fullPathFile.c_str(), nullptr, nullptr, false, CREATE_SUSPENDED, nullptr, nullptr, &start_info, &proc_info);
+                    if (bret) {
+                        m_name = fullPathFile;
+                        m_proc_info = proc_info;
+                    }
+                    return bret;
+                }
+            }
+            return bret;
+        }
+        bool StartProcessByFileFullPath(const std::string& full_name) {
+            bool bret = false;
+            if (!IsRunning())
+            {
+                STARTUPINFOA start_info;
+                ZeroMemory(&start_info, sizeof(start_info));
+                start_info.cb = sizeof(start_info);
+                PROCESS_INFORMATION proc_info = {};
+                bret = CreateProcessA(nullptr, (LPSTR)full_name.c_str(), nullptr, nullptr, false, CREATE_SUSPENDED, nullptr, nullptr, &start_info, &proc_info);
+                if (bret) {
+                    m_name = full_name;
+                    m_proc_info = proc_info;
+                }
+                return bret;
+            }
+            return bret;
+        }
+        void ProcessExit() {
+            if (IsRunning())
+            {
+                CloseHandle(m_proc_info.hThread);
+                CloseHandle(m_proc_info.hProcess);
+                memset(&m_proc_info, 0, sizeof(m_proc_info));
+                m_name.clear();
+            }
+        }
+    private:
+        std::string m_name;
+        PROCESS_INFORMATION m_proc_info;
+    };
+
 } // namespace cchips

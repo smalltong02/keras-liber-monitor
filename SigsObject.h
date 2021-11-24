@@ -37,6 +37,7 @@ namespace cchips {
 #define SI_CNAME "Name"
 #define SI_CDELAY "Delay"
 #define SI_CVTBLIDX "VtblIdx"
+#define SI_BITMAP "Bitmap"
 
 #define SI_PLATFORM "Platform"
 #define SI_PROC_TYPE "Processes"

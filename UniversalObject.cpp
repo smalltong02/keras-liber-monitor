@@ -110,34 +110,44 @@ namespace cchips {
 
     void CategoryObject::InitGetCategory()
     {
-        char buffer[MAX_PATH];
+        tls_check_struct *tls = check_get_tls();
+        if (tls) {
+            tls->active = 1;
+            if (setjmp(tls->jb) == 0) {
+                char buffer[MAX_PATH];
 
-        DWORD nret = GetModuleFileName(NULL, buffer, MAX_PATH);
-        if (nret == 0) return;
-        std::string filename = buffer;
-        size_t npos = filename.rfind('\\');
-        if (npos != std::string::npos) {
-            filename = filename.substr(npos + 1);
-        }
-        if (!filename.size()) return;
-
-        for (const auto& category : _category_str_def) {
-            std::unique_ptr<RE2> pattern_ptr = std::make_unique<RE2>(category.second, RE2::Quiet);
-            if (!pattern_ptr) break;
-            if (RE2::FullMatch(filename, *pattern_ptr)) {
-                m_category_pattern = std::move(pattern_ptr);
-                m_category = category.first;
-                break;
-            }
-        }
-
-        if (m_category != category_normal && m_category_pattern) {
-            for (const auto& dangerous : _dangerous_str_def) {
-                if (m_category == dangerous.first) {
-                    m_dangerous_pattern = std::make_unique<RE2>(dangerous.second, RE2::Quiet);
-                    break;
+                DWORD nret = GetModuleFileName(NULL, buffer, MAX_PATH);
+                if (nret == 0) return;
+                std::string filename = buffer;
+                size_t npos = filename.rfind('\\');
+                if (npos != std::string::npos) {
+                    filename = filename.substr(npos + 1);
                 }
+                if (!filename.size()) return;
+                for (const auto& category : _category_str_def) {
+                    std::unique_ptr<RE2> pattern_ptr = std::make_unique<RE2>(category.second, RE2::Quiet);
+                    if (!pattern_ptr) break;
+                    if (RE2::FullMatch(filename, *pattern_ptr)) {
+                        m_category_pattern = std::move(pattern_ptr);
+                        m_category = category.first;
+                        break;
+                    }
+                }
+                if (m_category != category_normal && m_category_pattern) {
+                    for (const auto& dangerous : _dangerous_str_def) {
+                        if (m_category == dangerous.first) {
+                            m_dangerous_pattern = std::make_unique<RE2>(dangerous.second, RE2::Quiet);
+                            break;
+                        }
+                    }
+                }
+                tls->active = 0;
+                return;
             }
+            tls->active = 0;
+            m_category = category_normal;
+            m_category_pattern = nullptr;
+            m_dangerous_pattern = nullptr;
         }
     }
 

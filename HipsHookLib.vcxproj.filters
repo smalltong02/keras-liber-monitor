@@ -339,6 +339,9 @@
     <ClCompile Include="Passes\loopinit\loopinit.cpp">
       <Filter>Passes\loopinit</Filter>
     </ClCompile>
+    <ClCompile Include="vbaimpl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FlagsObject.h">
@@ -709,6 +712,9 @@
     </ClInclude>
     <ClInclude Include="Passes\loopinit\loopinit.h">
       <Filter>Passes\loopinit</Filter>
+    </ClInclude>
+    <ClInclude Include="vbaimpl.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

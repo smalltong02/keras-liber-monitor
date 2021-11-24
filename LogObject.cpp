@@ -113,7 +113,17 @@ namespace cchips {
     {
         std::function<RAPID_DOC_PAIR()> getdata(std::bind(&CLogObject::GetData, this));
 #ifdef USING_PIPE_MESSAGE
-        std::unique_ptr<PipeJSONClient> pipe_ptr = std::make_unique<PipeJSONClient>(L"\\\\.\\pipe\\hips_hook", PipeJSONClient::cfg_serial);
+        std::wstring pipe_name;
+        if (g_impl_object->IsPipeMode()) {
+            pipe_name = L"\\\\.\\pipe\\hips_hook";
+        }
+        if (g_impl_object->IsLocalMode()) {
+            wchar_t tmp_buffer[MAX_PATH] = {};
+            GetTempPathW(MAX_PATH * sizeof(wchar_t), tmp_buffer);
+            pipe_name = std::wstring(L"LocalFile\\") + std::wstring(tmp_buffer) + L"hipshook.log";
+        }
+        if (!pipe_name.length()) return false;
+        std::unique_ptr<PipeJSONClient> pipe_ptr = std::make_unique<PipeJSONClient>(pipe_name, PipeJSONClient::cfg_serial);
         if (pipe_ptr && pipe_ptr->Start())
             m_pipe_client = std::move(pipe_ptr);
         if (m_pipe_client)

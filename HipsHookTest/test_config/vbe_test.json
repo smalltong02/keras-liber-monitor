@@ -17,7 +17,7 @@
 
     "Class": {
       "Type": "VBE",
-      "API": "rtcCreateObject2"
+      "Name": "rtcCreateObject2"
     },
 
     "Parameters": {
@@ -42,7 +42,7 @@
 
     "Class": {
       "Type": "VBE",
-      "API": "rtcCallByName"
+      "Name": "rtcCallByName"
     },
 
     "Parameters": {
@@ -70,7 +70,7 @@
 
     "Class": {
       "Type": "VBE",
-      "API": "rtcGetObject"
+      "Name": "rtcGetObject"
     },
 
     "Parameters": {
@@ -95,7 +95,7 @@
 
     "Class": {
       "Type": "VBE",
-      "API": "rtcShell"
+      "Name": "rtcShell"
     },
 
     "Parameters": {
@@ -119,7 +119,7 @@
 
     "Class": {
       "Type": "VBE",
-      "API": "rtcCreateObject2"
+      "Name": "rtcCreateObject2"
     },
 
     "Parameters": {
@@ -144,7 +144,7 @@
 
     "Class": {
       "Type": "VBE",
-      "API": "rtcCallByName"
+      "Name": "rtcCallByName"
     },
 
     "Parameters": {
@@ -172,7 +172,7 @@
 
     "Class": {
       "Type": "VBE",
-      "API": "rtcGetObject"
+      "Name": "rtcGetObject"
     },
 
     "Parameters": {
@@ -197,7 +197,7 @@
 
     "Class": {
       "Type": "VBE",
-      "API": "rtcShell"
+      "Name": "rtcShell"
     },
 
     "Parameters": {
@@ -221,7 +221,7 @@
 
     "Class": {
       "Type": "VBE",
-      "API": "rtcCreateObject2"
+      "Name": "rtcCreateObject2"
     },
 
     "Parameters": {
@@ -246,7 +246,7 @@
 
     "Class": {
       "Type": "VBE",
-      "API": "rtcCallByName"
+      "Name": "rtcCallByName"
     },
 
     "Parameters": {
@@ -274,7 +274,7 @@
 
     "Class": {
       "Type": "VBE",
-      "API": "rtcGetObject"
+      "Name": "rtcGetObject"
     },
 
     "Parameters": {
@@ -299,7 +299,7 @@
 
     "Class": {
       "Type": "VBE",
-      "API": "rtcShell"
+      "Name": "rtcShell"
     },
 
     "Parameters": {
@@ -323,6 +323,7 @@
 
     "Class": {
       "Type": "INLINE",
+      "Name": "rtcCallFunction",
       "Bitmap": "558BEC56578B7D0C85FF75076A5B"
     },
 
@@ -347,6 +348,7 @@
 
     "Class": {
       "Type": "INLINE",
+      "Name": "rtcCallFunction",
       "Bitmap": "558BEC56578B7D0C85FF75076A5B"
     },
 
@@ -371,6 +373,7 @@
 
     "Class": {
       "Type": "INLINE",
+      "Name": "rtcCallFunction",
       "Bitmap": "558BEC56578B7D0C85FF75076A5B"
     },
 
@@ -395,6 +398,7 @@
 
     "Class": {
       "Type": "INLINE",
+      "Name": "rtcComCall",
       "Bitmap": "558BEC83EC34837D080075076A5B"
     },
 
@@ -423,6 +427,7 @@
 
     "Class": {
       "Type": "INLINE",
+      "Name": "rtcComCall",
       "Bitmap": "8BFF558BEC83EC34837D08000F8401BD0F00"
     },
 
@@ -451,6 +456,7 @@
 
     "Class": {
       "Type": "INLINE",
+      "Name": "rtcComCall",
       "Bitmap": "558BEC83EC34837D080075076A5B"
     },
 
@@ -479,6 +485,7 @@
 
     "Class": {
       "Type": "INLINE",
+      "Name": "rtcSetProp",
       "Bitmap": "558BEC837D1808568B7510751C0F"
     },
 
@@ -506,6 +513,7 @@
 
     "Class": {
       "Type": "INLINE",
+      "Name": "rtcSetProp",
       "Bitmap": "558BEC837D1808568B7510751C0F"
     },
 
@@ -533,6 +541,7 @@
 
     "Class": {
       "Type": "INLINE",
+      "Name": "rtcSetProp",
       "Bitmap": "558BEC837D1808568B7510751C0F"
     },
 
@@ -542,6 +551,32 @@
       "Arguments": "LPDWORD",
       "param3": "INT",
       "param4": "INT"
+    }
+  },
+
+  "InternalFindWindowsExW": {
+    "Signature": {
+      "Library": "user32.dll",
+      "Return": "HWND",
+      "Feature": "T1"
+    },
+
+    "Hooks": {
+      "Platform": "^\\w*$",
+      "Processes": "^(?i)32-bit$",
+      "Category": "^(?i)category_test$"
+    },
+
+    "Class": {
+      "Type": "INLINE",
+      "Name": "InternalFindWindowsExW",
+      "Bitmap": "8BFF558BEC83EC288365F80033C05356578D7DDC"
+    },
+
+    "Parameters": {
+      "lpClassName": "LPCWSTR",
+      "lpWindowName": "LPCWSTR",
+      "param3": "DWORD"
     }
   }
 }

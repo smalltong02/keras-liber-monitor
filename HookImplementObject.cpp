@@ -245,7 +245,14 @@ namespace cchips {
 
     MH_STATUS CHookImplementObject::HookNormalApi(hook_node& node)
     {
-        MH_STATUS status = MH_CreateHookApiEx(A2WString((*node.function).GetLibrary()).c_str(), (LPCSTR)(*node.function).GetName().c_str(), m_hookImplementFunction, &(node.orgin_api_implfunc), (LPVOID*)&node, &node.ppTarget);
+        std::string func_name;
+        if ((*node.function).GetClassProto()) {
+            func_name = (*node.function).GetClassProto()->GetClassNam();
+        }
+        else {
+            func_name = (*node.function).GetName();
+        }
+        MH_STATUS status = MH_CreateHookApiEx(A2WString((*node.function).GetLibrary()).c_str(), (LPCSTR)func_name.c_str(), m_hookImplementFunction, &(node.orgin_api_implfunc), (LPVOID*)&node, &node.ppTarget);
         if (status == MH_OK)
         {
             if (node.bdelayed && node.ppTarget)
@@ -303,9 +310,9 @@ namespace cchips {
             status = MH_CreateHook_New(target_addr, node.hook_implement_object->GetHookImplementFunction(), &(node.orgin_api_implfunc), (LPVOID*)&node);
             if (status == MH_OK)
             {
+                node.ppTarget = target_addr;
                 if (node.bdelayed)
                 {
-                    node.ppTarget = target_addr;
                     status = MH_EnableHook(target_addr);
                     if (status == MH_OK)
                     {
@@ -335,6 +342,63 @@ namespace cchips {
         case CPrototype::class_ps:
         case CPrototype::class_kvm:
         case CPrototype::class_cshape:
+        {
+            return HookNormalApi(node);
+        }
+        break;
+        case CPrototype::class_inline:
+        {
+            MODULEINFO mi = { 0 };
+            HMODULE hmodule = nullptr;
+            if ((*node.function).GetLibrary().length() == 0) {
+                hmodule = GetModuleHandle(nullptr);
+            }
+            else {
+                hmodule = GetModuleHandle((*node.function).GetLibrary().c_str());
+            }
+            if (!hmodule) {
+                status = MH_ERROR_MODULE_NOT_FOUND;
+                break;
+            }
+            if (!GetModuleInformation(GetCurrentProcess(), hmodule, &mi, sizeof(mi)))
+                break;
+            if (!mi.lpBaseOfDll) break;
+            std::vector<unsigned char> vbitmap = (*node.function).GetClassProto()->GetVBitmap();
+            if (!vbitmap.size())
+                break;
+            PVOID target_addr = memmem(mi.lpBaseOfDll, mi.SizeOfImage, &vbitmap[0], vbitmap.size());
+            if (!target_addr)
+                break;
+            status = MH_CreateHook_New(target_addr, node.hook_implement_object->GetHookImplementFunction(), &(node.orgin_api_implfunc), (LPVOID*)&node);
+            if (status == MH_OK)
+            {
+                node.ppTarget = target_addr;
+                if (node.bdelayed)
+                {
+                    status = MH_EnableHook(target_addr);
+                    if (status == MH_OK)
+                    {
+                        error_log("inline hook create: '{}' success!", node.function->GetName());
+                    }
+                    else
+                    {
+                        error_log("inline hook create: '{}' failed({})!", node.function->GetName(), status);
+                    }
+                    node.bdelayed = false;
+                }
+                else
+                {
+                    error_log("inline hook create: '{}' success!", node.function->GetName());
+                }
+                return status;
+            }
+            else
+            {
+                error_log("inline hook create: '{}' failed({})!", node.function->GetName(), status);
+                return status;
+            }
+        }
+        break;
         default:
             break;
         }
@@ -358,6 +422,7 @@ namespace cchips {
         switch (type)
         {
         case CPrototype::class_wmi:
+        case CPrototype::class_inline:
         {
             if (!node.bdelayed && node.ppTarget)
             {
@@ -372,6 +437,10 @@ namespace cchips {
         case CPrototype::class_ps:
         case CPrototype::class_kvm:
         case CPrototype::class_cshape:
+        {
+            return RemoveNormalApi(node);
+        }
+        break;
         default:
             break;
         }
@@ -439,7 +508,7 @@ namespace cchips {
                 {
                     // delayed hook;
                     m_hookNodeList[count].bdelayed = true;
-                    if (!(*m_hookNodeList[count].function).GetClassProto() || (*m_hookNodeList[count].function).GetClassProto()->GetClassType() == CPrototype::class_normal)
+                    if (!(*m_hookNodeList[count].function).GetClassProto() || (*m_hookNodeList[count].function).GetClassProto()->GetClassType() != CPrototype::class_wmi)
                         m_delayNodeList[StringToLower((*m_hookNodeList[count].function).GetLibrary())].push_back(count);
                     else
                         m_delayNodeList[(*m_hookNodeList[count].function).GetClassProto()->GetTypeName()].push_back(count);
@@ -641,7 +710,32 @@ namespace cchips {
         ADD_POST_PROCESSING(IWbemClassObject_Put, detour_IWbemClassObject_Put);
         ADD_POST_PROCESSING(IWbemClassObject_Next, detour_IWbemClassObject_Next);
         ADD_POST_PROCESSING(IWbemServices_ExecMethod, detour_IWbemServices_ExecMethod);
-        
+        //processing vba hook
+        ADD_PRE_PROCESSING(rtcCreateObject2_v6, detour_rtcCreateObject2);
+        ADD_PRE_PROCESSING(rtcCreateObject2_v7, detour_rtcCreateObject2);
+        ADD_PRE_PROCESSING(rtcCreateObject2_v71, detour_rtcCreateObject2);
+        ADD_PRE_PROCESSING(rtcCallByName_v6, detour_rtcCallByName);
+        ADD_PRE_PROCESSING(rtcCallByName_v7, detour_rtcCallByName);
+        ADD_PRE_PROCESSING(rtcCallByName_v71, detour_rtcCallByName);
+        ADD_PRE_PROCESSING(rtcGetObject_v6, detour_rtcGetObject);
+        ADD_PRE_PROCESSING(rtcGetObject_v7, detour_rtcGetObject);
+        ADD_PRE_PROCESSING(rtcGetObject_v71, detour_rtcGetObject);
+        ADD_PRE_PROCESSING(rtcShell_v6, detour_rtcShell);
+        ADD_PRE_PROCESSING(rtcShell_v7, detour_rtcShell);
+        ADD_PRE_PROCESSING(rtcShell_v71, detour_rtcShell);
+        ADD_PRE_PROCESSING(Vbe6_rtcCallFunction, detour_rtcCallFunction);
+        ADD_PRE_PROCESSING(Vbe7_rtcCallFunction, detour_rtcCallFunction);
+        ADD_PRE_PROCESSING(Vbe71_rtcCallFunction, detour_rtcCallFunction);
+        ADD_PRE_PROCESSING(Vbe6_rtcComCall, detour_rtcComCall);
+        ADD_PRE_PROCESSING(Vbe7_rtcComCall, detour_rtcComCall);
+        ADD_PRE_PROCESSING(Vbe71_rtcComCall, detour_rtcComCall);
+        ADD_PRE_PROCESSING(Vbe6_rtcSetProp, detour_rtcSetProp);
+        ADD_PRE_PROCESSING(Vbe7_rtcSetProp, detour_rtcSetProp);
+        ADD_PRE_PROCESSING(Vbe71_rtcSetProp, detour_rtcSetProp);
+        //Patch
+        ADD_PRE_PROCESSING(SamplePatch1, detour_samplePatch1);
+        //processing test hook
+        ADD_PRE_PROCESSING(InternalFindWindowsExW, detour_internalFindWindowsExW);
         return true;
     }
 
@@ -686,6 +780,7 @@ namespace cchips {
         DEL_POST_PROCESSING(VirtualAllocEx, detour_virtualAllocEx);
         DEL_POST_PROCESSING(VirtualProtectEx, detour_virtualProtectEx);
         DEL_POST_PROCESSING(RtlAllocateHeap, detour_rtlAllocateHeap);
+        DEL_POST_PROCESSING(CoCreateInstance, detour_coCreateInstance_post);
         // processing wmi hook
         DEL_PRE_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_ExecQuery);
         DEL_POST_PROCESSING(IWbemServices_ExecQuery, detour_IWbemServices_Post_ExecQuery);
@@ -694,6 +789,41 @@ namespace cchips {
         DEL_POST_PROCESSING(IWbemClassObject_Put, detour_IWbemClassObject_Put);
         DEL_POST_PROCESSING(IWbemClassObject_Next, detour_IWbemClassObject_Next);
         DEL_POST_PROCESSING(IWbemServices_ExecMethod, detour_IWbemServices_ExecMethod);
+        //processing vba hook
+        DEL_PRE_PROCESSING(rtcCreateObject2_v6, detour_rtcCreateObject2);
+        DEL_PRE_PROCESSING(rtcCreateObject2_v7, detour_rtcCreateObject2);
+        DEL_PRE_PROCESSING(rtcCreateObject2_v71, detour_rtcCreateObject2);
+        DEL_PRE_PROCESSING(rtcCallByName_v6, detour_rtcCallByName);
+        DEL_PRE_PROCESSING(rtcCallByName_v7, detour_rtcCallByName);
+        DEL_PRE_PROCESSING(rtcCallByName_v71, detour_rtcCallByName);
+        DEL_PRE_PROCESSING(rtcGetObject_v6, detour_rtcGetObject);
+        DEL_PRE_PROCESSING(rtcGetObject_v7, detour_rtcGetObject);
+        DEL_PRE_PROCESSING(rtcGetObject_v71, detour_rtcGetObject);
+        DEL_POST_PROCESSING(rtcCreateObject2_v6, detour_rtcCreateObject2_post);
+        DEL_POST_PROCESSING(rtcCreateObject2_v7, detour_rtcCreateObject2_post);
+        DEL_POST_PROCESSING(rtcCreateObject2_v71, detour_rtcCreateObject2_post);
+        DEL_POST_PROCESSING(rtcCallByName_v6, detour_rtcCallByName_post);
+        DEL_POST_PROCESSING(rtcCallByName_v7, detour_rtcCallByName_post);
+        DEL_POST_PROCESSING(rtcCallByName_v71, detour_rtcCallByName_post);
+        DEL_POST_PROCESSING(rtcGetObject_v6, detour_rtcGetObject_post);
+        DEL_POST_PROCESSING(rtcGetObject_v7, detour_rtcGetObject_post);
+        DEL_POST_PROCESSING(rtcGetObject_v71, detour_rtcGetObject_post);
+        DEL_PRE_PROCESSING(rtcShell_v6, detour_rtcShell);
+        DEL_PRE_PROCESSING(rtcShell_v7, detour_rtcShell);
+        DEL_PRE_PROCESSING(rtcShell_v71, detour_rtcShell);
+        DEL_PRE_PROCESSING(Vbe6_rtcCallFunction, detour_rtcCallFunction);
+        DEL_PRE_PROCESSING(Vbe7_rtcCallFunction, detour_rtcCallFunction);
+        DEL_PRE_PROCESSING(Vbe71_rtcCallFunction, detour_rtcCallFunction);
+        DEL_PRE_PROCESSING(Vbe6_rtcComCall, detour_rtcComCall);
+        DEL_PRE_PROCESSING(Vbe7_rtcComCall, detour_rtcComCall);
+        DEL_PRE_PROCESSING(Vbe71_rtcComCall, detour_rtcComCall);
+        DEL_PRE_PROCESSING(Vbe6_rtcSetProp, detour_rtcSetProp);
+        DEL_PRE_PROCESSING(Vbe7_rtcSetProp, detour_rtcSetProp);
+        DEL_PRE_PROCESSING(Vbe71_rtcSetProp, detour_rtcSetProp);
+        //Patch
+        DEL_PRE_PROCESSING(SamplePatch1, detour_samplePatch1);
+        //processing test hook
+        DEL_PRE_PROCESSING(InternalFindWindowsExW, detour_internalFindWindowsExW);
         return true;
     }
 

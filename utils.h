@@ -38,7 +38,9 @@ VOID GetStackRange(ULONG_PTR* base, ULONG_PTR* limit);
 int GetCallOpSize(const void* addr);
 void ClearThreadTls();
 char hexbyte(char hex);
+bool hexfromstring(BYTE* bytes, int bytes_len, const char* str, int hex_len);
 std::string hexstring(BYTE byte);
+void *memmem(const void *buf, size_t buf_len, const void *byte_sequence, size_t byte_sequence_len);
 
 inline std::wstring to_wide_string(const std::string& input)
 {

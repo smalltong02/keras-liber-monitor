@@ -135,8 +135,18 @@ namespace cchips {
                     {
                         class_delay = std::any_cast<std::string_view>(anydelay);
                     }
-                    std::unique_ptr<CPrototype::ClassProto> class_proto = std::make_unique<CPrototype::ClassProto>(class_type, class_name, class_delay, class_vtblidx);
-                    func_object->SetClassProto(std::move(class_proto));
+                    std::string_view class_bitmap;
+                    if (auto anydelay(CRapidJsonWrapper::GetMember(std::vector<std::string>{ SI_CLASS, SI_BITMAP }, Object));
+                        anydelay.has_value() && anydelay.type() == typeid(std::string_view))
+                    {
+                        class_bitmap = std::any_cast<std::string_view>(anydelay);
+                        std::unique_ptr<CPrototype::ClassProto> class_proto = std::make_unique<CPrototype::ClassProto>(class_type, class_name, class_bitmap);
+                        func_object->SetClassProto(std::move(class_proto));
+                    }
+                    else {
+                        std::unique_ptr<CPrototype::ClassProto> class_proto = std::make_unique<CPrototype::ClassProto>(class_type, class_name, class_delay, class_vtblidx);
+                        func_object->SetClassProto(std::move(class_proto));
+                    }
                 }
             }
             // set hooks information

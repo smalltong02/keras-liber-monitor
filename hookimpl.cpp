@@ -732,3 +732,20 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_P
     }
     return processing_continue;
 }
+
+// for sample 4cd6ac6a04eb5234757e84ebf401caf7
+processing_status WINAPI CHookImplementObject::detour_samplePatch1(detour_node* node, ULONG param1, ULONG param2)
+{
+    PRE_BEGIN(node)
+        processing_status status = processing_continue;
+    if (param1 == 0xE6E607E4 && param2 == 0x1C) {
+        do {
+            PVOID address = (PVOID)(*((ULONG*)0x00431FB0) + param2 * 4);
+            if (address) {
+                memset(address, 0, 4);
+            }
+            node->hook_implement_object->DisableAllApis();
+        } while (0);
+    }
+    return status;
+}
