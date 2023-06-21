@@ -12,6 +12,7 @@
 #include <memory>
 #include <sstream>
 #include <variant>
+#include <functional>
 #include "ExceptionThrow.h"
 #include "utils.h"
 
