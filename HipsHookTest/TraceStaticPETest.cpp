@@ -28,21 +28,20 @@ private:
 };
 
 const std::vector<std::string> TraceStaticPETest::m_file_list = {
-    //    "c:\\windows\\system32\\notepad.exe",
-    "C:\\work\\output_result\\test_vb.exe",
-    "C:\\work\\output_result\\ILSpy.exe",
-    "E:\\Tools\\Sysinternals\\ProcessExplorer\\procexp.exe",
-    "C:\\Drivers\\storage\\CYP25\\drivers\\production\\Windows10-x64\\die.exe",
-    "C:\\Drivers\\storage\\CYP25\\drivers\\production\\Windows10-x64\\dpinst.exe",
-    "C:\\Drivers\\storage\\CYP25\\drivers\\production\\Windows10-x64\\fortitcs.exe",
-    "C:\\Drivers\\storage\\CYP25\\drivers\\production\\Windows10-x64\\CyUcmClient.sys",
-    "C:\\Drivers\\storage\\CYP25\\drivers\\production\\Windows10-x64\\CyUcmClient.inf",
-    "C:\\Drivers\\storage\\R93YC\\Drivers\\Production\\Windows10-x64\\HfcDisableService.exe",
-    "C:\\work\\output_result\\HipsHookTest.exe",
-    "C:\\work\\output_result\\test_visualbasic.exe",
+    "..\\samples\\test_vb.exe",
+    "..\\samples\\ILSpy.exe",
+    "..\\samples\\procexp.exe",
+    "..\\samples\\die.exe",
+    "..\\samples\\dpinst.exe",
+    "..\\samples\\fortitcs.exe",
+    "..\\samples\\CyUcmClient.sys",
+    "..\\samples\\CyUcmClient.inf",
+    "..\\samples\\HfcDisableService.exe",
+    "..\\samples\\HipsHookTest.exe",
+    "..\\samples\\test_visualbasic.exe",
 };
 
-const std::string TraceStaticPETest::m_folder = "C:\\windows\\system32\\drivers";
+const std::string TraceStaticPETest::m_folder = "..\\samples";
 
 // test class CJsonOptions
 TEST_F(TraceStaticPETest, JsonOptions_Class_Test)
@@ -85,7 +84,7 @@ TEST_F(TraceStaticPETest, CStaticFileManager_Class_Test)
     CStaticFileManager manager(std::move(options));
     
     for (auto& file : m_file_list) {
-        manager.Scan(file, "c:\\work\\output_result");
+        manager.Scan(file, "..\\outputs");
     }
     ASSERT_EQ(manager.GetSuccessScanCount(), 10);
 }

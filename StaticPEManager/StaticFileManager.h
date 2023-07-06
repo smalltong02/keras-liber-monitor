@@ -151,31 +151,48 @@ namespace cchips {
             if (!json_result)
                 return false;
             json_result->AddTopMember("sha256", fileinfo->GetIdentifierInfo().GetIdentifier());
-            std::unique_ptr <cchips::RapidValue> baseinfo = std::make_unique<cchips::RapidValue>();
-            if (!baseinfo) return false;
-            baseinfo->CopyFrom(*fileinfo->GetBaseInfo()->MoveDocument(), json_result->GetAllocator());
-            json_result->AddTopMember("baseinfo", std::move(baseinfo));
-            std::unique_ptr <cchips::RapidValue> versioninfo = std::make_unique<cchips::RapidValue>();
-            if (!versioninfo) return false;
-            versioninfo->CopyFrom(*fileinfo->GetVersionInfo()->MoveDocument(), json_result->GetAllocator());
-            json_result->AddTopMember("versioninfo", std::move(versioninfo));
-            std::unique_ptr <cchips::RapidValue> installinfo = std::make_unique<cchips::RapidValue>();
-            if (!installinfo) return false;
-            installinfo->CopyFrom(*fileinfo->GetInstalledInfo()->MoveDocument(), json_result->GetAllocator());
-            json_result->AddTopMember("installinfo", std::move(installinfo));
-            std::unique_ptr <cchips::RapidValue> signinfo = std::make_unique<cchips::RapidValue>();
-            if (!signinfo) return false;
-            signinfo->CopyFrom(*fileinfo->GetVerifyInfo()->MoveDocument(), json_result->GetAllocator());
-            json_result->AddTopMember("signinfo", std::move(signinfo));
-            std::unique_ptr <cchips::RapidValue> peinsideinfo = std::make_unique<cchips::RapidValue>();
-            if (!peinsideinfo) return false;
-            peinsideinfo->CopyFrom(*fileinfo->GetPeInsideInfo()->MoveDocument(), json_result->GetAllocator());
-            json_result->AddTopMember("insideinfo", std::move(peinsideinfo));
-            std::unique_ptr <cchips::RapidValue> insnflowinfo = std::make_unique<cchips::RapidValue>();
-            if (!insnflowinfo) return false;
-            //insnflowinfo->CopyFrom(*fileinfo->GetInsnFlowInfo()->MoveDocument(), json_result->GetAllocator());
-            //json_result->AddTopMember("insnflowinfo", std::move(insnflowinfo));
-
+            auto basedoc = fileinfo->GetBaseInfo()->MoveDocument();
+            if (basedoc) {
+                std::unique_ptr <cchips::RapidValue> baseinfo = std::make_unique<cchips::RapidValue>();
+                if (!baseinfo) return false;
+                baseinfo->CopyFrom(*basedoc, json_result->GetAllocator());
+                json_result->AddTopMember("baseinfo", std::move(baseinfo));
+            }
+            auto versiondoc = fileinfo->GetVersionInfo()->MoveDocument();
+            if (versiondoc) {
+                std::unique_ptr <cchips::RapidValue> versioninfo = std::make_unique<cchips::RapidValue>();
+                if (!versioninfo) return false;
+                versioninfo->CopyFrom(*versiondoc, json_result->GetAllocator());
+                json_result->AddTopMember("versioninfo", std::move(versioninfo));
+            }
+            auto installdoc = fileinfo->GetInstalledInfo()->MoveDocument();
+            if (installdoc) {
+                std::unique_ptr <cchips::RapidValue> installinfo = std::make_unique<cchips::RapidValue>();
+                if (!installinfo) return false;
+                installinfo->CopyFrom(*installdoc, json_result->GetAllocator());
+                json_result->AddTopMember("installinfo", std::move(installinfo));
+            }
+            auto signdoc = fileinfo->GetVerifyInfo()->MoveDocument();
+            if (signdoc) {
+                std::unique_ptr <cchips::RapidValue> signinfo = std::make_unique<cchips::RapidValue>();
+                if (!signinfo) return false;
+                signinfo->CopyFrom(*signdoc, json_result->GetAllocator());
+                json_result->AddTopMember("signinfo", std::move(signinfo));
+            }
+            auto peinsidedoc = fileinfo->GetPeInsideInfo()->MoveDocument();
+            if (peinsidedoc) {
+                std::unique_ptr <cchips::RapidValue> peinsideinfo = std::make_unique<cchips::RapidValue>();
+                if (!peinsideinfo) return false;
+                peinsideinfo->CopyFrom(*peinsidedoc, json_result->GetAllocator());
+                json_result->AddTopMember("insideinfo", std::move(peinsideinfo));
+            }
+            auto insnflowdoc = fileinfo->GetInsnFlowInfo()->MoveDocument();
+            if (insnflowdoc) {
+                std::unique_ptr <cchips::RapidValue> insnflowinfo = std::make_unique<cchips::RapidValue>();
+                if (!insnflowinfo) return false;
+                insnflowinfo->CopyFrom(*insnflowdoc, json_result->GetAllocator());
+                json_result->AddTopMember("insnflowinfo", std::move(insnflowinfo));
+            }
             std::ofstream outputfile(output_file, std::ios::out | std::ios::trunc);
             if (!outputfile.is_open()) {
                 return false;

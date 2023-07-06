@@ -495,6 +495,33 @@ namespace cchips {
         return;
     }
 
+    void Module::dump(const std::unique_ptr<cchips::CRapidJsonWrapper>& document, Cfg_view_flags flags) const
+    {
+        if (!Valid()) return;
+        if (!document) return;
+        std::unique_ptr<RapidValue> module_value = std::make_unique<RapidValue>();
+        if (!module_value) return;
+        module_value->SetObject();
+        auto& allocator = document->GetAllocator();
+        std::string module_name = GetModuleName();
+        if (!module_name.length()) module_name = "unknown_module";
+        std::stringstream ss;
+        ss << "0x" << std::hex << GetBaseAddress();
+        module_value->AddMember("module_name", RapidValue(module_name.c_str(), allocator), allocator);
+        module_value->AddMember("architecture", RapidValue(GetArchitecture().c_str(), allocator), allocator);
+        module_value->AddMember("address", RapidValue(ss.str().c_str(), allocator), allocator);
+        module_value->AddMember("functions", size(), allocator);
+
+        for (auto& func : m_function_list) {
+            if (func.first && func.second) {
+                func.second->dump(*module_value, allocator, flags);
+            }
+        }
+        m_report_object.dump(*module_value, allocator);
+        document->CopyRapidValue(std::move(module_value));
+        return;
+    }
+
     bool Function::Initialize()
     {
         if (!m_parent.lock()) return false;

@@ -30,14 +30,13 @@ namespace cchips {
                     GetPassRegistry().sequence(GetPassRegistry().sequence_passes_define);
                     GetPassRegistry().run(fmodule);
                     if (fmodule->Valid()) {
-                        auto logpath = file_path.filename();
+                        //auto logpath = file_path.filename();
                         //logpath = fs::path(".\\").append(logpath.replace_extension(".json").string());
-                        logpath = fs::path("C:\\work\\output_result\\").append(logpath.replace_extension(".json").string());
-                        fmodule->dump(logpath.string());
+                        //logpath = fs::path("C:\\work\\output_result\\").append(logpath.replace_extension(".json").string());
+                        fmodule->dump(json_result);
                     }
-                    return true;
                 }
-                //file_info.SetInsnFlowInfo(std::move(json_result));
+                file_info.SetInsnFlowInfo(std::move(json_result));
                 return true;
             }
             catch (const std::exception& e)

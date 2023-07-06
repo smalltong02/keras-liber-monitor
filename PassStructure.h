@@ -702,6 +702,7 @@ namespace cchips {
         }
         const std::unique_ptr<ModuleContext>& GetContext() const { return m_module_context; }
         void dump(const std::string& output_file, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const;
+        void dump(const std::unique_ptr<cchips::CRapidJsonWrapper>& document, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const;
         bool Valid() const {
             if (m_module_context && m_module_context->Valid())
                 return true;

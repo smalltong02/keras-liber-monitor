@@ -215,7 +215,19 @@ namespace cchips {
             (*sub_document).AddMember(RapidValue(name.c_str(), allocator), *value, allocator);
             return true;
         }
-        std::unique_ptr<RapidDocument> MoveDocument() { return std::move(m_document); m_bValid = false; }
+        std::unique_ptr<RapidDocument> MoveDocument() { 
+            m_bValid = false;
+            if (m_document) {
+                return std::move(m_document);
+            }
+            return nullptr;
+        }
+        bool CopyRapidValue(std::unique_ptr<RapidValue> value) {
+            if (!IsValid()) return false;
+            if (!value) return false;
+            m_document->CopyFrom(*value, m_document->GetAllocator());
+            return true;
+        }
         iterator        begin() { return (*m_document).GetObject().begin(); }
         const_iterator  begin() const { return (*m_document).GetObject().begin(); }
         iterator        end() { return (*m_document).GetObject().end(); }
