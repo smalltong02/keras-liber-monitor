@@ -1,0 +1,105 @@
+{
+  "Name": "CollectPEInfo",
+  "Version": "1.0.0.0",
+  "CreateDate": "20//12//2021 2:24PM",
+  "Description": "Collect PE file information",
+
+  "config": {
+    "identifier": "SHA256",
+    "petype": "^(?i)PE$",
+    "subsystem": "^(?i)WIN_GUI$|^(?i)WIN_CUI$|^(?i)NATIVE$",
+    "outputtype": "json",
+    "runningmode": 0,
+    "bbaseinfo": true,
+    "bversioninfo": true,
+    "binstallinfo": true,
+    "bsigninfo": true,
+    "bpeinsideinfo": true,
+    "bpeinsnflowinfo": true
+  },
+
+  "base_info": {
+    "bfilename": true,
+    "blocation": true,
+    "bfiletype": true,
+    "bfilesize": true,
+    "bfileattribute": true,
+    "bsizeondisk": false,
+    "bcreatetime": false,
+    "bmodifytime": false
+  },
+
+  "version_info": {
+    "bdescription": true,
+    "btype": true,
+    "bversion": true,
+    "bproductname": true,
+    "bproductversion": true,
+    "bcopyright": true
+  },
+
+  "install_info": {
+    "bname": true,
+    "bversion": true,
+    "bpid": true,
+    "blocation": true,
+    "bpublisher": true
+  },
+
+  "signature_info": {
+    "brootcert": true,
+    "bcountersign": true,
+    "bnestedsign": true,
+    "certificate_info": {
+      "bdigestalgorithm": true,
+      "bversion": true,
+      "bserialnumber": true,
+      "bsignalgorithm": true,
+      "bsignhashalgorithm": true,
+      "bissuer": true,
+      "btimefrom": true,
+      "btimeto": true,
+      "bsubject": true,
+      "bpublickey": true,
+      "bpublickeyalgorithm": true,
+      "bpublickeyparam": true,
+      "bauthoritykeyiden": true,
+      "bsubjectkeyiden": true,
+      "bsubjectaltername": true,
+      "benhancedkeyusage": true,
+      "bcrldistrubtionpoints": true,
+      "bcertificatepolicies": true,
+      "bauthorityinformation": true,
+      "bkeyusage": true,
+      "bbasicconstraints": true,
+      "bthumbprint": true,
+      "bissuerthumbprint": true
+    }
+  },
+
+  "peinside_info": {
+    "bpebasicfeature": true,
+    "bstatfeature": true,
+    "bcrossreffeature": true,
+    "bpackerfeature": true,
+    "bdatadirectoryfeature": true,
+    "bdebugdatadirectoryfeature": true,
+    "bembeddedfeature": true,
+    "bimporttablefeature": true,
+    "bexporttablefeature": true,
+    "biconfeature": true,
+    "bmanifestfeature": true,
+    "bresourcefeature": true,
+    "brichheaderfeature": true,
+    "bsectionfeature": true,
+    "bstringsfeature": true,
+    "bunpackerfeature": true,
+    "bdotnetfeature": true
+  },
+
+  "peinsnflow_info": {
+    "apiflowfeature": true,
+    "blockflowfeature": true,
+    "insnflowfeature": true
+  }
+}

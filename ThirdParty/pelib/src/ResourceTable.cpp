@@ -54,7 +54,7 @@ namespace cchips {
 
     const std::string_view Resource::getBytes(std::size_t sOffset, std::size_t sSize) const
     {
-        if (sOffset >= bytes.size())
+        if (sOffset >= loadedBytes.size())
         {
             return {};
         }
@@ -140,18 +140,15 @@ namespace cchips {
 
     void Resource::load(const PeFormat *rOwner)
     {
-        unsigned long long image_base = 0;
-        rOwner->getImageBaseAddress(image_base);
-        if (!image_base || !size || !rOwner || offset >= rOwner->getSizeOfImage())
+        if (!size || !rOwner || offset >= rOwner->getLoadedFileLength())
         {
             loadedBytes = "";
             loaded = false;
             return;
         }
 
-
-        const char *origBytes = reinterpret_cast<const char*>(image_base + offset);
-        std::string_view bytes_view = std::string_view(origBytes, (std::min)(size, rOwner->getSizeOfImage() - offset));
+        const auto* origBytes = rOwner->getLoadedBytesData() + offset;
+        std::string_view bytes_view = std::string_view(reinterpret_cast<const char*>(origBytes), (std::min)(size, rOwner->getLoadedFileLength() - offset));
         std::copy(bytes_view.begin(), bytes_view.end(), std::back_inserter(bytes));
         loadedBytes = std::string_view(reinterpret_cast<const char*>(bytes.data()), bytes.size());
         loaded = true;

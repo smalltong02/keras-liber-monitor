@@ -13,6 +13,7 @@
 #include <memory>
 #include <functional>
 #include <variant>
+#include <sstream>
 #include "re2/re2.h"
 #include "re2/stringpiece.h"
 #include "hookimpl.h"

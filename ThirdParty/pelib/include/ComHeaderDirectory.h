@@ -148,7 +148,7 @@ namespace PeLib
 		unsigned int uiOffset = peHeader.rvaToOffset(peHeader.getIddComHeaderRva());
 		unsigned int uiSize = peHeader.getIddComHeaderSize();
 
-		if (ulFileSize < uiOffset + uiSize)
+		if (ulFileSize < (uint64_t)(uiOffset + uiSize))
 		{
 			return ERROR_INVALID_FILE;
 		}

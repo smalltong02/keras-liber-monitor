@@ -343,7 +343,7 @@ namespace cchips {
         static const std::size_t VAR_KEY_SIZE = 24;              ///< unicode "Translation"
         static const std::size_t STRTAB_KEY_SIZE = 18;           ///< 8 unicode hex digits
         static const std::uint32_t FFI_SIGNATURE = 0xFEEF04BD;   ///< fixed file info signature
-    public:
+     public:
         struct VersionInfoHeader
         {
             std::uint16_t length;                       ///< length of whole structure
@@ -478,6 +478,12 @@ namespace cchips {
 
             return nullptr;
         }
+        const ResourceIconGroup* getResourceIconGroup(int index) const {
+            if (index < iconGroups.size()) {
+                return iconGroups[index];
+            }
+            return nullptr;
+        }
         const ResourceIconGroup* getPriorResourceIconGroup() const {
             for (const auto group : iconGroups)
             {
@@ -487,6 +493,12 @@ namespace cchips {
                 }
             }
 
+            return nullptr;
+        }
+        const ResourceIcon* getPriorResourceIcon() const {
+            if (icons.size()) {
+                return icons[0];
+            }
             return nullptr;
         }
         /// @}

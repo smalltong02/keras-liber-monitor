@@ -104,7 +104,7 @@ TEST_F(HookAnalysisInsnTest, Module_Class)
     krnl_module->dump("C:\\work\\kernel32_x86.json");
 #endif
 #ifdef _AMD64_
-    krnl_module->dump("C:\\work\\kernel32_x64.json");
+    krnl_module->dump(".\\kernel32_x64.json");
 #endif
 
     std::shared_ptr<Module> user_module = std::make_shared<Module>();
@@ -122,7 +122,7 @@ TEST_F(HookAnalysisInsnTest, Module_Class)
     user_module->dump("C:\\work\\user32_x86.json");
 #endif
 #ifdef _AMD64_
-    user_module->dump("C:\\work\\user32_x64.json");
+    user_module->dump(".\\user32_x64.json");
 #endif
 
     std::shared_ptr<Module> advi_module = std::make_shared<Module>();
@@ -140,7 +140,7 @@ TEST_F(HookAnalysisInsnTest, Module_Class)
     advi_module->dump("C:\\work\\advapi32_x86.json");
 #endif
 #ifdef _AMD64_
-    advi_module->dump("C:\\work\\advapi32_x64.json");
+    advi_module->dump(".\\advapi32_x64.json");
 #endif
 
     HMODULE self_hmod = GetModuleHandle(nullptr);
@@ -155,7 +155,7 @@ TEST_F(HookAnalysisInsnTest, Module_Class)
     self_module->dump("C:\\work\\HipsHookTest_x86.json");
 #endif
 #ifdef _AMD64_
-    self_module->dump("C:\\work\\HipsHookTest_x64.json");
+    self_module->dump(".\\HipsHookTest_x64.json");
 #endif
 }
 #endif

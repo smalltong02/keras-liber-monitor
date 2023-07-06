@@ -25,6 +25,7 @@ namespace PeLib
 				  std::istream& inStream,
 				  unsigned int uiOffset,
 				  unsigned int uiSize); // EXPORT
+		  bool hasSecurity() const { return !m_certs.empty(); }
 	};
 }
 

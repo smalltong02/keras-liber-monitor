@@ -491,6 +491,11 @@ if (DWORD index_; !CheckExploitFuncs::ValidStackPointer(reinterpret_cast<ULONG_P
                 return m_configObject->IsLocalMode();
             return false;
         }
+        const int GetLogMode() const {
+            if (m_configObject)
+                return m_configObject->GetLogMode();
+            return 0;
+        }
     private:
         MH_STATUS HookNormalApi(hook_node& node);
         MH_STATUS HookSpecialApi(hook_node& node);

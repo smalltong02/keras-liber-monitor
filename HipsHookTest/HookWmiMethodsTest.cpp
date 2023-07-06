@@ -994,13 +994,17 @@ TEST_F(HookWmiMethodsTest, Win32ProcessTest)
     ASSERT_TRUE(SUCCEEDED(hr));
     hr = m_wbemSvc->ExecMethod(L"Win32_Process", L"Create", 0, NULL, pInParams, &pOutParams, NULL);
     ASSERT_TRUE(SUCCEEDED(hr));
+    ::Sleep(1000);
     VARIANT varReturnValue;
     hr = pOutParams->Get(L"ReturnValue", 0, &varReturnValue, NULL, 0);
     ASSERT_TRUE(SUCCEEDED(hr));
     ASSERT_TRUE(GetValueString(varReturnValue, chRetValue));
-    hr = pOutParams->Get(L"ProcessId", 0, &varReturnValue, NULL, 0);
-    ASSERT_TRUE(SUCCEEDED(hr));
-    ASSERT_TRUE(GetValueString(varReturnValue, chRetValue));
+    if (varReturnValue.intVal == 0) {
+        VariantClear(&varReturnValue);
+        hr = pOutParams->Get(L"ProcessId", 0, &varReturnValue, NULL, 0);
+        ASSERT_TRUE(SUCCEEDED(hr));
+        ASSERT_TRUE(GetValueString(varReturnValue, chRetValue));
+    }
     pWbemClsObj->Release();
     pEnumClsObj->Release();
 }

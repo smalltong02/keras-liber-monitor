@@ -109,17 +109,17 @@ namespace cchips {
         return nullptr;
     }
 
-    bool CLogObject::Initialize()
+    bool CLogObject::Initialize(const int mode)
     {
         std::function<RAPID_DOC_PAIR()> getdata(std::bind(&CLogObject::GetData, this));
 #ifdef USING_PIPE_MESSAGE
         std::wstring pipe_name;
-        if (g_impl_object->IsPipeMode()) {
+        if (mode == output_pipe) {
             pipe_name = L"\\\\.\\pipe\\hips_hook";
         }
-        if (g_impl_object->IsLocalMode()) {
+        else if (mode == output_local) {
             wchar_t tmp_buffer[MAX_PATH] = {};
-            GetTempPathW(MAX_PATH * sizeof(wchar_t), tmp_buffer);
+            GetCurrentDirectoryW(MAX_PATH, tmp_buffer);
             pipe_name = std::wstring(L"LocalFile\\") + std::wstring(tmp_buffer) + L"hipshook.log";
         }
         if (!pipe_name.length()) return false;

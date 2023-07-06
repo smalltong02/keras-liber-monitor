@@ -968,6 +968,7 @@ namespace cchips {
         if (!ep->ExceptionRecord) return ret;
         if (!ep->ContextRecord) return ret;
         //std::cout << "exception addr: " << std::hex << ep->ExceptionRecord->ExceptionAddress << std::endl;
+        //std::cout << "exception code: " << std::hex << ep->ExceptionRecord->ExceptionCode << std::endl;
         DWORD e_code = ep->ExceptionRecord->ExceptionCode;
         de_type detype = de_unknown;
         if (CExceptionObject::IsBreakPoint(e_code)) {

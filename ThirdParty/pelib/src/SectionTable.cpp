@@ -69,14 +69,15 @@ namespace cchips {
 
     void Section::load(const PeFormat *sOwner)
     {
-        if (!memorySize || !address)
+        size_t loadsize = isInMemory ? memorySize : fileSize;
+        if (!loadsize || !address)
         {
             bytes = "";
             loaded = sOwner && offset < sOwner->getSizeOfImage();
             return;
         }
 
-        bytes = std::string_view(reinterpret_cast<const char*>(address), (std::min)(memorySize, sOwner->getSizeOfImage() - offset));
+        bytes = std::string_view(reinterpret_cast<const char*>(address), (std::min)(loadsize, sOwner->getSizeOfImage() - offset));
         loaded = true;
     }
 } // namespace cchips

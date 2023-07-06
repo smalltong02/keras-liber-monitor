@@ -22,7 +22,7 @@ std::unique_ptr<CServerObject> g_server_object = std::make_unique<CServerObject>
 int _tmain(int argc, _TCHAR* argv[])
 {
     std::this_thread::sleep_for(1s);
-    if (g_hook_test_object->Initialize() && g_log_object->Initialize())
+    if (g_hook_test_object->Initialize() && g_log_object->Initialize(g_impl_object->GetLogMode()))
     {
         //Sleep(1000*100);
         testing::InitGoogleMock(&argc, argv);
@@ -35,7 +35,7 @@ int _tmain(int argc, _TCHAR* argv[])
 #ifdef _BENCHMARK_TEST
 int _tmain(int argc, _TCHAR* argv[])
 {
-    if (g_log_object->Initialize() && g_hook_test_object->Initialize())
+    if (g_log_object->Initialize(g_impl_object->GetLogMode()) && g_hook_test_object->Initialize())
     {
         ::benchmark::Initialize(&argc, argv);
         if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;

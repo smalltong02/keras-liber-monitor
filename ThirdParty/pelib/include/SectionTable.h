@@ -59,6 +59,7 @@ namespace cchips {
         unsigned long long getSizeInFile() const { return fileSize; }
         unsigned long long getLoadedSize() const { return bytes.size(); }
         unsigned long long getAddress() const { return address; }
+        unsigned long long getVirtualAddress() const { return virtual_address; }
         unsigned long long getEndAddress() const {
             unsigned long long size = 0;
             if (!getSizeInMemory(size))
@@ -85,6 +86,18 @@ namespace cchips {
             return entrySizeIsValid;
         }
         bool getMemory() const { return isInMemory; }
+
+        template<typename NumberType>
+        NumberType getBytesAtOffsetAsNumber(unsigned long long sOffset) const
+        {
+            if (bytes.size() < sizeof(NumberType) || sOffset > bytes.size() - sizeof(NumberType))
+            {
+                return {};
+            }
+
+            auto rawBytes = bytes.data();
+            return *reinterpret_cast<const NumberType*>(&rawBytes[sOffset]);
+        }
         /// @}
 
         /// @name Getters of section or segment content
@@ -103,6 +116,7 @@ namespace cchips {
         void setOffset(unsigned long long sOffset) { offset = sOffset; }
         void setSizeInFile(unsigned long long sFileSize) { fileSize = sFileSize; }
         void setAddress(unsigned long long sAddress) { address = sAddress; }
+        void setAddressInMemory(unsigned long long sAddress) { virtual_address = sAddress; }
         void setSizeInMemory(unsigned long long sMemorySize) {
             memorySize = sMemorySize;
             memorySizeIsValid = true;
@@ -132,6 +146,7 @@ namespace cchips {
         unsigned long long offset = 0;        ///< start offset in file
         unsigned long long fileSize = 0;      ///< size in file
         unsigned long long address = 0;       ///< start address in memory
+        unsigned long long virtual_address = 0; ///< virtual address
         unsigned long long memorySize = 0;    ///< size in memory
         unsigned long long entrySize = 0;     ///< size of one entry in file
         bool memorySizeIsValid = false;       ///< @c true if size in memory is valid

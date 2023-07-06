@@ -33,7 +33,7 @@ namespace cchips {
 
     class CapInsn : public CBaseStruc {
     public:
-        CapInsn(csh cs_handle) : CBaseStruc(base_instruction) {
+        CapInsn(csh cs_handle) : CBaseStruc(base_instruction), m_address(nullptr), m_id(0), m_size(0) {
             if (cs_handle == 0) return;
             m_insn = cs_malloc(cs_handle);
             if (m_insn)
@@ -41,7 +41,7 @@ namespace cchips {
                 m_count = 1;
             }
         }
-        CapInsn(cs_insn* insn, size_t count = 1) : CBaseStruc(base_instruction), m_insn(std::move(insn)), m_count(count) {
+        CapInsn(cs_insn* insn, size_t count = 1) : CBaseStruc(base_instruction), m_address(nullptr), m_id(0), m_size(0), m_insn(std::move(insn)), m_count(count) {
             if (m_insn) {
                 m_mnemonic_str = std::string(m_insn->mnemonic) + std::string(" ") + std::string(m_insn->op_str);
                 m_mnemonic_bytes.resize(m_insn->size);
@@ -373,133 +373,9 @@ namespace cchips {
             }
             return rflag;
         }
-        bool GetJmpAddress(CapInsn& insn, std::uint8_t*& next_addr, std::uint8_t*& jmp_addr, x86_op_type& op_type) const {
-            if (InJmpGroup(insn)) {
-                if (OpInCount(insn, X86_OP_IMM)) {
-                    int index = OpInIndex(insn, X86_OP_IMM, 1);
-                    if (insn.self()->detail) {
-                        cs_x86* x86 = &insn.self()->detail->x86;
-                        if (insn.GetInsnId() == X86_INS_JMP || insn.GetInsnId() == X86_INS_LJMP)
-                            next_addr = nullptr;
-                        else
-                            next_addr = reinterpret_cast<std::uint8_t*>(insn.address()) + insn.size();
-                        jmp_addr = reinterpret_cast<std::uint8_t*>(x86->operands[index].imm);
-                        op_type = X86_OP_IMM;
-                        return true;
-                    }
-                }
-                else if (OpInCount(insn, X86_OP_REG)) {
-                    op_type = X86_OP_REG;
-                    if (insn.GetInsnId() == X86_INS_JMP || insn.GetInsnId() == X86_INS_LJMP)
-                        next_addr = nullptr;
-                    else
-                        next_addr = reinterpret_cast<std::uint8_t*>(insn.address()) + insn.size();
-                    jmp_addr = nullptr;
-                    return true;
-                }
-                else if (OpInCount(insn, X86_OP_MEM)) {
-                    int index = OpInIndex(insn, X86_OP_MEM, 1);
-                    if (insn.self()->detail) {
-                        cs_x86* x86 = &insn.self()->detail->x86;
-                        if (insn.GetInsnId() == X86_INS_JMP || insn.GetInsnId() == X86_INS_LJMP)
-                            next_addr = nullptr;
-                        else
-                            next_addr = reinterpret_cast<std::uint8_t*>(insn.address()) + insn.size();
-                        if (x86->operands[index].mem.segment == X86_REG_INVALID &&
-                            x86->operands[index].mem.base == X86_REG_INVALID &&
-                            x86->operands[index].mem.index == X86_REG_INVALID) {
-                            jmp_addr = reinterpret_cast<std::uint8_t*>(x86->operands[index].mem.disp);
-                        }
-                        else {
-                            jmp_addr = nullptr;
-                        }
-                        op_type = X86_OP_MEM;
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-        bool GetLoopAddress(CapInsn& insn, std::uint8_t*& next_addr, std::uint8_t*& loop_addr, x86_op_type& op_type) const {
-            if (InLoopGroup(insn)) {
-                if (OpInCount(insn, X86_OP_IMM)) {
-                    int index = OpInIndex(insn, X86_OP_IMM, 1);
-                    if (insn.self()->detail) {
-                        cs_x86* x86 = &insn.self()->detail->x86;
-                        next_addr = reinterpret_cast<std::uint8_t*>(insn.address()) + insn.size();
-                        loop_addr = reinterpret_cast<std::uint8_t*>(x86->operands[index].imm);
-                        op_type = X86_OP_IMM;
-                        return true;
-                    }
-                }
-                else if (OpInCount(insn, X86_OP_REG)) {
-                    op_type = X86_OP_REG;
-                    loop_addr = nullptr;
-                    return true;
-                }
-                else if (OpInCount(insn, X86_OP_MEM)) {
-                    int index = OpInIndex(insn, X86_OP_MEM, 1);
-                    if (insn.self()->detail) {
-                        cs_x86* x86 = &insn.self()->detail->x86;
-                        if (insn.GetInsnId() == X86_INS_LOOP)
-                            next_addr = nullptr;
-                        else
-                            next_addr = reinterpret_cast<std::uint8_t*>(insn.address()) + insn.size();
-                        if (x86->operands[index].mem.segment == X86_REG_INVALID &&
-                            x86->operands[index].mem.base == X86_REG_INVALID &&
-                            x86->operands[index].mem.index == X86_REG_INVALID) {
-                            loop_addr = reinterpret_cast<std::uint8_t*>(x86->operands[index].mem.disp);
-                        }
-                        else {
-                            loop_addr = nullptr;
-                        }
-                        op_type = X86_OP_MEM;
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-        bool GetCallAddress(CapInsn& insn, std::uint8_t*& jmp_addr, x86_op_type& op_type) const {
-            if (InCallGroup(insn)) {
-                if (OpInCount(insn, X86_OP_IMM)) {
-                    int index = OpInIndex(insn, X86_OP_IMM, 1);
-                    if (insn.self()->detail) {
-                        cs_x86* x86 = &insn.self()->detail->x86;
-                        jmp_addr = reinterpret_cast<std::uint8_t*>(x86->operands[index].imm);
-                        op_type = X86_OP_IMM;
-                        return true;
-                    }
-                }
-                else if (OpInCount(insn, X86_OP_MEM)) {
-                    int index = OpInIndex(insn, X86_OP_MEM, 1);
-                    if (insn.self()->detail) {
-                        cs_x86* x86 = &insn.self()->detail->x86;
-                        if (x86->operands[index].mem.segment == X86_REG_INVALID &&
-                            x86->operands[index].mem.base == X86_REG_INVALID &&
-                            x86->operands[index].mem.index == X86_REG_INVALID) {
-                            jmp_addr = reinterpret_cast<std::uint8_t*>(x86->operands[index].mem.disp);
-                        }
-                        else {
-                            jmp_addr = nullptr;
-                            if (x86->operands[index].mem.segment == X86_REG_INVALID) {
-                                if (x86->operands[index].mem.base == X86_REG_EIP || x86->operands[index].mem.base == X86_REG_RIP) {
-                                    jmp_addr = reinterpret_cast<std::uint8_t*>(insn.address() + insn.size() + x86->operands[index].mem.disp);
-                                }
-                            }
-                        }
-                        op_type = X86_OP_MEM;
-                        return true;
-                    }
-                }
-                else if (OpInCount(insn, X86_OP_REG)) {
-                    op_type = X86_OP_REG;
-                    jmp_addr = nullptr;
-                    return true;
-                }
-            }
-            return false;
-        }
+        bool GetJmpAddress(CapInsn& insn, std::uint8_t*& next_addr, std::uint8_t*& jmp_addr, x86_op_type& op_type) const;
+        bool GetLoopAddress(CapInsn& insn, std::uint8_t*& next_addr, std::uint8_t*& loop_addr, x86_op_type& op_type) const;
+        bool CapstoneImpl::GetCallAddress(CapInsn& insn, std::uint8_t*& jmp_addr, x86_op_type& op_type) const;
     private:
         CapstoneImpl() { 
 #ifdef _X86_

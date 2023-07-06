@@ -66,22 +66,31 @@ namespace cchips {
         FileDetector() = delete;
         ~FileDetector() = delete;
 
-        const static size_t _default_header_size_def = 1024 * 1024; // 1M
+        const static size_t _default_header_size_def = 4096; // 4k
 
-        static file_format DetectFileFormat(const std::uint8_t* base_address);
-        static const std::uint8_t* GetEntryPoint(const std::uint8_t* base_address);
-        static const size_t GetSizeOfImage(const std::uint8_t* base_address);
+        static std::string GetFileFormat(const std::uint8_t* base_address, size_t size = _default_header_size_def);
+        static std::string GetFileFormat(const std::string& path);
+        static file_format DetectFileFormat(const std::uint8_t* base_address, size_t size = _default_header_size_def);
+        static file_format DetectFileFormat(const std::string& path);
+        static const std::uint8_t* GetEntryPoint(const std::uint8_t* base_address, size_t size = _default_header_size_def);
+        static const std::uint8_t* GetEntryPoint(const std::string& path);
+        static const size_t GetSizeOfImage(const std::uint8_t* base_address, size_t size = _default_header_size_def);
+        static const size_t GetSizeOfImage(const std::string& path);
         static std::unique_ptr<CapInsn> GetAsmInstruction(std::uint8_t* insn_addr);
         static PeLib::PeFile* ReadImageMemory(std::istream& istream);
+        static PeLib::PeFile* ReadImageFile(const std::string& path);
     private:
+        static bool LoadFile(const std::string& path, std::vector<std::uint8_t>& context_buffer);
         static bool HasSubstringOnPosition(const std::string &str,
             const std::string &withWhat, std::string::size_type position);
-        static bool IsPEHead(const std::uint8_t* base_address);
+        static bool IsPEHead(const std::uint8_t* base_address, size_t size = _default_header_size_def);
+        static bool IsPEHead(const std::string& path);
 
         const static WORD _pe_header_signature_def = 0x4550;
         const static DWORD _pe_header_little_endian_signature_def = 0x50450000;
         const static std::map<std::pair<std::size_t, std::string>, file_format> _magic_format_map;
         const static std::map<std::pair<std::size_t, std::string>, file_format> _unknown_format_map;
+        const static std::map<file_format, std::string> _file_format_map;
     };
 
     class FileInfo

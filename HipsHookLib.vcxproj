@@ -120,10 +120,10 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;.\;.\ThirdParty\Certificate;.\ThirdParty\tinyxml2\include\tinyxml2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -140,8 +140,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalLibraryDirectories>.\lib\Debug;.\capstone\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libMinHook.x86.lib;capstone_x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\lib\Debug;.\capstone\lib;.\ThirdParty\Certificate\jansson\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libMinHook.x86.lib;capstone_x86.lib;jansson_x32_d.lib;Crypt32.lib;Version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
@@ -179,10 +179,10 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;.\;.\ThirdParty\Certificate;.\ThirdParty\tinyxml2\include\tinyxml2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -198,8 +198,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>libMinHook.x64.lib;capstone_x64_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\lib\Debug;.\capstone\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libMinHook.x64.lib;capstone_x64_d.lib;jansson_x64_d.lib;Version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\lib\Debug;.\capstone\lib;.\ThirdParty\Certificate\jansson\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debugger|x64'">
@@ -236,10 +236,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>Default</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;.\;.\ThirdParty\Certificate;.\ThirdParty\tinyxml2\include\tinyxml2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4244;4290;4800;4200;4214;4018;4996</DisableSpecificWarnings>
@@ -259,8 +259,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalLibraryDirectories>.\lib\Release;.\capstone\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libMinHook.x86.lib;capstone_x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\lib\Release;.\capstone\lib;.\ThirdParty\Certificate\jansson\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libMinHook.x86.lib;capstone_x86.lib;jansson_x32.lib;Crypt32.lib;Version.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>true</LinkTimeCodeGeneration>
     </Lib>
   </ItemDefinitionGroup>
@@ -272,10 +272,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>Default</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;.\;.\ThirdParty\Certificate;.\ThirdParty\tinyxml2\include\tinyxml2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -292,8 +292,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>libMinHook.x64.lib;capstone_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\lib\Release;.\capstone\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libMinHook.x64.lib;capstone_x64.lib;jansson_x64.lib;Version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\lib\Release;.\capstone\lib;.\ThirdParty\Certificate\jansson\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -324,6 +324,7 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debugger|x64'">CompileAsC</CompileAs>
     </ClCompile>
+    <ClCompile Include="CapstoneImpl.cpp" />
     <ClCompile Include="commutils.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugger|Win32'">NotUsing</PrecompiledHeader>
@@ -410,10 +411,36 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugger|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="StaticPEManager\FileInfo.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\InstallInfoBuilder.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\CrossRefFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\DatadirectoryFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\DebugdatadirectoryFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\DotnetFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\EmbeddedFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\ExporttableFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\Handler.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\IconFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\ImporttableFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\ManifestFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\PackerFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\PeBasicFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\PeInside.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\ResourceFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\RichheaderFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\SectionFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\StatFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\StringsFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\stringutils.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\UnpackerFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\VersionInfoBuilder.cpp" />
+    <ClCompile Include="StaticPEManager\JsonOptions.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugger|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="ThirdParty\Certificate\md5.cpp" />
+    <ClCompile Include="ThirdParty\Certificate\osslsigncode.cpp" />
     <ClCompile Include="ThirdParty\pelib\src\BoundImportDirectory.cpp" />
     <ClCompile Include="ThirdParty\pelib\src\CoffSymbolTable.cpp" />
     <ClCompile Include="ThirdParty\pelib\src\ComHeaderDirectory.cpp" />
@@ -437,6 +464,7 @@
     <ClCompile Include="ThirdParty\pelib\src\SecurityDirectory.cpp" />
     <ClCompile Include="ThirdParty\pelib\src\SharedFunc.cpp" />
     <ClCompile Include="ThirdParty\pelib\src\TlsInfo.cpp" />
+    <ClCompile Include="ThirdParty\tinyxml2\tinyxml2.cpp" />
     <ClCompile Include="UniversalObject.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="vbaimpl.cpp" />
@@ -532,9 +560,43 @@
     <ClInclude Include="SafePtr.h" />
     <ClInclude Include="SigsObject.h" />
     <ClInclude Include="SpecialLog.h" />
+    <ClInclude Include="StaticPEManager\FileInfo.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\BaseInfoBuilder.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\InfoBuilder.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\InstallInfoBuilder.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeinsideInfoBuilder.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\CrossRefFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\DatadirectoryFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\DebugdatadirectoryFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\DotnetFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\EmbeddedFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\ExporttableFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\Handler.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\IconFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\ImporttableFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\ManifestFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\PackerFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\PeBasicFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\PeInside.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\ResourceFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\RichheaderFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\SectionFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\StatFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\StringsFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\stringutils.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\UnpackerFeature.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeinsnflowInfoBuilder.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\SignatureInfoBuilder.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\VersionInfoBuilder.h" />
+    <ClInclude Include="StaticPEManager\JsonOptions.h" />
+    <ClInclude Include="StaticPEManager\StaticFileManager.h" />
+    <ClInclude Include="StaticPEManager\TraverseDriveEngine.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="ThirdParty\Certificate\md5.h" />
+    <ClInclude Include="ThirdParty\Certificate\osslsigncode.h" />
     <ClInclude Include="ThirdParty\pelib\include\BoundImportDirectory.h" />
+    <ClInclude Include="ThirdParty\pelib\include\CLRHeader.h" />
     <ClInclude Include="ThirdParty\pelib\include\CoffSymbolTable.h" />
     <ClInclude Include="ThirdParty\pelib\include\ComHeaderDirectory.h" />
     <ClInclude Include="ThirdParty\pelib\include\DebugDirectory.h" />
@@ -546,6 +608,9 @@
     <ClInclude Include="ThirdParty\pelib\include\ImportDirectory.h" />
     <ClInclude Include="ThirdParty\pelib\include\ImportTable.h" />
     <ClInclude Include="ThirdParty\pelib\include\InputBuffer.h" />
+    <ClInclude Include="ThirdParty\pelib\include\MetadataHeader.h" />
+    <ClInclude Include="ThirdParty\pelib\include\MetadataStream.h" />
+    <ClInclude Include="ThirdParty\pelib\include\MetadataTable.h" />
     <ClInclude Include="ThirdParty\pelib\include\MzHeader.h" />
     <ClInclude Include="ThirdParty\pelib\include\OutputBuffer.h" />
     <ClInclude Include="ThirdParty\pelib\include\PeFile.h" />
@@ -563,6 +628,8 @@
     <ClInclude Include="ThirdParty\pelib\include\SharedFunc.h" />
     <ClInclude Include="ThirdParty\pelib\include\TlsDirectory.h" />
     <ClInclude Include="ThirdParty\pelib\include\TlsInfo.h" />
+    <ClInclude Include="ThirdParty\pelib\include\VBHeader.h" />
+    <ClInclude Include="ThirdParty\tinyxml2\include\tinyxml2\tinyxml2.h" />
     <ClInclude Include="UniversalObject.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="vbaimpl.h" />

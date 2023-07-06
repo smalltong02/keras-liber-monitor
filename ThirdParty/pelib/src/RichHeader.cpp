@@ -957,6 +957,11 @@ namespace
 		return result;
 	}
 
+	void RichHeader::addLinkerInfo(LinkerInfo& record)
+	{
+		header.push_back(record);
+	}
+
 	RichHeader::richHeaderIterator RichHeader::begin() const
 	{
 		return records.begin();

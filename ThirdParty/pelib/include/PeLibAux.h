@@ -212,6 +212,10 @@ namespace PeLib
 	const dword PELIB_MAX_IMPORTED_FUNCTIONS = 0x1000;          // Maximum number of exported functions (per DLL) that we support
 	const dword PELIB_MAX_EXPORTED_FUNCTIONS = 0x1000;          // Maximum number of exported functions that we support
 
+	const std::size_t STANDARD_RICH_HEADER_OFFSET = 0x80;
+	const std::size_t MINIMAL_PDB_NB10_INFO_LENGTH = 17;
+	const std::size_t MINIMAL_PDB_RSDS_INFO_LENGTH = 25;
+
 	template<int bits>
 	struct PELIB_IMAGE_ORDINAL_FLAGS;
 
@@ -724,7 +728,7 @@ namespace PeLib
 		SizeOfUninitializedData = 0;
 		AddressOfEntryPoint = 0;
 		BaseOfCode = 0;
-//		BaseOfData = 0;
+		BaseOfData = 0;
 		ImageBase = 0;
 		SectionAlignment = 0;
 		FileAlignment = 0;
@@ -926,7 +930,7 @@ namespace PeLib
 			NumberOfFunctions = 0;
 			NumberOfNames = 0;
 			AddressOfFunctions = 0;
-			NumberOfNames = 0;
+			AddressOfNames = 0;
 			AddressOfNameOrdinals = 0;
 		}
 

@@ -64,6 +64,15 @@ namespace cchips {
         result = std::string(reinterpret_cast<const char*>(data + offset), size);
     }
 
+    template<typename N> void bytesToString(
+        const std::vector<N>& bytes,
+        std::string& result,
+        std::size_t offset = 0,
+        std::size_t size = 0)
+    {
+        bytesToString(bytes.data(), bytes.size(), result, offset, size);
+    }
+
     template<typename N> void bytesToHexString(const N *data, std::size_t dataSize, std::string &result, std::size_t offset = 0, std::size_t size = 0, bool uppercase = true)
     {
         if (!data)
