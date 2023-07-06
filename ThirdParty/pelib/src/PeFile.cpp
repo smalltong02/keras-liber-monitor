@@ -14,6 +14,8 @@
 
 namespace PeLib
 {
+	const double PeFile::log_2 = 1.44269504088896340736; //instead of using M_LOG2E
+
 	PeFile::~PeFile()
 	{
 	}

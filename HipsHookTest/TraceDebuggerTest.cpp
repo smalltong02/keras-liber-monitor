@@ -30,6 +30,7 @@ protected:
     static long bp_callback(std::shared_ptr<Debugger::Modifier> ep);
     static long trace_callback(std::shared_ptr<Debugger::Modifier> ep);
     static long end_insn_callback(std::shared_ptr<Debugger::Modifier> ep);
+    static long crash_callback(std::shared_ptr<Debugger::Modifier> ep);
     static long m_test_value;
 private:
     static std::shared_ptr<Module> pe_module;
@@ -63,28 +64,39 @@ long TraceDebuggerTest::end_insn_callback(std::shared_ptr<Debugger::Modifier> ep
             if (!last_insn->self()->detail) return false;
             cs_detail* detail = last_insn->self()->detail;
             cs_x86* x86 = &last_insn->self()->detail->x86;
-            std::cout << "    0x" << std::hex << last_insn->address() << ": " << last_insn->dump() << std::endl;
+            //std::cout << "    0x" << std::hex << last_insn->address() << ": " << last_insn->dump() << std::endl;
+            printf("    0x%llx: %s    \n", last_insn->address(), last_insn->dump().c_str());
             if (GetCapstoneImplment().InCondBranchGroup(*last_insn)) {
                 std::uint64_t eflags = GetCapstoneImplment().GetREflags(*last_insn);
-                std::cout << "       eflags: " << std::dec << eflags << "  : " << ep->getEflags() << std::endl;
+                //std::cout << "       eflags: " << std::dec << eflags << "  : " << ep->getEflags() << std::endl;
+                printf("       eflags: %lld : %d\n", eflags, ep->getEflags());
                 bool bNE = GetCapstoneImplment().IsCcNE(*last_insn);
                 bool bFlag = (std::uint32_t)eflags & ep->getEflags();
                 if ((bNE && !bFlag) ||
                     (!bNE && bFlag)) {
-                    std::cout << "       jmpto: " << std::hex << reinterpret_cast<std::uint64_t>(jmp_addr) << std::endl;
+                    //std::cout << "       jmpto: " << std::hex << reinterpret_cast<std::uint64_t>(jmp_addr) << std::endl;
+                    printf("       jmpto: 0x%llx\n", reinterpret_cast<std::uint64_t>(jmp_addr));
                 }
                 else {
-                    std::cout << "       jmpto: " << std::hex << reinterpret_cast<std::uint64_t>(next_addr) << std::endl;
+                    //std::cout << "       jmpto: " << std::hex << reinterpret_cast<std::uint64_t>(next_addr) << std::endl;
+                    printf("       jmpto: 0x%llx\n", reinterpret_cast<std::uint64_t>(next_addr));
                 }
             }
             else if (GetCapstoneImplment().InBranchGroup(*last_insn)) {
-                std::cout << "       jmpto: " << std::hex << reinterpret_cast<std::uint64_t>(jmp_addr) << std::endl;
+                //std::cout << "       jmpto: " << std::hex << reinterpret_cast<std::uint64_t>(jmp_addr) << std::endl;
+                printf("       jmpto: 0x%llx\n", reinterpret_cast<std::uint64_t>(jmp_addr));
             }
         }
     }
     else {
-        std::cout << "    0x" << std::hex << last_insn->address() << ": " << last_insn->dump() << "    " << std::endl;
+        //std::cout << "    0x" << std::hex << last_insn->address() << ": " << last_insn->dump() << "    " << std::endl;
+        printf("    0x%llx: %s    \n", last_insn->address(), last_insn->dump().c_str());
     }
+    return 0;
+}
+
+long TraceDebuggerTest::crash_callback(std::shared_ptr<Debugger::Modifier> ep)
+{
     return 0;
 }
 
@@ -101,27 +113,33 @@ long TraceDebuggerTest::trace_callback(std::shared_ptr<Debugger::Modifier> ep)
         } 
     }
     if (!block) return 0;
-    std::cout << "  block = " << block->getBlockNo() << std::endl;
+    //std::cout << "trace_callback:" << std::hex << (UINT64)block->getAddress() << std::endl;
+    //std::cout << "  block = " << block->getBlockNo() << std::endl;
+    printf("trace_callback: %llx\n", block->getAddress());
+    printf("  block = %d\n", block->getBlockNo());
     for (int count = 0; count < block->size() - 1; count++) {
         auto insn = block->getInsn(count);
         if (!insn) return 0;
-        std::cout << "    0x" << std::hex << insn->address() << ": " << insn->dump() << "    " << std::endl;
+        //std::cout << "    0x" << std::hex << insn->address() << ": " << insn->dump() << "    " << std::endl;
+        printf("    0x%llx: %s    \n", insn->address(), insn->dump().c_str());
     }
     auto last_insn = block->getEndInsn();
     if (!last_insn) return 0;
     if (block->GetBlockType() == BasicBlock::block_end) {
-        std::cout << "    0x" << std::hex << last_insn->address() << ": " << last_insn->dump() << "    " << std::endl;
+        //std::cout << "    0x" << std::hex << last_insn->address() << ": " << last_insn->dump() << "    " << std::endl;
+        printf("    0x%llx: %s    \n", last_insn->address(), last_insn->dump().c_str());
         return 0;
     }
     if (address == last_insn->address()) {
         end_insn_callback(ep);
     }
     bool bsuccess = GetDebugger().setBreakPoint(last_insn->address(), end_insn_callback);
+
     auto next_block = block->GetNextBlock();
-    auto branch_block = block->GetBranchBlock();
-    if(next_block)
+    if (next_block)
         bsuccess = GetDebugger().setBreakPoint(next_block->GetBaseAddress(), trace_callback);
-    if(branch_block)
+    auto branch_block = block->GetBranchBlock();
+    if (branch_block)
         bsuccess = GetDebugger().setBreakPoint(branch_block->GetBaseAddress(), trace_callback);
     return 0;
 }
@@ -355,7 +373,7 @@ TEST_F(TraceDebuggerTest, Debugger_TraceMode1_Test)
             printf("sta %% 2 == 1, sta = %d\n", sta);
         }
         else {
-            std::cout << "sta %% 2 == 0, sta = " << std::dec << sta << std::endl;
+            std::cout << "sta %% 2 == 0, sta = " << std::hex << sta << std::endl;
         }
         return;
     };
@@ -389,7 +407,8 @@ TEST_F(TraceDebuggerTest, Debugger_TraceMode1_Test)
     std::thread thread(
         ptr);
     thread.join();
-    //ASSERT_EQ(m_test_value, 10);
+    ASSERT_EQ(m_test_value, 5);
+    std::cout << "Debugger_TraceMode1_Test end!" << std::endl;
 }
 
 #endif

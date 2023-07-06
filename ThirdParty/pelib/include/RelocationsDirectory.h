@@ -91,7 +91,7 @@ namespace PeLib
 
 		// If uiSize is big enough it can overflow after addition with uiOffset, ulFileSize < uiOffset + uiSize can be true,
 		//   even though it should be false.
-		if ((ulFileSize < uiSize) || (ulFileSize < uiOffset + uiSize))
+		if ((ulFileSize < (uint64_t)uiSize) || (ulFileSize < (uint64_t)(uiOffset + uiSize)))
 		{
 			return ERROR_INVALID_FILE;
 		}

@@ -573,9 +573,21 @@ namespace cchips {
             const std::uint8_t* base_address = nullptr;
             const std::uint8_t* end_address = nullptr;
             std::unique_ptr<PeFormat> pe_format = nullptr;
-
+            std::unique_ptr<PeLib::PeFile> GetPeFile(const std::string& path);
             void InitializePeStructure(std::unique_ptr<PeLib::PeFile> pe_file);
         public:
+            ModuleContext(const std::string& path) {
+                auto file = GetPeFile(path);
+                if (!file) {
+                    module_format = FileDetector::format_unknown;
+                    base_address = nullptr;
+                }
+                else {
+                    base_address = file->getLoadedBytesData();
+                    end_address = base_address + file->getLoadedFileLength();
+                    InitializePeStructure(std::move(file));
+                }
+            }
             ModuleContext(const std::uint8_t* address) { 
                 std::unique_ptr<byte_array_buffer> pe_ba_buffer = nullptr;
                 std::unique_ptr<std::istream> istream_buffer = nullptr;
@@ -606,9 +618,10 @@ namespace cchips {
             }
             std::uint8_t* GetOEP() const { 
                 if (Valid()) {
-                    unsigned long long offset = 0;
+                    unsigned long long rva = 0;
                     std::uint8_t* ep_address = const_cast<std::uint8_t*>(GetBaseAddress());
-                    if (pe_format->getEpAddress(offset) && offset) {
+                    if (pe_format->getEpAddress(rva) && rva) {
+                        uint32_t offset = pe_format->getValidOffsetFromRva((uint32_t)rva);
                         return reinterpret_cast<std::uint8_t*>(ep_address + offset);
                     }
                 }
@@ -620,6 +633,11 @@ namespace cchips {
                 }
                 return 0; 
             }
+            bool isLoadingFile() const { if (pe_format) return pe_format->isLoadingFile(); else return false; }
+            bool isLoadingMemory() const { if (pe_format) return pe_format->isLoadingMemory(); else return false; }
+            std::uint64_t getValidRvaAddressFromFileAddress(std::uint64_t address) const { if (pe_format) return pe_format->getValidRvaAddressFromFileAddress(address); else return address; }
+            std::uint64_t getValidOffsetFromMemRva(std::uint64_t rva) const { if (pe_format) return pe_format->getValidOffsetFromMemRva(rva); else return rva; }
+            std::uint64_t getValidOffsetFromRva(std::uint32_t rva) const { if (pe_format) return pe_format->getValidOffsetFromRva(rva); else return rva; }
             const std::unique_ptr<PeFormat>& GetPeFormat() { return pe_format; }
             const std::uint8_t* GetBaseAddress() const { return base_address; }
             const std::uint8_t* GetEndAddress() const { return end_address; }
@@ -664,6 +682,7 @@ namespace cchips {
             ClrInsnCounts();
         }
         void SetPrecacheAddress(std::uint8_t* address) { m_precache_address = address; }
+        void SetPrecachePath(const std::string& path) { m_precache_path = path; }
         bool Initialize();
         void SetModuleName(std::string& name) { m_name = name; }
         const std::string& GetModuleName() const { return m_name; }
@@ -683,6 +702,7 @@ namespace cchips {
         }
         const std::unique_ptr<ModuleContext>& GetContext() const { return m_module_context; }
         void dump(const std::string& output_file, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const;
+        void dump(const std::unique_ptr<cchips::CRapidJsonWrapper>& document, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const;
         bool Valid() const {
             if (m_module_context && m_module_context->Valid())
                 return true;
@@ -718,6 +738,7 @@ namespace cchips {
     private:
         std::string m_name;
         std::uint8_t* m_precache_address = 0;
+        std::string m_precache_path;
         std::shared_ptr<Abi> m_abi = nullptr;
         std::unique_ptr<ModuleContext> m_module_context = nullptr;
         GLOBAL_SYMBOLTABLE m_globalvariable_list;

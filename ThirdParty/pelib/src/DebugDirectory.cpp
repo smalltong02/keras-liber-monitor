@@ -9,7 +9,7 @@
 * or the license information file (license.htm) in the root directory
 * of PeLib.
 */
-
+#include <sstream>
 #include "PeLibInc.h"
 #include "DebugDirectory.h"
 
@@ -351,5 +351,34 @@ namespace PeLib
 	const std::vector<std::pair<unsigned int, unsigned int>>& DebugDirectory::getOccupiedAddresses() const
 	{
 		return m_occupiedAddresses;
+	}
+
+	void PdbInfo::dump(std::string& dumpInfo) const
+	{
+		if (type.empty() && path.empty() && guid.empty() && !age && !timeStamp)
+		{
+			dumpInfo.clear();
+			return;
+		}
+
+		std::stringstream ret;
+
+		ret << "; ------------ Information about related PDB file ------------\n";
+		if (!type.empty())
+		{
+			ret << "; Type of file: " << getType() << "\n";
+		}
+		if (!path.empty())
+		{
+			ret << "; Path to PDB file: " << getPath() << "\n";
+		}
+		if (!guid.empty())
+		{
+			ret << "; GUID: " << getGuid() << "\n";
+		}
+		ret << "; Version of file (age): " << getAge() << "\n";
+		ret << "; Timestamp: " << getTimeStamp() << "\n";
+
+		dumpInfo = ret.str() + "\n";
 	}
 }

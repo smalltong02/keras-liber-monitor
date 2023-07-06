@@ -205,7 +205,12 @@ namespace cchips {
                     if (tls) {
                         tls->active = 1;
                         if (setjmp(tls->jb) == 0) {
-                            call_addr = *reinterpret_cast<std::uint8_t**>(call_addr);
+                            if (cur_module->GetContext()->isLoadingFile()) {
+                                call_addr = (std::uint8_t*)(*reinterpret_cast<std::uint32_t*>(call_addr));
+                            }
+                            else {
+                                call_addr = *reinterpret_cast<std::uint8_t**>(call_addr);
+                            }
                             tls->active = 0;
                         }
                         else {
@@ -250,20 +255,20 @@ namespace cchips {
                     }
                 }
                 else {
-                    //if (image_range.contains(call_addr)) {
-                    //    if (!cur_module->AddFunction(std::string(""), call_addr)) return;
-                    //    std::shared_ptr<Function> func = cur_module->GetFunction(call_addr);
-                    //    if (!func) return;
-                    //    insn.setPointerObject(func);
-                    //    insn.updateMnemonic(func->GetFuncName());
-                    //    std::shared_ptr<FunctionPassManager> funcs_manager = std::static_pointer_cast<FunctionPassManager>(GetPassRegistry().getPassManager(Pass::passmanager_function));
-                    //    if (!funcs_manager) return;
-                    //    funcs_manager->Run(func);
-                    //}
-                    //else {
-                    //    // report, feature.
-                    //    // check stack? heap? or other module.
-                    //}
+                    if (image_range.contains(call_addr)) {
+                        if (!cur_module->AddFunction(std::string(""), call_addr)) return;
+                        std::shared_ptr<Function> func = cur_module->GetFunction(call_addr);
+                        if (!func) return;
+                        insn.setPointerObject(func);
+                        insn.updateMnemonic(func->GetFuncName());
+                        std::shared_ptr<FunctionPassManager> funcs_manager = std::static_pointer_cast<FunctionPassManager>(GetPassRegistry().getPassManager(Pass::passmanager_function));
+                        if (!funcs_manager) return;
+                        funcs_manager->Run(func);
+                    }
+                    else {
+                        // report, feature.
+                        // check stack? heap? or other module.
+                    }
                 }
             }
         }

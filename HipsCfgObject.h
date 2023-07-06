@@ -64,6 +64,7 @@ namespace cchips {
         bool IsTraceMode() const { return m_hips_mode & hips_trace_mode; }
         bool IsPipeMode() const { return m_log_mode & log_pipe_mode; }
         bool IsLocalMode() const { return m_log_mode & log_local_mode; }
+        const int GetLogMode() const { return m_log_mode; }
         bool InitializeFlagsObjects(const HMODULE handle, const CRapidJsonWrapper& document); // initialize flags array.
         bool InitializeSignsObjects(const HMODULE handle, const CRapidJsonWrapper& document); // initialize sigs array.
         bool InitializeWmisObjects(const HMODULE handle, const CRapidJsonWrapper& document); // initialize wmis array.

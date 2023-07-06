@@ -162,7 +162,7 @@ namespace PeLib
 		std::uint64_t ulFileSize = fileSize(inStream_w);
 		unsigned int dirRva = peHeader.getIddExportRva();
 		unsigned int dirOffset = peHeader.rvaToOffset(dirRva);
-		if (ulFileSize < dirOffset + PELIB_IMAGE_EXPORT_DIRECTORY::size())
+		if (ulFileSize < (uint64_t)(dirOffset + PELIB_IMAGE_EXPORT_DIRECTORY::size()))
 		{
 			return ERROR_INVALID_FILE;
 		}

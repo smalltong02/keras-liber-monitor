@@ -17,6 +17,42 @@
 
 namespace PeLib
 {
+	/**
+ * Information about PDB file
+ */
+	class PdbInfo
+	{
+	private:
+		std::string type;          ///< type of PDB file
+		std::string path;          ///< original path to PDB debug file
+		std::string guid;          ///< GUID of PDB file
+		std::size_t age = 0;       ///< age of PDB file
+		std::size_t timeStamp = 0; ///< time and date that PDB file was created
+	public:
+		/// @name Getters
+		/// @{
+		std::string getType() const { return type; }
+		std::string getPath() const { return path; }
+		std::string getGuid() const { return guid; }
+		std::size_t getAge() const { return age; }
+		std::size_t getTimeStamp() const { return timeStamp; }
+		/// @}
+
+		/// @name Setters
+		/// @{
+		void setType(std::string sType) { type = sType; }
+		void setPath(std::string sPath) { path = sPath; }
+		void setGuid(std::string sGuid) { guid = sGuid; }
+		void setAge(std::size_t sAge) { age = sAge; }
+		void setTimeStamp(std::size_t sTimeStamp) { timeStamp = sTimeStamp; }
+		/// @}
+
+		/// @name Other methods
+		/// @{
+		void dump(std::string& dumpInfo) const;
+		/// @}
+	};
+
 	/// Class that handles the Debug directory.
 	class DebugDirectory
 	{
@@ -116,7 +152,7 @@ namespace PeLib
 		unsigned int uiOffset = peHeader.rvaToOffset(uiRva);
 		unsigned int uiSize = peHeader.getIddDebugSize();
 
-		if (ulFileSize < uiOffset + uiSize)
+		if (ulFileSize < (uint64_t)(uiOffset + uiSize))
 		{
 			return ERROR_INVALID_FILE;
 		}
@@ -138,10 +174,10 @@ namespace PeLib
 				return ERROR_INVALID_FILE;
 			}
 
-			//inStream_w.seekg(currDebugInfo[i].idd.PointerToRawData, std::ios::beg);
-			//currDebugInfo[i].data.resize(currDebugInfo[i].idd.SizeOfData);
-			//inStream_w.read(reinterpret_cast<char*>(currDebugInfo[i].data.data()), currDebugInfo[i].idd.SizeOfData);
-			//if (!inStream_w) return ERROR_INVALID_FILE;
+			inStream_w.seekg(currDebugInfo[i].idd.PointerToRawData, std::ios::beg);
+			currDebugInfo[i].data.resize(currDebugInfo[i].idd.SizeOfData);
+			inStream_w.read(reinterpret_cast<char*>(currDebugInfo[i].data.data()), currDebugInfo[i].idd.SizeOfData);
+			if (!inStream_w) return ERROR_INVALID_FILE;
 
 			if (currDebugInfo[i].idd.SizeOfData > 0)
 			{

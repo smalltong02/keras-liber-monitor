@@ -44,7 +44,7 @@ bool InitializeHook(std::shared_ptr<CHipsCfgObject> hipsCfgObject)
     if (hipsCfgObject == nullptr || g_impl_object == nullptr || g_log_object == nullptr)
         return false;
 
-    if (g_impl_object->Initialize(std::move(hipsCfgObject)) && g_log_object->Initialize() && g_impl_object->Running())
+    if (g_impl_object->Initialize(std::move(hipsCfgObject)) && g_log_object->Initialize(g_impl_object->GetLogMode()) && g_impl_object->Running())
     {
         bSuccess = true;
     }

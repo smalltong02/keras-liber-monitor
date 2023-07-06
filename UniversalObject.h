@@ -9,6 +9,7 @@
 #include <functional>
 #include <variant>
 #include <set>
+#include <sstream>
 #include "Psapi.h"
 #include "re2\re2.h"
 #include "utils.h"

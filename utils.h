@@ -7,6 +7,7 @@
 #include <codecvt>
 #include <variant>
 #include <any>
+#include <sstream>
 #include <setjmp.h>
 
 #define ASM_CALL_RELATIVE   0xE8

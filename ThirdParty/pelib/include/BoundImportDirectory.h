@@ -112,7 +112,7 @@ namespace PeLib
 		dword dwOffset = peHeader.rvaToOffset(peHeader.getIddBoundImportRva());
 		unsigned int uiSize = peHeader.getIddBoundImportSize();
 
-		if (fileSize(inStream_w) < dwOffset + uiSize)
+		if (fileSize(inStream_w) < (uint64_t)(dwOffset + uiSize))
 		{
 			return ERROR_INVALID_FILE;
 		}

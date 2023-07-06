@@ -76,6 +76,21 @@
     <Filter Include="Passes\loopinit">
       <UniqueIdentifier>{049e5d8f-0e48-46b2-bf71-5b34bcf52328}</UniqueIdentifier>
     </Filter>
+    <Filter Include="StaticPEManager">
+      <UniqueIdentifier>{d76e91c4-e4b8-4e6d-9e08-e0c990d745c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="StaticPEManager\InfoBuilder">
+      <UniqueIdentifier>{bfae5f49-3999-431e-b988-7bf97da038a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdPary\Certificate">
+      <UniqueIdentifier>{18f43c76-b8ea-4c6c-96ae-cc4151376fab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="StaticPEManager\InfoBuilder\PeInside">
+      <UniqueIdentifier>{447efb04-7503-44e5-af4e-91106f30fff1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdPary\tinyxml2">
+      <UniqueIdentifier>{58076064-5077-4de3-b905-9a19884ca5a3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HipsHookLib.cpp">
@@ -341,6 +356,90 @@
     </ClCompile>
     <ClCompile Include="vbaimpl.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\Certificate\osslsigncode.cpp">
+      <Filter>ThirdPary\Certificate</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\JsonOptions.cpp">
+      <Filter>StaticPEManager</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\FileInfo.cpp">
+      <Filter>StaticPEManager</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\Certificate\md5.cpp">
+      <Filter>ThirdPary\Certificate</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\VersionInfoBuilder.cpp">
+      <Filter>StaticPEManager\InfoBuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\CrossRefFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\ExporttableFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\Handler.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\ImporttableFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\PeBasicFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\PeInside.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\StatFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\StringsFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\InstallInfoBuilder.cpp">
+      <Filter>StaticPEManager\InfoBuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\IconFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\stringutils.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\RichheaderFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\DatadirectoryFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\DebugdatadirectoryFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\DotnetFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\EmbeddedFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\ManifestFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\PackerFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\ResourceFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\SectionFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\UnpackerFeature.cpp">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\tinyxml2\tinyxml2.cpp">
+      <Filter>ThirdPary\tinyxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="CapstoneImpl.cpp">
+      <Filter>ThirdPary\Capstone</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -715,6 +814,123 @@
     </ClInclude>
     <ClInclude Include="vbaimpl.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\TraverseDriveEngine.h">
+      <Filter>StaticPEManager</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\Certificate\osslsigncode.h">
+      <Filter>ThirdPary\Certificate</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\JsonOptions.h">
+      <Filter>StaticPEManager</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\StaticFileManager.h">
+      <Filter>StaticPEManager</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\InfoBuilder.h">
+      <Filter>StaticPEManager\InfoBuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\FileInfo.h">
+      <Filter>StaticPEManager</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\Certificate\md5.h">
+      <Filter>ThirdPary\Certificate</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\BaseInfoBuilder.h">
+      <Filter>StaticPEManager\InfoBuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\VersionInfoBuilder.h">
+      <Filter>StaticPEManager\InfoBuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeinsideInfoBuilder.h">
+      <Filter>StaticPEManager\InfoBuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeinsnflowInfoBuilder.h">
+      <Filter>StaticPEManager\InfoBuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\CrossRefFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\DatadirectoryFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\DebugdatadirectoryFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\DotnetFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\EmbeddedFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\ExporttableFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\Handler.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\IconFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\ImporttableFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\ManifestFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\PackerFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\PeBasicFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\PeInside.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\ResourceFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\RichheaderFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\SectionFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\StatFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\StringsFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\UnpackerFeature.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\SignatureInfoBuilder.h">
+      <Filter>StaticPEManager\InfoBuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\InstallInfoBuilder.h">
+      <Filter>StaticPEManager\InfoBuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\stringutils.h">
+      <Filter>StaticPEManager\InfoBuilder\PeInside</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\tinyxml2\include\tinyxml2\tinyxml2.h">
+      <Filter>ThirdPary\tinyxml2</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\VBHeader.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\CLRHeader.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\MetadataHeader.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\MetadataStream.h">
+      <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pelib\include\MetadataTable.h">
+      <Filter>ThirdPary\PeInfo</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

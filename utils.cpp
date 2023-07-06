@@ -56,28 +56,28 @@ bool ExtractResource(HMODULE ModuleHandle, TCHAR const * ResourceName,
     HRSRC resourceInfo = FindResource(ModuleHandle, ResourceId, ResourceName);
     if (resourceInfo == NULL)
     {
-        DWORD const lastError = GetLastError();
+        //DWORD const lastError = GetLastError();
         return false;
     }
 
     DWORD const resourceSize = SizeofResource(ModuleHandle, resourceInfo);
     if (resourceSize == 0)
     {
-        DWORD const lastError = GetLastError();
+        //DWORD const lastError = GetLastError();
         return false;
     }
 
     HGLOBAL resourceHandle = LoadResource(ModuleHandle, resourceInfo);
     if (resourceHandle == NULL)
     {
-        DWORD const lastError = GetLastError();
+        //DWORD const lastError = GetLastError();
         return false;
     }
 
     void * resourceData = LockResource(resourceHandle);
     if (resourceData == NULL)
     {
-        DWORD const lastError = GetLastError();
+        //DWORD const lastError = GetLastError();
         return false;
     }
 

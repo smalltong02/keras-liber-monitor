@@ -10,6 +10,7 @@
 #include <chrono>
 #include "rapidjson\document.h"
 #include "rapidjson\writer.h"
+#include "rapidjson\prettywriter.h"
 #include "crc.h"
 
 #ifdef CCHIPS_EXTERNAL_USE
@@ -129,6 +130,22 @@ namespace cchips {
             m_bValid = true;
             return true;
         }
+        RapidDocument::AllocatorType& GetAllocator() {
+            return (*m_document).GetAllocator();
+        }
+        bool AddTopMember(const std::string& name, std::unique_ptr<RapidValue> value) {
+            if (!IsValid()) return false;
+            if (auto anyvalue{ GetMember(name) }; !anyvalue.has_value()) {
+                RapidDocument::AllocatorType& allocator = (*m_document).GetAllocator();
+                (*m_document).AddMember(RapidValue(name.c_str(), allocator), *value, allocator);
+                return true;
+            }
+            return false;
+        }
+        bool AddTopMember(const std::string& name, const std::string& value) {
+            RapidDocument::AllocatorType& allocator = (*m_document).GetAllocator();
+            return AddTopMember(name, RapidValue(value.c_str(), allocator));
+        }
         bool AddTopMember(const std::string& name, RapidValue value) {
             if (!IsValid()) return false;
             if (auto anyvalue{ GetMember(name) }; !anyvalue.has_value()) {
@@ -142,7 +159,7 @@ namespace cchips {
             if (!IsValid()) return std::nullopt;
             rapidjson::StringBuffer string_buffer;
             string_buffer.Clear();
-            rapidjson::Writer<rapidjson::StringBuffer> writer(string_buffer);
+            rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(string_buffer);
             if (m_document->Accept(writer))
                 return optstring(std::in_place, string_buffer.GetString());
             return std::nullopt;
@@ -188,6 +205,28 @@ namespace cchips {
             if (!keys.size()) return false;
             if (!IsValid()) return false;
             return SetValue(keys, value, replace);
+        }
+        bool AddSoftwareMember(const std::string& name, std::unique_ptr<RapidValue> value) {
+            if (!IsValid()) return false;
+            RapidValue* sub_document = &(*m_document)["software"];
+            if (!sub_document || !sub_document->IsObject())
+                return false;
+            RapidDocument::AllocatorType& allocator = (*m_document).GetAllocator();
+            (*sub_document).AddMember(RapidValue(name.c_str(), allocator), *value, allocator);
+            return true;
+        }
+        std::unique_ptr<RapidDocument> MoveDocument() { 
+            m_bValid = false;
+            if (m_document) {
+                return std::move(m_document);
+            }
+            return nullptr;
+        }
+        bool CopyRapidValue(std::unique_ptr<RapidValue> value) {
+            if (!IsValid()) return false;
+            if (!value) return false;
+            m_document->CopyFrom(*value, m_document->GetAllocator());
+            return true;
         }
         iterator        begin() { return (*m_document).GetObject().begin(); }
         const_iterator  begin() const { return (*m_document).GetObject().begin(); }
@@ -418,8 +457,8 @@ namespace cchips {
                             verifier = (_verifier_type)bson_iterator_int(&i);
                         }
                         // verifier here
+                        break;
                     }
-                    break;
                     case BSON_STRING:
                     {
                         if (_stricmp(key, "R3Log") == 0)
@@ -427,8 +466,8 @@ namespace cchips {
                             ss << bson_iterator_string(&i);
                             json_wrapper = std::make_unique<CRapidJsonWrapper>(ss.str());
                         }
+                        break;
                     }
-                    break;
                     default:
                         warning("can't get bson type : %d\n", t);
                     }

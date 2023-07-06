@@ -71,7 +71,12 @@ namespace cchips {
                 if (tls) {
                     tls->active = 1;
                     if (setjmp(tls->jb) == 0) {
-                        func_ptr->to_address = *reinterpret_cast<std::uint8_t**>(func_ptr->address);
+                        if (GetContext()->isLoadingFile()) {
+                            func_ptr->to_address = (std::uint8_t*)(*reinterpret_cast<std::uint32_t*>(func_ptr->address));
+                        }
+                        else {
+                            func_ptr->to_address = *reinterpret_cast<std::uint8_t**>(func_ptr->address);
+                        }
                         tls->active = 0;
                     }
                     else {
@@ -105,9 +110,19 @@ namespace cchips {
     }
 
     bool Module::Initialize() {
-        if (!m_precache_address)
-            m_precache_address = reinterpret_cast<std::uint8_t*>(GetModuleHandle(nullptr));
-        m_module_context = std::make_unique<ModuleContext>(m_precache_address);
+        if (!m_precache_address) {
+            if (m_precache_path.empty()) {
+                m_precache_address = reinterpret_cast<std::uint8_t*>(GetModuleHandle(nullptr));
+                m_module_context = std::make_unique<ModuleContext>(m_precache_address);
+            }
+            else {
+                m_module_context = std::make_unique<ModuleContext>(m_precache_path);
+            }
+        }
+        else {
+            m_module_context = std::make_unique<ModuleContext>(m_precache_address);
+        }
+        
         if (m_module_context && m_module_context->Valid()) {
             InitializeAbi();
             InitializeCommonRegister();
@@ -282,116 +297,142 @@ namespace cchips {
     void Module::ModuleContext::InitializePeStructure(std::unique_ptr<PeLib::PeFile> pe_file)
     {
         ASSERT(pe_file);
-        tls_check_struct *tls = check_get_tls();
-        if (tls) {
-            tls->active = 1;
-            if (setjmp(tls->jb) == 0) {
-                pe_file->readMzHeader();
-                pe_file->readPeHeader();
-                pe_file->readImportDirectory();
-                pe_file->readExportDirectory();
-                pe_file->readIatDirectory();
-                tls->active = 0;
-            }
-            else {
-                //execption occur
-                tls->active = 0;
-                pe_file = nullptr;
-                module_format = FileDetector::format_unknown;
-                return;
-            }
-        }
+        //tls_check_struct *tls = check_get_tls();
+        //if (tls) {
+        //    tls->active = 1;
+        //    if (setjmp(tls->jb) == 0) {
+        //        pe_file->readMzHeader();
+        //        pe_file->readPeHeader();
+        //        pe_file->readImportDirectory();
+        //        pe_file->readExportDirectory();
+        //        pe_file->readIatDirectory();
+        //        tls->active = 0;
+        //    }
+        //    else {
+        //        //execption occur
+        //        tls->active = 0;
+        //        pe_file = nullptr;
+        //        module_format = FileDetector::format_unknown;
+        //        return;
+        //    }
+        //}
 
-        if (tls) {
-            tls->active = 1;
-            if (setjmp(tls->jb) == 0) {
-                pe_file->readBoundImportDirectory();
-                tls->active = 0;
-            }
-            else {
-                //execption occur
-                tls->active = 0;
-            }
-        }
-        if (tls) {
-            tls->active = 1;
-            if (setjmp(tls->jb) == 0) {
-                pe_file->readDelayImportDirectory();
-                tls->active = 0;
-            }
-            else {
-                //execption occur
-                tls->active = 0;
-            }
-        }
-        if (tls) {
-            tls->active = 1;
-            if (setjmp(tls->jb) == 0) {
-                pe_file->readCoffSymbolTable();
-                tls->active = 0;
-            }
-            else {
-                //execption occur
-                tls->active = 0;
-            }
-        }
-        if (tls) {
-            tls->active = 1;
-            if (setjmp(tls->jb) == 0) {
-                pe_file->readDebugDirectory();
-                tls->active = 0;
-            }
-            else {
-                //execption occur
-                tls->active = 0;
-            }
-        }
-        if (tls) {
-            tls->active = 1;
-            if (setjmp(tls->jb) == 0) {
-                pe_file->readTlsDirectory();
-                tls->active = 0;
-            }
-            else {
-                //execption occur
-                tls->active = 0;
-            }
-        }
-        if (tls) {
-            tls->active = 1;
-            if (setjmp(tls->jb) == 0) {
-                pe_file->readResourceDirectory();
-                tls->active = 0;
-            }
-            else {
-                //execption occur
-                tls->active = 0;
-            }
-        }
-        if (tls) {
-            tls->active = 1;
-            if (setjmp(tls->jb) == 0) {
-                pe_file->readSecurityDirectory();
-                tls->active = 0;
-            }
-            else {
-                //execption occur
-                tls->active = 0;
-            }
-        }
-        if (tls) {
-            tls->active = 1;
-            if (setjmp(tls->jb) == 0) {
-                pe_file->readComHeaderDirectory();
-                tls->active = 0;
-            }
-            else {
-                //execption occur
-                tls->active = 0;
-            }
-        }
+        //if (tls) {
+        //    tls->active = 1;
+        //    if (setjmp(tls->jb) == 0) {
+        //        pe_file->readBoundImportDirectory();
+        //        tls->active = 0;
+        //    }
+        //    else {
+        //        //execption occur
+        //        tls->active = 0;
+        //    }
+        //}
+        //if (tls) {
+        //    tls->active = 1;
+        //    if (setjmp(tls->jb) == 0) {
+        //        pe_file->readDelayImportDirectory();
+        //        tls->active = 0;
+        //    }
+        //    else {
+        //        //execption occur
+        //        tls->active = 0;
+        //    }
+        //}
+        //if (tls) {
+        //    tls->active = 1;
+        //    if (setjmp(tls->jb) == 0) {
+        //        pe_file->readCoffSymbolTable();
+        //        tls->active = 0;
+        //    }
+        //    else {
+        //        //execption occur
+        //        tls->active = 0;
+        //    }
+        //}
+        //if (tls) {
+        //    tls->active = 1;
+        //    if (setjmp(tls->jb) == 0) {
+        //        pe_file->readDebugDirectory();
+        //        tls->active = 0;
+        //    }
+        //    else {
+        //        //execption occur
+        //        tls->active = 0;
+        //    }
+        //}
+        //if (tls) {
+        //    tls->active = 1;
+        //    if (setjmp(tls->jb) == 0) {
+        //        pe_file->readTlsDirectory();
+        //        tls->active = 0;
+        //    }
+        //    else {
+        //        //execption occur
+        //        tls->active = 0;
+        //    }
+        //}
+        //if (tls) {
+        //    tls->active = 1;
+        //    if (setjmp(tls->jb) == 0) {
+        //        pe_file->readResourceDirectory();
+        //        tls->active = 0;
+        //    }
+        //    else {
+        //        //execption occur
+        //        tls->active = 0;
+        //    }
+        //}
+        //if (tls) {
+        //    tls->active = 1;
+        //    if (setjmp(tls->jb) == 0) {
+        //        pe_file->readSecurityDirectory();
+        //        tls->active = 0;
+        //    }
+        //    else {
+        //        //execption occur
+        //        tls->active = 0;
+        //    }
+        //}
+        //if (tls) {
+        //    tls->active = 1;
+        //    if (setjmp(tls->jb) == 0) {
+        //        pe_file->readComHeaderDirectory();
+        //        tls->active = 0;
+        //    }
+        //    else {
+        //        //execption occur
+        //        tls->active = 0;
+        //    }
+        //}
         pe_format = std::make_unique<PeFormat>(std::move(pe_file));
         return;
+    }
+
+    std::unique_ptr<PeLib::PeFile> Module::ModuleContext::GetPeFile(const std::string& path)
+    {
+        PeLib::PeFile32 pefile(path);
+        if (pefile.readMzHeader() != PeLib::ERROR_NONE) {
+            return nullptr;
+        }
+        if (!pefile.mzHeader().isValid()) {
+            return nullptr;
+        }
+        if (pefile.readPeHeader() != PeLib::ERROR_NONE) {
+            return nullptr;
+        }
+        if (!pefile.peHeader().isValid()) {
+            return nullptr;
+        }
+        WORD machine = pefile.peHeader().getMachine();
+        WORD magic = pefile.peHeader().getMagic();
+
+        if ((machine == PeLib::PELIB_IMAGE_FILE_MACHINE_AMD64
+            || machine == PeLib::PELIB_IMAGE_FILE_MACHINE_IA64)
+            && magic == PeLib::PELIB_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+            return std::make_unique<PeLib::PeFile64>(path);
+        }
+        return std::make_unique<PeLib::PeFile32>(path);
     }
 
     std::shared_ptr<CBaseStruc> Module::GetBaseObjectAtAddress(std::uint8_t* address) const
@@ -451,6 +492,33 @@ namespace cchips {
         rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buf);
         document.Accept(writer);
         jsonFile << buf.GetString();
+        return;
+    }
+
+    void Module::dump(const std::unique_ptr<cchips::CRapidJsonWrapper>& document, Cfg_view_flags flags) const
+    {
+        if (!Valid()) return;
+        if (!document) return;
+        std::unique_ptr<RapidValue> module_value = std::make_unique<RapidValue>();
+        if (!module_value) return;
+        module_value->SetObject();
+        auto& allocator = document->GetAllocator();
+        std::string module_name = GetModuleName();
+        if (!module_name.length()) module_name = "unknown_module";
+        std::stringstream ss;
+        ss << "0x" << std::hex << GetBaseAddress();
+        module_value->AddMember("module_name", RapidValue(module_name.c_str(), allocator), allocator);
+        module_value->AddMember("architecture", RapidValue(GetArchitecture().c_str(), allocator), allocator);
+        module_value->AddMember("address", RapidValue(ss.str().c_str(), allocator), allocator);
+        module_value->AddMember("functions", size(), allocator);
+
+        for (auto& func : m_function_list) {
+            if (func.first && func.second) {
+                func.second->dump(*module_value, allocator, flags);
+            }
+        }
+        m_report_object.dump(*module_value, allocator);
+        document->CopyRapidValue(std::move(module_value));
         return;
     }
 

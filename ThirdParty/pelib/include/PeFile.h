@@ -76,6 +76,7 @@ namespace PeLib
 		  CoffSymbolTable m_coffsymtab; ///< Symbol table of the current file.
 		  SecurityDirectory m_secdir; ///< Security directory of the current file.
 		public:
+#define MAX_CHARS_AMOUNT 256
 		  virtual ~PeFile();
 
 		  /// Returns the name of the current file.
@@ -117,8 +118,21 @@ namespace PeLib
 		  virtual int readSecurityDirectory() = 0; // EXPORT
 		  /// Returns a loader error, if there was any
 		  virtual LoaderError loaderError() const = 0;
-
+		  virtual bool isLoadingFile() const = 0;
+		  virtual bool isLoadingMemory() const = 0;
 		  virtual unsigned int getBits() const = 0;
+
+		  virtual std::size_t getLoadedFileLength() const = 0;
+		  virtual const unsigned char* getLoadedBytesData() const = 0;
+		  virtual void bytesToString(const unsigned char* data, std::size_t dataSize, std::string& result, std::size_t offset = 0, std::size_t size = 0) const = 0;
+		  virtual void bytesToHexString(const unsigned char* data, std::size_t dataSize, std::string& result, std::size_t offset = 0, std::size_t size = 0, bool uppercase = true) const = 0;
+		  virtual bool getBytes(std::vector<unsigned char>& result, unsigned long long offset, unsigned long long numberOfBytes) const = 0;
+		  virtual bool getEpBytes(std::vector<unsigned char>& result, unsigned long long numberOfBytes) const = 0;
+		  virtual bool getHexBytes(std::string& result, unsigned long long offset, unsigned long long numberOfBytes) const = 0;
+		  virtual bool getHexEpBytes(std::string& result, unsigned long long numberOfBytes) const = 0;
+		  virtual bool getStringBytes(std::string& result, unsigned long long offset, unsigned long long numberOfBytes) const = 0;
+		  virtual bool getStringEpBytes(std::string& result, unsigned long long numberOfBytes) const = 0;
+		  virtual double caculateEntropy(uint32_t offset, uint32_t length) const = 0;
 
 		  /// Accessor function for the MZ header.
 		  const MzHeader& mzHeader() const;
@@ -139,6 +153,8 @@ namespace PeLib
 		  const SecurityDirectory& securityDir() const;
 		  /// Accessor function for the security directory.
 		  SecurityDirectory& securityDir();
+
+		  static const double log_2;
 	};
 
 	/**
@@ -171,6 +187,8 @@ namespace PeLib
 		  DebugDirectoryT<bits> m_debugdir; ///< Debug directory of the current file.
 		  DelayImportDirectory<bits> m_delayimpdir; ///< Delay import directory of the current file.
 		  TlsDirectory<bits> m_tlsdir; ///< TLS directory of the current file.
+		  std::vector<unsigned char>* m_loadedBytes; ///< reference to serialized content of input file.
+		  std::vector<unsigned char> m_bytes; ///< content of file as bytes.
 
 		public:
 		  /// Default constructor which exists only for the sake of allowing to construct files without filenames.
@@ -181,7 +199,8 @@ namespace PeLib
 		  /// Initializes a PeFile with a filename
 		  explicit PeFileT(const std::string& strFilename);
 		  PeFileT(std::istream& stream, _loading_type type);
-
+		  bool isLoadingFile() const { return (m_loading_type == loading_file); }
+		  bool isLoadingMemory() const { return (m_loading_type == loading_memory); }
 		  /// Returns the name of the current file.
 		  std::string getFileName() const;
 		  /// Changes the name of the current file.
@@ -224,6 +243,18 @@ namespace PeLib
 		  {
 			  return bits;
 		  }
+
+		  std::size_t getLoadedFileLength() const;
+		  const unsigned char* getLoadedBytesData() const;
+		  void bytesToString(const unsigned char* data, std::size_t dataSize, std::string& result, std::size_t offset, std::size_t size) const;
+		  void bytesToHexString(const unsigned char* data, std::size_t dataSize, std::string& result, std::size_t offset, std::size_t size, bool uppercase) const;
+		  bool getBytes(std::vector<unsigned char>& result, unsigned long long offset, unsigned long long numberOfBytes) const;
+		  bool getEpBytes(std::vector<unsigned char>& result, unsigned long long numberOfBytes) const;
+		  bool getHexBytes(std::string& result, unsigned long long offset, unsigned long long numberOfBytes) const;
+		  bool getHexEpBytes(std::string& result, unsigned long long numberOfBytes) const;
+		  bool getStringBytes(std::string& result, unsigned long long offset, unsigned long long numberOfBytes) const;
+		  bool getStringEpBytes(std::string& result, unsigned long long numberOfBytes) const;
+		  double caculateEntropy(uint32_t offset, uint32_t length) const;
 
 		  /// Accessor function for the PE header.
 		  const PeHeader32_64& peHeader() const;
@@ -320,10 +351,26 @@ namespace PeLib
 	template<int bits>
 	PeFileT<bits>::PeFileT(const std::string& strFilename) :
             m_loading_type(loading_file),
+			m_loadedBytes(&m_bytes),
 			m_iStream(m_ifStream)
 	{
 		m_filename = strFilename;
-		m_ifStream.open(m_filename, std::ifstream::binary);
+		m_ifStream.open(m_filename, std::ios::in | std::ios::binary | std::ios::ate);
+		if (!m_ifStream.is_open())
+			return;
+		if (!m_iStream.good())
+			return;
+		int file_length = (int)m_iStream.tellg();
+		if (!file_length)
+			return;
+		m_iStream.seekg(0, std::ios::beg);
+		m_bytes.resize(file_length);
+		m_iStream.read((char*)&m_bytes[0], file_length);
+		int readed = (int)m_iStream.tellg();
+		if (readed != file_length) {
+			m_bytes.clear();
+		}
+		return;
 	}
 
 	/**
@@ -332,8 +379,23 @@ namespace PeLib
 	template<int bits>
 	PeFileT<bits>::PeFileT(std::istream& stream, _loading_type type) :
 			m_iStream(stream),
+			m_loadedBytes(&m_bytes),
             m_loading_type(type)
 	{
+		if (!m_iStream.good())
+			return;
+		m_iStream.seekg(0, std::ios::end);
+		int file_length = (int)m_iStream.tellg();
+		if (!file_length)
+			return;
+		m_iStream.seekg(0, std::ios::beg);
+		m_bytes.resize(file_length);
+		m_iStream.read((char*)&m_bytes[0], file_length);
+		int readed = (int)m_iStream.tellg();
+		if (readed != file_length) {
+			m_bytes.clear();
+		}
+		return;
  	}
 
 	template<int bits>
@@ -706,6 +768,155 @@ namespace PeLib
 			return comDir().read(m_iStream, peHeader());
 		}
 		return ERROR_DIRECTORY_DOES_NOT_EXIST;
+	}
+
+	template<int bits>
+	std::size_t PeFileT<bits>::getLoadedFileLength() const
+	{
+		if (m_loadedBytes)
+			return m_loadedBytes->size();
+		return 0;
+	}
+
+	template<int bits>
+	const unsigned char* PeFileT<bits>::getLoadedBytesData() const
+	{
+		if (m_loadedBytes)
+			return m_loadedBytes->data();
+		return nullptr;
+	}
+
+	template<int bits>
+	bool PeFileT<bits>::getBytes(std::vector<unsigned char>& result, unsigned long long offset, unsigned long long numberOfBytes) const
+	{
+		if (offset >= getLoadedFileLength())
+		{
+			return false;
+		}
+		numberOfBytes = offset + numberOfBytes > getLoadedFileLength() ? getLoadedFileLength() - offset : numberOfBytes;
+		result.clear();
+		result.reserve(numberOfBytes);
+		std::copy(m_loadedBytes->begin() + offset, m_loadedBytes->begin() + offset + numberOfBytes, std::back_inserter(result));
+		return true;
+	}
+
+	template<int bits>
+	bool PeFileT<bits>::getEpBytes(std::vector<unsigned char>& result, unsigned long long numberOfBytes) const
+	{
+		return false;
+	}
+
+	template<int bits> 
+	void PeFileT<bits>::bytesToString(const unsigned char* data, std::size_t dataSize, std::string& result, std::size_t offset, std::size_t size) const
+	{
+		if (!data)
+		{
+			dataSize = 0;
+		}
+
+		if (offset >= dataSize)
+		{
+			size = 0;
+		}
+		else
+		{
+			size = (size == 0 || offset + size > dataSize) ? dataSize - offset : size;
+		}
+
+		result.clear();
+		result.reserve(size);
+		result = std::string(reinterpret_cast<const char*>(data + offset), size);
+	}
+
+	template<int bits> 
+	void PeFileT<bits>::bytesToHexString(const unsigned char* data, std::size_t dataSize, std::string& result, std::size_t offset, std::size_t size, bool uppercase) const
+	{
+		if (!data)
+		{
+			dataSize = 0;
+		}
+
+		if (offset >= dataSize)
+		{
+			size = 0;
+		}
+		else
+		{
+			size = (size == 0 || offset + size > dataSize) ? dataSize - offset : size;
+		}
+
+		// Sample: 4A2A008CF1AEE9BA49D8D1DAA22D8E868365ACE633823D464478239F27ED4F18
+		// Tool: redec-fileinfo.exe, Debug, x64, data = image, dataSize = 0xE1BC00
+		// Optimized: This code now takes 0.106 seconds to convert (measured in VS 2015 IDE)
+		// (down from about 40 seconds)
+		const char* intToHex = uppercase ? "0123456789ABCDEF" : "0123456789abcdef";
+		std::size_t hexIndex = 0;
+
+		// Reserve the necessary space for the hexa string
+		result.resize(size * 2);
+
+		// Convert to hexa byte-by-byte. No reallocations
+		for (std::size_t i = 0; i < size; ++i, hexIndex += 2)
+		{
+			std::uint8_t oneByte = data[offset + i];
+
+			result[hexIndex + 0] = intToHex[(oneByte >> 0x04) & 0x0F];
+			result[hexIndex + 1] = intToHex[(oneByte >> 0x00) & 0x0F];
+		}
+	}
+
+	template<int bits>
+	bool PeFileT<bits>::getHexBytes(std::string& result, unsigned long long offset, unsigned long long numberOfBytes) const
+	{
+		bytesToHexString(getLoadedBytesData(), getLoadedFileLength(), result, offset, (size_t)numberOfBytes, true);
+		return offset < getLoadedFileLength();
+	}
+
+	template<int bits>
+	bool PeFileT<bits>::getHexEpBytes(std::string& result, unsigned long long numberOfBytes) const
+	{
+		bytesToHexString(getLoadedBytesData(), getLoadedFileLength(), result, peHeader().getAddressOfEntryPoint(), (size_t)numberOfBytes, true);
+		return true;
+	}
+
+	template<int bits>
+	bool PeFileT<bits>::getStringBytes(std::string& result, unsigned long long offset, unsigned long long numberOfBytes) const
+	{
+		bytesToString(getLoadedBytesData(), getLoadedFileLength(), result, offset, (size_t)numberOfBytes);
+		return offset < getLoadedFileLength();
+	}
+
+	template<int bits>
+	bool PeFileT<bits>::getStringEpBytes(std::string& result, unsigned long long numberOfBytes) const
+	{
+		bytesToString(getLoadedBytesData(), getLoadedFileLength(), result, peHeader().getAddressOfEntryPoint(), (size_t)numberOfBytes);
+		return true;
+	}
+
+	template<int bits>
+	double PeFileT<bits>::caculateEntropy(uint32_t offset, uint32_t length) const
+	{
+		double entropy = 0.;
+		size_t file_size = getLoadedFileLength();
+		if (!file_size || file_size < (size_t)(offset + length))
+			return entropy;
+		file_size = (size_t)length;
+		const unsigned char* file_data = getLoadedBytesData();
+		if (!file_data)
+			return entropy;
+
+		uint32_t byte_count[MAX_CHARS_AMOUNT] = { 0 }; //Byte count for each of 255 bytes
+		for (size_t i = offset; i != file_size; i++)
+			++byte_count[file_data[i]];
+
+		for (uint32_t i = 0; i < MAX_CHARS_AMOUNT; ++i)
+		{
+			double temp = static_cast<double>(byte_count[i]) / file_size;
+			if (temp > 0.)
+				entropy += std::abs(temp * (std::log(temp) * log_2));
+		}
+
+		return entropy;
 	}
 
 	// Returns an error code indicating loader problem. We check every part of the PE file

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.960
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HipsHook", "HipsHook.vcxproj", "{26F9570B-F5BE-444E-A1B0-D839735C5265}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -29,6 +29,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ServicesTestApp", "HipsHook
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InjectApp", "InjectApp\InjectApp.vcxproj", "{E35FC0D4-658C-4F91-A609-3025BAE0A58A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Classifier", "Classifier\Classifier.vcxproj", "{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -164,6 +166,26 @@ Global
 		{E35FC0D4-658C-4F91-A609-3025BAE0A58A}.Release|x64.Build.0 = Release|x64
 		{E35FC0D4-658C-4F91-A609-3025BAE0A58A}.Release|x86.ActiveCfg = Release|Win32
 		{E35FC0D4-658C-4F91-A609-3025BAE0A58A}.Release|x86.Build.0 = Release|Win32
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.BenchmarkDebug|x64.ActiveCfg = Debug|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.BenchmarkDebug|x64.Build.0 = Debug|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.BenchmarkDebug|x86.ActiveCfg = Debug|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.BenchmarkDebug|x86.Build.0 = Debug|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.BenchmarkRelease|x64.ActiveCfg = Release|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.BenchmarkRelease|x64.Build.0 = Release|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.BenchmarkRelease|x86.ActiveCfg = Release|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.BenchmarkRelease|x86.Build.0 = Release|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.Debug|x64.ActiveCfg = Debug|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.Debug|x64.Build.0 = Debug|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.Debug|x86.ActiveCfg = Debug|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.Debug|x86.Build.0 = Debug|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.Debugger|x64.ActiveCfg = Debug|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.Debugger|x64.Build.0 = Debug|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.Debugger|x86.ActiveCfg = Debug|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.Debugger|x86.Build.0 = Debug|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.Release|x64.ActiveCfg = Release|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.Release|x64.Build.0 = Release|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.Release|x86.ActiveCfg = Release|x64
+		{5A3626B0-FF78-47CB-BCF2-7ACF5901E181}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

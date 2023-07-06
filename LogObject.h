@@ -109,8 +109,8 @@ namespace cchips {
         };
         using outputtype = enum _outputtype {
             output_invalid = -1,
-            output_pipe = 0,
-            output_local,
+            output_pipe = 1,
+            output_local = 2,
         };
 
         ~CLogObject() {
@@ -123,7 +123,7 @@ namespace cchips {
 #endif
         }
 
-        bool Initialize();
+        bool Initialize(const int mode = output_local);
 #ifdef USING_PIPE_MESSAGE
         bool AddLog(RAPID_DOC_PAIR& log_pair, bool bhead = false) {
             if (!m_valid) return false;
@@ -404,6 +404,18 @@ namespace cchips {
         return;
     }
 #define error_log(format,...) error_output(format, __FILE__,__LINE__, ##__VA_ARGS__);
+    template<typename ...Args>
+    void info_output(const char* format, const char* file, int line, Args...args)
+    {
+        std::stringstream os;
+        cchips::special_log::sm_log(os, file, line, format, args...);
+        ASSERT(os.str().length());
+        if (!os.str().length()) return;
+        std::unique_ptr<CLogHandle> info_handle = std::make_unique<CLogHandle>(INFO_FEATURE, CLogObject::logtype::log_error);
+        if (info_handle) (*info_handle).AddLog(LOGPAIR("info", os.str()));
+        return;
+    }
+#define info_log(format,...) info_output(format, __FILE__,__LINE__, ##__VA_ARGS__);
 #ifdef _DEBUG 
     template<typename ...Args>
     void debug_output(const char* format, const char* file, int line, Args...args)

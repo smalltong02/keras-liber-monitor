@@ -545,7 +545,7 @@ namespace PeLib
 		unsigned int uiRva = peHeader.getIddImportRva();
 		unsigned int uiOffset = (unsigned int)peHeader.rvaToOffset(uiRva);
 
-		if ((uiOffset + PELIB_IMAGE_IMPORT_DESCRIPTOR::size()) > ulFileSize)
+		if ((uint64_t)(uiOffset + PELIB_IMAGE_IMPORT_DESCRIPTOR::size()) > ulFileSize)
 		{
 			setLoaderError(LDR_ERROR_IMPDIR_OUT_OF_FILE);
 			return ERROR_INVALID_FILE;
