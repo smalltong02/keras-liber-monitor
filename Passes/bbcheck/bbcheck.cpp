@@ -72,43 +72,40 @@ namespace cchips {
         if (block_sizes != Block->getBlockSize())
             return error_block_size;
         // check block link
-        switch (Block->GetBlockType())
-        {
-        case BasicBlock::block_start:
-        {
-            if (Block->GetNextBlock() == nullptr &&
-                Block->GetBranchBlock() == nullptr)
-                return error_block_link;
+        auto block_type = Block->GetBlockType();
+        if ((block_type == BasicBlock::block_invalid) ||
+            (block_type == BasicBlock::block_unknown)) {
+            return error_block_invalid;
         }
-        break;
-        case BasicBlock::block_sequnce:
-        {
+        if (block_type & BasicBlock::block_start) {
+            if (Block->GetNextBlock() == nullptr &&
+                Block->GetBranchBlock() == nullptr) {
+                if (!(block_type & BasicBlock::block_end)) {
+                    return error_block_link;
+                }
+            }
+        }
+        if (block_type & BasicBlock::block_sequnce) {
             if (Block->GetNextBlock() == nullptr ||
                 Block->GetBranchBlock() != nullptr)
-                return error_block_link;
+                if (!(block_type & BasicBlock::block_end)) {
+                    return error_block_link;
+                }
         }
-        break;
-        case BasicBlock::block_branch:
-        case BasicBlock::block_loop:
-        {
+        if ((block_type & BasicBlock::block_branch) ||
+            (block_type & BasicBlock::block_loop)) {
             if (Block->GetBranchBlock() == nullptr)
                 return error_block_link;
         }
-        break;
-        case BasicBlock::block_linkage:
-        {
-
+        if (block_type & BasicBlock::block_linkage) {
+            if (!(block_type & BasicBlock::block_end)) {
+                return error_block_link;
+            }
         }
-        break;
-        case BasicBlock::block_end:
-        {
+        if (block_type & BasicBlock::block_end) {
             if (Block->GetNextBlock() != nullptr ||
                 Block->GetBranchBlock() != nullptr)
                 return error_block_link;
-        }
-        break;
-        default:
-            return error_block_invalid;
         }
 
         for (auto& pre : Block->GetPreBlockList()) {
@@ -133,7 +130,8 @@ namespace cchips {
                     break;
                 }
             }
-            if (!bfind) return error_block_link;
+            if (!bfind) 
+                return error_block_link;
         }
         
         std::shared_ptr<BasicBlock> branch_block = Block->GetBranchBlock();
@@ -145,7 +143,8 @@ namespace cchips {
                     break;
                 }
             }
-            if (!bfind) return error_block_link;
+            if (!bfind) 
+                return error_block_link;
         }
         return error_success;
     }

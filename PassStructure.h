@@ -3,6 +3,8 @@
 #include <map>
 #include <vector>
 #include <atomic>
+#include "re2/re2.h"
+#include "re2/stringpiece.h"
 #include "PeInfo.h"
 #include "PeFormat.h"
 #include "CapstoneImpl.h"
@@ -230,14 +232,14 @@ namespace cchips {
     class BasicBlock : public CBaseStruc, public std::enable_shared_from_this<BasicBlock> {
     public:
         using block_type = enum {
-            block_invalid = 0,
-            block_start,
-            block_sequnce,
-            block_branch,
-            block_linkage,
-            block_loop,
-            block_end,
-            block_unknown,
+            block_unknown = 0,
+            block_start = 0x1,
+            block_sequnce = 0x2,
+            block_branch = 0x4,
+            block_linkage = 0x8,
+            block_loop = 0x10,
+            block_end = 0x20,
+            block_invalid = 0xffffffff,
         };
 
         using CapInsnListType = std::vector<std::shared_ptr<CapInsn>>;
@@ -264,49 +266,84 @@ namespace cchips {
             if (!m_parent.lock()) return false;
             if (m_block_address == nullptr) return false;
             if (!m_block_name.length()) return false;
-            if (m_block_type == block_invalid || m_block_type > block_unknown) return false;
+            if (m_block_type == block_invalid) return false;
             return true;
         }
         const std::string& GetName() const { return m_block_name; }
         bool setBlockType(block_type type) { 
-            if (type == block_invalid || type > block_unknown)
-                return false;
-            if (m_block_type == block_start)
-                return false;
-            m_block_type = type; 
+            if (type == block_invalid) {
+                m_block_type = block_invalid;
+                return true;
+            }
+            if (type == block_unknown) {
+                m_block_type = block_unknown;
+                return true;
+            }
+            m_block_type = m_block_type | type;
             return true;
         }
-        block_type GetBlockType() const { return m_block_type; }
+        bool clrBlockType(block_type type) {
+            m_block_type &= ~type;
+            return true;
+        }
+        std::uint32_t GetBlockType() const { return m_block_type; }
         std::string getBlockType() const {
             switch (m_block_type)
             {
             case block_invalid:
                 return "invalid";
-            case block_start:
-                return "start";
-            case block_sequnce:
-                return "sequnce";
-            case block_branch:
-                return "branch";
-            case block_linkage:
-                return "linkage";
-            case block_loop:
-                return "loop";
-            case block_end:
-                return "end";
+            case block_unknown:
+                return "unknown";
             default:
                 ;
             }
-            return "unknown";
+            std::string block_type;
+            if (m_block_type & block_start) {
+                block_type = "start";
+            }
+            if (m_block_type & block_sequnce) {
+                if (block_type.length()) {
+                    block_type += std::string(" | ");
+                }
+                block_type += "sequnce";
+            }
+            if (m_block_type & block_branch) {
+                if (block_type.length()) {
+                    block_type += std::string(" | ");
+                }
+                block_type += "branch";
+            }
+            if (m_block_type & block_linkage) {
+                if (block_type.length()) {
+                    block_type += std::string(" | ");
+                }
+                block_type += "linkage";
+            }
+            if (m_block_type & block_loop) {
+                if (block_type.length()) {
+                    block_type += std::string(" | ");
+                }
+                block_type += "loop";
+            }
+            if (m_block_type & block_end) {
+                if (block_type.length()) {
+                    block_type += std::string(" | ");
+                }
+                block_type += "end";
+            }
+            if (!block_type.length()) {
+                block_type = "unknown";
+            }
+            return block_type;
         }
         bool IsInvalid() const { return m_block_type == block_invalid; }
         bool IsUnknown() const { return m_block_type == block_unknown; }
-        bool IsStart() const { return m_block_type == block_start; }
-        bool IsSequnce() const { return m_block_type == block_sequnce; }
-        bool IsBranch() const { return m_block_type == block_branch; }
-        bool IsLinkage() const { return m_block_type == block_linkage; }
-        bool IsLoop() const { return m_block_type == block_loop; }
-        bool IsEnd() const { return m_block_type == block_end; }
+        bool IsStart() const { return (m_block_type & block_start); }
+        bool IsSequnce() const { return (m_block_type & block_sequnce); }
+        bool IsBranch() const { return (m_block_type & block_branch); }
+        bool IsLinkage() const { return (m_block_type & block_linkage); }
+        bool IsLoop() const { return (m_block_type & block_loop); }
+        bool IsEnd() const { return (m_block_type & block_end); }
         bool isAfterBlock(std::shared_ptr<BasicBlock> block, std::shared_ptr<const BasicBlock> first = nullptr) const;
         std::shared_ptr<CapInsn> getBeginInsn() const { return *m_capinsns.begin(); }
         std::shared_ptr<CapInsn> getEndInsn() const { return *m_capinsns.rbegin(); }
@@ -350,9 +387,27 @@ namespace cchips {
         const std::vector<std::weak_ptr<BasicBlock>>& GetPreBlockList() const { return pre_block_list; }
         std::shared_ptr<BasicBlock> GetNextBlock() const { return next_block.lock(); }
         std::shared_ptr<BasicBlock> GetBranchBlock() const { return branch_block.lock(); }
+        std::shared_ptr<CapInsn> GetUnPrefinInsn() const {
+            for (auto& insn : m_capinsns) {
+                if (insn) {
+                    if (!insn->IsPrefin())
+                        return insn;
+                }
+            }
+            return nullptr;
+        }
+        std::shared_ptr<CapInsn> GetUnPostfinInsn() const {
+            for (auto& insn : m_capinsns) {
+                if (insn) {
+                    if (!insn->IsPostfin())
+                        return insn;
+                }
+            }
+            return nullptr;
+        }
     private:
         unsigned int m_block_no;
-        block_type m_block_type;
+        std::uint32_t m_block_type;
         size_t m_size;
         std::string m_block_name;
         std::uint8_t* m_block_address;
@@ -396,7 +451,7 @@ namespace cchips {
         using value_type = std::uint64_t;
         SimpleLoop() = delete;
         SimpleLoop(const invariant_type& invariant, const stepsize_type& stepsize, std::shared_ptr<BasicBlock> block, std::uint64_t init_val = invalid_init_value) 
-            : Loop(Loop::loop_simple), m_stepsize(stepsize), m_invariant(invariant), m_block(block) {}
+            : Loop(Loop::loop_simple), m_stepsize(stepsize), m_invariant(invariant), m_block(block), m_init_value(0){}
         ~SimpleLoop() = default;
 
         std::uint64_t GetBaseAddress() const { 
@@ -438,14 +493,17 @@ namespace cchips {
             func_oep,
             func_normal,
             func_linkage,
+            func_export,
+            func_max,
         };
 
         Function() = delete;
-        Function(std::shared_ptr<Module> parent, std::string& func_name, std::uint8_t* func_address, func_type type = func_normal) : m_parent(parent), CBaseStruc(base_function), m_func_name(func_name), m_func_address(func_address), m_func_type(type){}
+        Function(std::shared_ptr<Module> parent, std::string& func_name, unsigned int func_no, std::uint8_t* func_address, func_type type = func_normal) : m_parent(parent), CBaseStruc(base_function), m_func_name(func_name), m_func_address(func_address), m_func_type(type), m_func_no(func_no) {}
         ~Function() = default;
         bool Initialize();
         
         const std::string& GetFuncName() const { return m_func_name; }
+        unsigned int getFunctionNo() const { return m_func_no; }
         unsigned long long GetFuncAddress() const { return reinterpret_cast<unsigned long long>(m_func_address); }
         std::uint64_t GetBaseAddress() const { return GetFuncAddress(); }
         std::string GetFuncType() const {
@@ -457,16 +515,19 @@ namespace cchips {
                 return "Normal";
             case func_linkage:
                 return "Linkage";
+            case func_export:
+                return "Export";
             default:
                 ;
             }
             return "unknown";
         }
         void SetFuncType(func_type type) { m_func_type = type; }
-        bool IsUnknown() const { if (m_func_type != func_oep && m_func_type != func_normal && m_func_type != func_linkage) return true; return false; }
+        bool IsUnknown() const { if (m_func_type >= func_max) return true; return false; }
         bool IsOep() const { if (m_func_type == func_oep) return true; return false; }
         bool IsNormal() const { if (m_func_type == func_normal) return true; return false; }
         bool IsLinkage() const { if (m_func_type == func_linkage) return true; return false; }
+        bool IsExport() const { if (m_func_type == func_export) return true; return false; }
         bool Decode(JumpTargets& jump_targets);
         bool getJumpTarget(JumpTargets& jump_targets, JumpTarget& jt);
         void decodeJumpTarget(JumpTargets& jump_targets, const JumpTarget& jt);
@@ -503,8 +564,36 @@ namespace cchips {
             m_loops.emplace_back(std::move(loop));
             return true;
         }
+        std::shared_ptr<BasicBlock> GetUnPrefinBlock() const {
+            for (auto& bb : m_basicblocks) {
+                if (bb.second) {
+                    if (!bb.second->IsPrefin())
+                        return bb.second;
+                }
+            }
+            return nullptr;
+        }
+        std::shared_ptr<BasicBlock> GetUnPostfinBlock() const {
+            for (auto& bb : m_basicblocks) {
+                if (bb.second) {
+                    if (!bb.second->IsPostfin())
+                        return bb.second;
+                }
+            }
+            return nullptr;
+        }
+        std::shared_ptr<BasicBlock> GetBasicBlock(std::uint32_t index) const {
+            for (auto & bb : m_basicblocks) {
+                if (bb.second) {
+                    if (bb.second->getBlockNo() == index)
+                        return bb.second;
+                }
+            }
+            return nullptr;
+        }
         const LoopListType& getLoops() const { return m_loops; }
     private:
+        unsigned int m_func_no;
         func_type m_func_type;
         std::string m_func_name;
         std::uint8_t* m_func_address;
@@ -536,6 +625,7 @@ namespace cchips {
         std::string& GetFileName() const { return m_func_pointer->file_name; }
         std::string& GetFuncName() const { return m_func_pointer->func_name; }
         std::string GetFullName() const { return m_func_pointer->file_name + std::string("!") + m_func_pointer->func_name; }
+        func_struc::func_type GetFuncType() const { return m_func_pointer->type; }
         void dump(RapidValue json_object, rapidjson::MemoryPoolAllocator<> allocator, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const { ; }
         std::shared_ptr<Module> GetParent() { return m_parent.lock(); }
         std::uint64_t GetBaseAddress() const { 
@@ -543,8 +633,40 @@ namespace cchips {
                 return reinterpret_cast<std::uint64_t>(m_func_pointer->to_address); 
             return 0;
         }
+        bool IsMainfunc(const std::string& funcname) const {
+            for (auto& str : _main_func_universal_name) {
+                RE2 pattern_main(str, RE2::Quiet);
+                if (RE2::FullMatch(funcname, pattern_main)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     private:
+        static const std::vector<std::string> _main_func_universal_name;
         std::unique_ptr<func_struc> m_func_pointer = nullptr;
+        std::weak_ptr<Module> m_parent;
+    };
+
+    class ControlFlowGraph : public CBaseStruc {
+    public:
+        using cfg_type = enum {
+            cfg_insnflow = 1,
+            cfg_blockflow = 2,
+            cfg_funcflow = 4,
+            cfg_apiflow = 8,
+        };
+        ControlFlowGraph(std::shared_ptr<Module> parent, cfg_type type) : m_parent(parent), CBaseStruc(base_cfgraph), m_cfg_type(type){}
+        ~ControlFlowGraph() {}
+        bool AddDatabase(const std::string& cfg_name, const std::vector<std::string>& database) {
+            m_cfg_database[cfg_name] = database;
+            return true;
+        }
+        std::uint64_t GetBaseAddress() const { return 0; }
+        void dump(RapidValue& json_object, rapidjson::MemoryPoolAllocator<>& allocator, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const;
+    private:
+        std::map<std::string, std::vector<std::string>> m_cfg_database;
+        cfg_type m_cfg_type = cfg_apiflow;
         std::weak_ptr<Module> m_parent;
     };
 
@@ -641,6 +763,7 @@ namespace cchips {
             const std::unique_ptr<PeFormat>& GetPeFormat() { return pe_format; }
             const std::uint8_t* GetBaseAddress() const { return base_address; }
             const std::uint8_t* GetEndAddress() const { return end_address; }
+            const std::unique_ptr<ExportTable>&  getExportTable() const { return pe_format->getExportTable(); }
         };
 
         class ReportObject {
@@ -714,12 +837,36 @@ namespace cchips {
         bool GetLinkageFuncName(std::string& func_name, std::uint8_t* func_address) const;
         bool AddFunction(std::string& func_name, std::uint8_t* func_address);
         std::shared_ptr<Function> GetFunction(std::uint8_t* func_address) const {
+            auto it = m_function_list.find(func_address);
+            if (it == m_function_list.end())
+                return nullptr;
+            return it->second;
+        }
+        std::shared_ptr<Function> GetFunction(std::uint32_t index) const {
             for (auto& func : m_function_list) {
-                if (func.first == func_address) {
+                if (func.second && func.second->getFunctionNo() == index) {
                     return func.second;
                 }
             }
             return {};
+        }
+        std::shared_ptr<Function> GetUnPrefinFunc() const {
+            for (auto& func : m_function_list) {
+                if (func.second) {
+                    if (!func.second->IsPrefin())
+                        return func.second;
+                }
+            }
+            return nullptr;
+        }
+        std::shared_ptr<Function> GetUnPostfinFunc() const {
+            for (auto& func : m_function_list) {
+                if (func.second) {
+                    if (!func.second->IsPostfin())
+                        return func.second;
+                }
+            }
+            return nullptr;
         }
         std::uint64_t GetBaseAddress() const { 
             if(m_module_context)
@@ -735,6 +882,11 @@ namespace cchips {
         void IncInsnCounts() { m_insn_counts.fetch_add(1); }
         void DecInsnCounts() { m_insn_counts.fetch_sub(1); }
         void ClrInsnCounts() { m_insn_counts.exchange(0); }
+        bool AddDatabaseToCfgraph(const std::string& cfg_name, const std::vector<std::string>& database) {
+            if (!m_cfgraph)
+                return false;
+            return m_cfgraph->AddDatabase(cfg_name, database);
+        }
     private:
         std::string m_name;
         std::uint8_t* m_precache_address = 0;
@@ -744,6 +896,7 @@ namespace cchips {
         GLOBAL_SYMBOLTABLE m_globalvariable_list;
         FUNCTION_SYMBOLTABLE m_function_list;
         GLOBALIFUNC_SYMBOLTABLE m_globalifunc_list;
+        std::unique_ptr<ControlFlowGraph> m_cfgraph;
         ReportObject m_report_object;
         static std::atomic_uint64_t m_insn_counts;
     };

@@ -131,11 +131,18 @@ namespace cchips {
             if (!info || info->getRegHandle() != PassInfo::passreg_pre) continue;
             Changed &= reinterpret_cast<ModulePass*>(pass->second.get())->runOnModule(M);
         }
+        M->UpdatePrefin();
 
         if (Changed) {
-            for (auto& func : *M) {
-                GetPassRegistry().run(func.second);
+            while (true) {
+                auto& func = M->GetUnPostfinFunc();
+                if (!func) 
+                    break;
+                GetPassRegistry().run(func);
             }
+            //for (auto& func : *M) {
+            //    GetPassRegistry().run(func.second);
+            //}
             for (auto& id : sequencepass) {
                 auto& pass = modulepasses.find(id);
                 if (pass == modulepasses.end()) continue;
@@ -145,7 +152,7 @@ namespace cchips {
                 reinterpret_cast<ModulePass*>(pass->second.get())->runOnModule(M);
             }
         }
-
+        M->UpdatePostfin();
         return Changed;
     }
 
@@ -203,11 +210,18 @@ namespace cchips {
             if (!info || info->getRegHandle() != PassInfo::passreg_pre) continue;
             Changed &= reinterpret_cast<FunctionPass*>(pass->second.get())->runOnFunction(F);
         }
+        F->UpdatePrefin();
 
         if (Changed) {
-            for (auto& bb : *F) {
-                GetPassRegistry().run(bb.second);
+            while (true) {
+                auto& bb = F->GetUnPostfinBlock();
+                if (!bb)
+                    break;
+                GetPassRegistry().run(bb);
             }
+            //for (auto& bb : *F) {
+            //    GetPassRegistry().run(bb.second);
+            //}
             for (auto& id : sequencepass) {
                 auto& pass = functionpasses.find(id);
                 if (pass == functionpasses.end()) continue;
@@ -217,7 +231,7 @@ namespace cchips {
                 reinterpret_cast<FunctionPass*>(pass->second.get())->runOnFunction(F);
             }
         }
-
+        F->UpdatePostfin();
         return Changed;
     }
 
@@ -275,11 +289,18 @@ namespace cchips {
             if (!info || info->getRegHandle() != PassInfo::passreg_pre) continue;
             Changed &= reinterpret_cast<BasicBlockPass*>(pass->second.get())->runOnBasicBlock(BB);
         }
+        BB->UpdatePrefin();
 
         if (Changed) {
-            for (auto& insn : *BB) {
-                GetPassRegistry().run(insn);
+            while (true) {
+                auto& bb = BB->GetUnPostfinInsn();
+                if (!bb)
+                    break;
+                GetPassRegistry().run(bb);
             }
+            //for (auto& insn : *BB) {
+            //    GetPassRegistry().run(insn);
+            //}
             for (auto& id : sequencepass) {
                 auto& pass = bbpasses.find(id);
                 if (pass == bbpasses.end()) continue;
@@ -289,7 +310,7 @@ namespace cchips {
                 reinterpret_cast<BasicBlockPass*>(pass->second.get())->runOnBasicBlock(BB);
             }
         }
-
+        BB->UpdatePostfin();
         return Changed;
     }
 
@@ -347,6 +368,7 @@ namespace cchips {
             if (!info || info->getRegHandle() != PassInfo::passreg_pre) continue;
             Changed &= reinterpret_cast<InstructionPass*>(pass->second.get())->runOnInstruction(insn);
         }
+        insn->UpdatePrefin();
 
         if (Changed) {
             for (auto& id : sequencepass) {
@@ -358,7 +380,7 @@ namespace cchips {
                 reinterpret_cast<InstructionPass*>(pass->second.get())->runOnInstruction(insn);
             }
         }
-
+        insn->UpdatePostfin();
         return Changed;
     }
 

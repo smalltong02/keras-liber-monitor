@@ -93,6 +93,7 @@ namespace cchips {
         }
 
         std::uint32_t GetSuccessScanCount() const { return m_success_scan_count; }
+        void ClrSuccessScanCount() { m_success_scan_count = 0; }
 
     private:
         bool scan_callback(const std::string& scan_path, const std::string& output_path) {

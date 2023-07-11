@@ -28,7 +28,7 @@ private:
 };
 
 const std::vector<std::string> TraceStaticPETest::m_file_list = {
-    "..\\samples\\test_vb.exe",
+    "..\\samples\\CyUcmClient.sys",
     "..\\samples\\ILSpy.exe",
     "..\\samples\\procexp.exe",
     "..\\samples\\die.exe",
@@ -87,6 +87,9 @@ TEST_F(TraceStaticPETest, CStaticFileManager_Class_Test)
         manager.Scan(file, "..\\outputs");
     }
     ASSERT_EQ(manager.GetSuccessScanCount(), 10);
+    manager.ClrSuccessScanCount();
+    manager.Scan(m_folder, "..\\outputs");
+    ASSERT_EQ(manager.GetSuccessScanCount(), 21);
 }
 #endif
 

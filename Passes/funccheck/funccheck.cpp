@@ -59,20 +59,18 @@ namespace cchips {
         for (auto& block : *Func) {
             if (!block.first) return error_func_basicblocks;
             if (!block.second) return error_func_basicblocks;
-            if (block.second->GetBlockType() == BasicBlock::block_end) {
+            if (block.second->GetBlockType() & BasicBlock::block_end) {
                 bend = true;
             }
         }
-        if (!bend) {
-            if (Func->size() == 1) {
-                auto& block = Func->begin();
-                if (block->second->GetBlockType() == BasicBlock::block_linkage) {
-                    Func->SetFuncType(Function::func_linkage);
-                    return error_success;
-                }
+        if (Func->size() == 1) {
+            auto& block = Func->begin();
+            if (block->second->GetBlockType() & BasicBlock::block_linkage) {
+                Func->SetFuncType(Function::func_linkage);
+                return error_success;
             }
-            return error_func_no_end;
         }
+        if(!bend) return error_func_no_end;
         return error_success;
     }
 } // namespace cchips

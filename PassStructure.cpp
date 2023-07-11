@@ -9,6 +9,10 @@ namespace cchips {
 
     std::atomic_uint64_t Module::m_insn_counts = 0;
 
+    const std::vector<std::string> GlobalIFunc::_main_func_universal_name = {
+        {"^(?i).*corexemain$"},
+    };
+
     bool Module::InitializeAbi()
     {
         if (!Valid()) return false;
@@ -127,6 +131,7 @@ namespace cchips {
             InitializeAbi();
             InitializeCommonRegister();
             InitializeGlobalIFunction();
+            m_cfgraph = std::make_unique<ControlFlowGraph>(shared_from_this(), ControlFlowGraph::cfg_apiflow);
             return true;
         }
         m_module_context = nullptr;
@@ -169,7 +174,15 @@ namespace cchips {
             if (func_address == m_module_context->GetOEP()) {
                 type = Function::func_oep;
             }
-            std::shared_ptr<Function> func_ptr = std::make_shared<Function>(shared_from_this(), func_name, func_address, type);
+            if (std::shared_ptr<CBaseStruc> callto_base; callto_base = GetBaseObjectAtAddress(func_address)) {
+                if (callto_base && callto_base->GetBaseType() == base_globalifunc) {
+                    auto& dynamic_gfunc = std::dynamic_pointer_cast<GlobalIFunc>(callto_base);
+                    if (dynamic_gfunc && dynamic_gfunc->GetFuncType() == GlobalIFunc::func_struc::func_type::func_export) {
+                        type = Function::func_export;
+                    }
+                }
+            }
+            std::shared_ptr<Function> func_ptr = std::make_shared<Function>(shared_from_this(), func_name, m_function_list.size(), func_address, type);
             if (!func_ptr) return false;
             m_function_list[address] = std::move(func_ptr);
             return true;
@@ -214,6 +227,7 @@ namespace cchips {
             if (!report.first.object.lock() || !report.second.length())
                 continue;
             GenerateJsonReport(count, report.first.object.lock(), report.second, report_value, allocator, flags);
+            count++;
         }
 
         json_object.AddMember("ErrorReport", report_value, allocator);
@@ -486,6 +500,9 @@ namespace cchips {
             }
         }
         m_report_object.dump(module_value, allocator);
+        if (m_cfgraph) {
+            m_cfgraph->dump(module_value, allocator);
+        }
         document.AddMember("module", module_value, allocator);
 
         rapidjson::StringBuffer buf;
@@ -518,6 +535,10 @@ namespace cchips {
             }
         }
         m_report_object.dump(*module_value, allocator);
+        if (m_cfgraph) {
+            m_cfgraph->dump(*module_value, allocator);
+        }
+
         document->CopyRapidValue(std::move(module_value));
         return;
     }
@@ -527,7 +548,7 @@ namespace cchips {
         if (!m_parent.lock()) return false;
         if (!m_func_name.length()) return false;
         if (!m_func_address) return false;
-        if (m_func_type > func_normal) return false;
+        if (m_func_type >= func_max) return false;
         m_basicblocks.clear();
         if (m_func_type == func_linkage) return true;
         JumpTargets jump_targets;
@@ -540,6 +561,7 @@ namespace cchips {
         RapidValue func_value;
         func_value.SetObject();
         func_value.AddMember("func_name", RapidValue(GetFuncName().c_str(), allocator), allocator);
+        func_value.AddMember("func_no", RapidValue(getFunctionNo()), allocator);
         std::stringstream ss;
         ss << "0x" << std::hex << GetFuncAddress();
         func_value.AddMember("address", RapidValue(ss.str().c_str(), allocator), allocator);
@@ -552,7 +574,9 @@ namespace cchips {
             }
         }
 
-        json_object.AddMember("Function", func_value, allocator);
+        ss.clear(); ss.str("");
+        ss << "function-" << std::dec << getFunctionNo();
+        json_object.AddMember(RapidValue(ss.str().c_str(), allocator), func_value, allocator);
         return;
     }
 
@@ -682,8 +706,9 @@ namespace cchips {
         section_range.setStartEnd(reinterpret_cast<std::uint8_t*>(section->getAddress()), reinterpret_cast<std::uint8_t*>(section->getEndAddress()));
         Range<std::uint8_t*> image_range;
         image_range.setStartEnd(const_cast<std::uint8_t*>(parent->GetContext()->GetBaseAddress()), const_cast<std::uint8_t*>(parent->GetContext()->GetEndAddress()));
-        if (x86_op_type op_type; GetCapstoneImplment().GetJmpAddress(*cap_insn, next_addr, jmp_addr, op_type)) {
-
+        if (x86_op_type op_type; GetCapstoneImplment().GetJmpAddress(parent, *cap_insn, next_addr, jmp_addr, op_type)) {
+            if (!jmp_addr)
+                return;
             if (section_range.contains(next_addr)) {
                 if (!getBasicBlockAtAddress(next_addr)) {
                     jump_targets.push(next_addr, JumpTarget::jmp_type::JMP_NORMAL, JumpTarget::from_type(insn_code, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_FALSE));
@@ -720,6 +745,25 @@ namespace cchips {
                     }
                 }
                 else if (std::shared_ptr<CBaseStruc> jmpto_base; jmpto_base = parent->GetBaseObjectAtAddress(jmp_addr)) {
+                    switch (jmpto_base->GetBaseType())
+                    {
+                    case CBaseStruc::base_function:
+                    case CBaseStruc::base_globalvariable:
+                    {
+                    }
+                    break;
+                    case CBaseStruc::base_globalifunc:
+                    {
+                        std::shared_ptr<GlobalIFunc> post_ifunc = std::static_pointer_cast<GlobalIFunc>(jmpto_base);
+                        if (!post_ifunc) break;
+                        if (post_ifunc->IsMainfunc(post_ifunc->GetFullName())) {
+                            //jump_targets.push(jmp_addr, JumpTarget::jmp_type::JMP_NORMAL, JumpTarget::from_type(insn_code, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_TRUE));
+                        }
+                    }
+                    break;
+                    default:
+                        ;
+                    }
                 }
                 else {
                     if (image_range.contains(jmp_addr)) {
@@ -743,6 +787,8 @@ namespace cchips {
         Range<std::uint8_t*> section_range;
         section_range.setStartEnd(reinterpret_cast<std::uint8_t*>(section->getAddress()), reinterpret_cast<std::uint8_t*>(section->getEndAddress()));
         if (x86_op_type op_type; GetCapstoneImplment().GetLoopAddress(*cap_insn, next_addr, loop_addr, op_type)) {
+            if (!loop_addr)
+                return;
             if (section_range.contains(next_addr)) {
                 if (!getBasicBlockAtAddress(next_addr)) {
                     jump_targets.push(next_addr, JumpTarget::jmp_type::JMP_NORMAL, JumpTarget::from_type(insn_code, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_FALSE));
@@ -808,6 +854,13 @@ namespace cchips {
             else if (cchips::GetCapstoneImplment().InLoopGroup(*cap_insn)) {
                 processLoopInstruction(current_block, std::move(cap_insn), insn_code, jump_targets);
                 break;
+            }
+            else if (cchips::GetCapstoneImplment().InIntGroup(*cap_insn)) {
+                if (cap_insn->GetInsnId() != X86_INS_INT1 && cap_insn->GetInsnId() != X86_INS_INT3) {
+                    current_block->AddCapInsn(std::move(std::shared_ptr<CapInsn>(cap_insn.release())));
+                    break;
+                }
+                current_block->AddCapInsn(std::move(std::shared_ptr<CapInsn>(cap_insn.release())));
             }
             else {
                 current_block->AddCapInsn(std::move(std::shared_ptr<CapInsn>(cap_insn.release())));
@@ -886,6 +939,7 @@ namespace cchips {
         std::stringstream ss;
         ss << "0x" << std::hex << reinterpret_cast<unsigned long long>(getAddress());
         block_value.AddMember("address", RapidValue(ss.str().c_str(), allocator), allocator);
+        block_value.AddMember("uint_type", RapidValue(GetBlockType()), allocator);
         block_value.AddMember("block_type", RapidValue(getBlockType().c_str(), allocator), allocator);
         block_value.AddMember("block_no", getBlockNo(), allocator);
 
@@ -898,7 +952,7 @@ namespace cchips {
         }
         block_value.AddMember("insns", insns_value, allocator);
         ss.clear(); ss.str("");
-        ss << "block-" << getBlockNo();
+        ss << "block-" << std::dec << getBlockNo();
         json_object.AddMember(RapidValue(ss.str().c_str(), allocator), block_value, allocator);
         return;
     }
@@ -1150,5 +1204,21 @@ namespace cchips {
             }
         }
         return false;
+    }
+
+    void ControlFlowGraph::dump(RapidValue& json_object, rapidjson::MemoryPoolAllocator<>& allocator, Cfg_view_flags flags) const
+    {
+        RapidValue database_value;
+        database_value.SetObject();
+        for (auto& database : m_cfg_database) {
+            RapidValue flow_value;
+            flow_value.SetArray();
+            for (auto& flowname : database.second) {
+                flow_value.PushBack(RapidValue(flowname.c_str(), allocator), allocator);
+            }
+            database_value.AddMember(RapidValue(database.first.c_str(), allocator), flow_value, allocator);
+        }
+        json_object.AddMember("cfgflowgraph", database_value, allocator);
+        return;
     }
 } // namespace cchips

@@ -59,7 +59,7 @@ long TraceDebuggerTest::end_insn_callback(std::shared_ptr<Debugger::Modifier> ep
     if (GetCapstoneImplment().InJmpGroup(*last_insn)) {
         std::uint8_t* next_addr = nullptr;
         std::uint8_t* jmp_addr = nullptr;
-        if (x86_op_type op_type; GetCapstoneImplment().GetJmpAddress(*last_insn, next_addr, jmp_addr, op_type)) {
+        if (x86_op_type op_type; GetCapstoneImplment().GetJmpAddress(pe_module, *last_insn, next_addr, jmp_addr, op_type)) {
             if (!last_insn->self()) return false;
             if (!last_insn->self()->detail) return false;
             cs_detail* detail = last_insn->self()->detail;

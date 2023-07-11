@@ -9,6 +9,8 @@ std::string hexstring(BYTE byte);
 namespace cchips {
 
     class BasicBlock;
+    class Function;
+    class Module;
 
     class CBaseStruc {
     public:
@@ -22,17 +24,41 @@ namespace cchips {
             base_globalvariable,
             base_localvariable,
             base_instruction,
+            base_cfgraph,
         };
-        CBaseStruc(base_type type) : m_type(type) {}
+        using init_state = enum {
+            state_uninit,
+            state_inited,
+            state_prefin,
+            state_postfin,
+        };
+        CBaseStruc(base_type type) : m_type(type) { UpdateInited(); }
         ~CBaseStruc() = default;
         base_type GetBaseType() const { return m_type; }
+        bool UpdateState(init_state state) { m_state = state; }
+        void UpdateInited() { m_state = state_inited; }
+        void UpdatePrefin() { m_state = state_prefin; }
+        void UpdatePostfin() { m_state = state_postfin; }
+        bool IsInited() const { if (m_state >= state_inited) return true; return false; }
+        bool IsPrefin() const { if (m_state >= state_prefin) return true; return false; }
+        bool IsPostfin() const { if (m_state >= state_postfin) return true; return false; }
         virtual std::uint64_t GetBaseAddress() const = 0;
     private:
         base_type m_type = base_invalid;
+        init_state m_state = state_uninit;
     };
 
     class CapInsn : public CBaseStruc {
     public:
+        using insn_type = enum {
+            insn_unknown = 0,
+            insn_normal = 1,
+            insn_loop = 2,
+            insn_intblock = 3,
+            insn_intfunc = 4,
+            insn_linkfunc = 5,
+            insn_linkvar = 6,
+        };
         CapInsn(csh cs_handle) : CBaseStruc(base_instruction), m_address(nullptr), m_id(0), m_size(0) {
             if (cs_handle == 0) return;
             m_insn = cs_malloc(cs_handle);
@@ -41,7 +67,7 @@ namespace cchips {
                 m_count = 1;
             }
         }
-        CapInsn(cs_insn* insn, size_t count = 1) : CBaseStruc(base_instruction), m_address(nullptr), m_id(0), m_size(0), m_insn(std::move(insn)), m_count(count) {
+        CapInsn(cs_insn* insn, size_t count = 1) : CBaseStruc(base_instruction), m_type(insn_normal), m_address(nullptr), m_id(0), m_size(0), m_insn(std::move(insn)), m_count(count) {
             if (m_insn) {
                 m_mnemonic_str = std::string(m_insn->mnemonic) + std::string(" ") + std::string(m_insn->op_str);
                 m_mnemonic_bytes.resize(m_insn->size);
@@ -120,10 +146,26 @@ namespace cchips {
             }
             return 0;
         }
+        insn_type GetInsnType() const { return m_type; }
         void SetParent(std::shared_ptr<BasicBlock> parent) { m_parent = parent; }
         void setPointerObject(std::shared_ptr<CBaseStruc> obj) { m_pobject = obj; }
         std::shared_ptr<CBaseStruc> getPointerObject() const { return m_pobject.lock(); }
-        void updateMnemonic(const std::string& op_str) { m_mnemonic_str = std::string(m_insn->mnemonic) + std::string(" ") + op_str; }
+        void updateMnemonic(const std::string& op_str, insn_type type = insn_intblock) {
+            m_type = type;
+            m_mnemonic_str = std::string(m_insn->mnemonic) + std::string(" ") + op_str; 
+        }
+        std::string GetTargetMnemonic() const {
+            if (!m_mnemonic_str.length())
+                return{};
+            std::istringstream iss(m_mnemonic_str);
+            std::string token;
+            std::getline(iss, token, ' ');
+            if (token.length()) {
+                std::getline(iss, token);
+                return token;
+            }
+            return {};
+        }
         void dump(RapidValue& json_object, rapidjson::MemoryPoolAllocator<>& allocator, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const {
             std::stringstream ss;
             ss << "0x" << std::hex << reinterpret_cast<unsigned long long>(m_address);
@@ -135,6 +177,7 @@ namespace cchips {
         std::uint8_t* m_address;
         size_t m_size;
         unsigned int m_id;
+        insn_type m_type = insn_unknown;
         cs_insn* m_insn = nullptr;
         size_t m_count = 0;
         std::string m_mnemonic_str;
@@ -373,7 +416,7 @@ namespace cchips {
             }
             return rflag;
         }
-        bool GetJmpAddress(CapInsn& insn, std::uint8_t*& next_addr, std::uint8_t*& jmp_addr, x86_op_type& op_type) const;
+        bool GetJmpAddress(std::shared_ptr<Module> cur_module, CapInsn& insn, std::uint8_t*& next_addr, std::uint8_t*& jmp_addr, x86_op_type& op_type) const;
         bool GetLoopAddress(CapInsn& insn, std::uint8_t*& next_addr, std::uint8_t*& loop_addr, x86_op_type& op_type) const;
         bool CapstoneImpl::GetCallAddress(CapInsn& insn, std::uint8_t*& jmp_addr, x86_op_type& op_type) const;
     private:

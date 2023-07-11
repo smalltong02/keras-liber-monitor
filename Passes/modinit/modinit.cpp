@@ -27,8 +27,13 @@ namespace cchips {
         if (!cur_module->Valid())
             return false; 
         if (cur_module->AddFunction(std::string("entry_point"), cur_module->GetContext()->GetOEP())) {
-            return true;
+            auto& exttable = cur_module->GetContext()->getExportTable();
+            if (exttable) {
+                for (auto& ext : *exttable) {
+                    cur_module->AddFunction(ext.getName(), (uint8_t*)ext.getAddress());
+                }
+            }
         }
-        return false;
+        return true;
     }
 } // namespace cchips

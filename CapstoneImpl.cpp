@@ -3,8 +3,10 @@
 
 namespace cchips {
 
-    bool CapstoneImpl::GetJmpAddress(CapInsn& insn, std::uint8_t*& next_addr, std::uint8_t*& jmp_addr, x86_op_type& op_type) const
+    bool CapstoneImpl::GetJmpAddress(std::shared_ptr<Module> cur_module, CapInsn& insn, std::uint8_t*& next_addr, std::uint8_t*& jmp_addr, x86_op_type& op_type) const
     {
+        if (!cur_module) return false;
+
         if (InJmpGroup(insn)) {
             if (OpInCount(insn, X86_OP_IMM)) {
                 int index = OpInIndex(insn, X86_OP_IMM, 1);
@@ -43,6 +45,26 @@ namespace cchips {
                     }
                     else {
                         jmp_addr = nullptr;
+                        if (x86->operands[index].mem.segment == X86_REG_INVALID) {
+                            if (x86->operands[index].mem.base == X86_REG_EIP || x86->operands[index].mem.base == X86_REG_RIP) {
+                                if (cur_module->GetContext()->GetBits() == 32) {
+                                    if (cur_module->GetContext()->isLoadingFile()) {
+                                        jmp_addr = reinterpret_cast<std::uint8_t*>(cur_module->GetContext()->getValidOffsetFromMemRva(x86->operands[index].mem.disp));
+                                    }
+                                    else {
+                                    }
+                                }
+                                else if (cur_module->GetContext()->GetBits() == 64) {
+                                    if (cur_module->GetContext()->isLoadingFile()) {
+                                        auto rva = cur_module->GetContext()->getValidRvaAddressFromFileAddress(insn.address() + insn.size());
+                                        jmp_addr = reinterpret_cast<std::uint8_t*>(cur_module->GetContext()->getValidOffsetFromMemRva(rva + x86->operands[index].mem.disp));
+                                    }
+                                    else {
+                                        jmp_addr = reinterpret_cast<std::uint8_t*>(insn.address() + insn.size() + x86->operands[index].mem.disp);
+                                    }
+                                }
+                            }
+                        }
                     }
                     op_type = X86_OP_MEM;
                     return true;
@@ -107,7 +129,13 @@ namespace cchips {
                 int index = OpInIndex(insn, X86_OP_IMM, 1);
                 if (insn.self()->detail) {
                     cs_x86* x86 = &insn.self()->detail->x86;
-                    jmp_addr = reinterpret_cast<std::uint8_t*>(x86->operands[index].imm);
+                    if (cur_module->GetContext()->isLoadingFile()) {
+                        auto rva = cur_module->GetContext()->getValidRvaAddressFromFileAddress(insn.address());
+                        jmp_addr = reinterpret_cast<std::uint8_t*>(cur_module->GetContext()->getValidOffsetFromMemRva(rva + (x86->operands[index].imm - insn.address())));
+                    }
+                    else {
+                        jmp_addr = reinterpret_cast<std::uint8_t*>(x86->operands[index].imm);
+                    }
                     op_type = X86_OP_IMM;
                     return true;
                 }

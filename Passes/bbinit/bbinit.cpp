@@ -56,6 +56,17 @@ namespace cchips {
         else if (cchips::GetCapstoneImplment().InLoopGroup(insn)) {
             return processLoopInstruction(insn);
         }
+        else if (cchips::GetCapstoneImplment().InIntGroup(insn)) {
+            block->setBlockType(BasicBlock::block_sequnce);
+            if (insn.GetInsnId() != X86_INS_INT1 && insn.GetInsnId() != X86_INS_INT3) {
+                block->setBlockType(BasicBlock::block_end);
+            }
+            else {
+                std::shared_ptr<BasicBlock> after_block = function->getBasicBlockAfter(block->getAddress());
+                if (!after_block) return false;
+                return function->linkBasicBlock(block, after_block, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_FALSE);
+            }
+        }
         else {
             block->setBlockType(BasicBlock::block_sequnce);
             std::shared_ptr<BasicBlock> after_block = function->getBasicBlockAfter(block->getAddress());
@@ -75,7 +86,7 @@ namespace cchips {
         if (!cur_module) return false;
         std::uint8_t* next_addr = nullptr;
         std::uint8_t* jmp_addr = nullptr;
-        if (x86_op_type op_type; GetCapstoneImplment().GetJmpAddress(insn, next_addr, jmp_addr, op_type)) {
+        if (x86_op_type op_type; GetCapstoneImplment().GetJmpAddress(cur_module, insn, next_addr, jmp_addr, op_type)) {
             block->setBlockType(BasicBlock::block_branch);
             std::shared_ptr<BasicBlock> post_block = function->getBasicBlockAtAddress(next_addr);
             if (post_block) {
@@ -108,25 +119,34 @@ namespace cchips {
                     case CBaseStruc::base_function:
                     {
                         std::shared_ptr<Function> post_func = std::static_pointer_cast<Function>(jmpto_base);
+                        if (!post_func) break;
                         insn.setPointerObject(jmpto_base);
-                        insn.updateMnemonic(post_func->GetFuncName());
+                        insn.updateMnemonic(post_func->GetFuncName(), CapInsn::insn_intfunc);
+                        block->clrBlockType(BasicBlock::block_branch);
                         block->setBlockType(BasicBlock::block_linkage);
+                        block->setBlockType(BasicBlock::block_end);
                     }
                     break;
                     case CBaseStruc::base_globalifunc:
                     {
                         std::shared_ptr<GlobalIFunc> post_ifunc = std::static_pointer_cast<GlobalIFunc>(jmpto_base);
+                        if (!post_ifunc) break;
                         insn.setPointerObject(jmpto_base);
-                        insn.updateMnemonic(post_ifunc->GetFullName());
+                        insn.updateMnemonic(post_ifunc->GetFullName(), CapInsn::insn_linkfunc);
+                        block->clrBlockType(BasicBlock::block_branch);
                         block->setBlockType(BasicBlock::block_linkage);
+                        block->setBlockType(BasicBlock::block_end);
                     }
                     break;
                     case CBaseStruc::base_globalvariable:
                     {
                         std::shared_ptr<GlobalVariable> post_ifunc = std::static_pointer_cast<GlobalVariable>(jmpto_base);
+                        if (!post_ifunc) break;
                         insn.setPointerObject(jmpto_base);
-                        insn.updateMnemonic(post_ifunc->GetName());
+                        insn.updateMnemonic(post_ifunc->GetName(), CapInsn::insn_linkvar);
+                        block->clrBlockType(BasicBlock::block_branch);
                         block->setBlockType(BasicBlock::block_linkage);
+                        block->setBlockType(BasicBlock::block_end);
                     }
                     break;
                     default:
@@ -173,7 +193,7 @@ namespace cchips {
             std::shared_ptr<BasicBlock> loop_block = function->getBasicBlockAtAddress(loop_addr);
             if (loop_block) {
                 insn.setPointerObject(loop_block);
-                insn.updateMnemonic(loop_block->GetName());
+                insn.updateMnemonic(loop_block->GetName(), CapInsn::insn_loop);
                 function->linkBasicBlock(block, loop_block, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_TRUE);
             }
             else {
@@ -211,6 +231,8 @@ namespace cchips {
                             else {
                                 call_addr = *reinterpret_cast<std::uint8_t**>(call_addr);
                             }
+                            if (!call_addr)
+                                return;
                             tls->active = 0;
                         }
                         else {
@@ -231,21 +253,21 @@ namespace cchips {
                         {
                             std::shared_ptr<Function> post_func = std::static_pointer_cast<Function>(callto_base);
                             insn.setPointerObject(callto_base);
-                            insn.updateMnemonic(post_func->GetFuncName());
+                            insn.updateMnemonic(post_func->GetFuncName(), CapInsn::insn_intfunc);
                         }
                         break;
                         case CBaseStruc::base_globalifunc:
                         {
                             std::shared_ptr<GlobalIFunc> post_ifunc = std::static_pointer_cast<GlobalIFunc>(callto_base);
                             insn.setPointerObject(callto_base);
-                            insn.updateMnemonic(post_ifunc->GetFullName());
+                            insn.updateMnemonic(post_ifunc->GetFullName(), CapInsn::insn_linkfunc);
                         }
                         break;
                         case CBaseStruc::base_globalvariable:
                         {
                             std::shared_ptr<GlobalVariable> post_ifunc = std::static_pointer_cast<GlobalVariable>(callto_base);
                             insn.setPointerObject(callto_base);
-                            insn.updateMnemonic(post_ifunc->GetName());
+                            insn.updateMnemonic(post_ifunc->GetName(), CapInsn::insn_linkvar);
                         }
                         break;
                         default:
@@ -260,10 +282,10 @@ namespace cchips {
                         std::shared_ptr<Function> func = cur_module->GetFunction(call_addr);
                         if (!func) return;
                         insn.setPointerObject(func);
-                        insn.updateMnemonic(func->GetFuncName());
-                        std::shared_ptr<FunctionPassManager> funcs_manager = std::static_pointer_cast<FunctionPassManager>(GetPassRegistry().getPassManager(Pass::passmanager_function));
-                        if (!funcs_manager) return;
-                        funcs_manager->Run(func);
+                        insn.updateMnemonic(func->GetFuncName(), CapInsn::insn_intfunc);
+                        //std::shared_ptr<FunctionPassManager> funcs_manager = std::static_pointer_cast<FunctionPassManager>(GetPassRegistry().getPassManager(Pass::passmanager_function));
+                        //if (!funcs_manager) return;
+                        //funcs_manager->Run(func);
                     }
                     else {
                         // report, feature.

@@ -18,7 +18,8 @@ namespace cchips {
         "LoopInit",
         // add Function post-pass at here.
         "InsnFree",
-        "ModCheck",
         // add Module post-pass at here.
+        "CflowGraph",
+        "ModCheck",
     };
 } // namespace cchips

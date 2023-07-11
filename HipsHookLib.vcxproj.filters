@@ -91,6 +91,9 @@
     <Filter Include="ThirdPary\tinyxml2">
       <UniqueIdentifier>{58076064-5077-4de3-b905-9a19884ca5a3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Passes\cfgraph">
+      <UniqueIdentifier>{13575f86-21f6-4b50-8d41-cd6fd3101616}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HipsHookLib.cpp">
@@ -440,6 +443,9 @@
     </ClCompile>
     <ClCompile Include="CapstoneImpl.cpp">
       <Filter>ThirdPary\Capstone</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\cfgraph\cfgraph.cpp">
+      <Filter>Passes\cfgraph</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -931,6 +937,9 @@
     </ClInclude>
     <ClInclude Include="ThirdParty\pelib\include\MetadataTable.h">
       <Filter>ThirdPary\PeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\cfgraph\cfgraph.h">
+      <Filter>Passes\cfgraph</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

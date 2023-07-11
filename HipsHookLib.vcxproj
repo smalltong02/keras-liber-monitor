@@ -395,6 +395,7 @@
     </ClCompile>
     <ClCompile Include="Passes\bbcheck\bbcheck.cpp" />
     <ClCompile Include="Passes\bbinit\bbinit.cpp" />
+    <ClCompile Include="Passes\cfgraph\cfgraph.cpp" />
     <ClCompile Include="Passes\funccheck\funccheck.cpp" />
     <ClCompile Include="Passes\funcinit\funcinit.cpp" />
     <ClCompile Include="Passes\insnfree\insnfree.cpp" />
@@ -541,6 +542,7 @@
     <ClInclude Include="Passes.h" />
     <ClInclude Include="Passes\bbcheck\bbcheck.h" />
     <ClInclude Include="Passes\bbinit\bbinit.h" />
+    <ClInclude Include="Passes\cfgraph\cfgraph.h" />
     <ClInclude Include="Passes\funccheck\funccheck.h" />
     <ClInclude Include="Passes\funcinit\funcinit.h" />
     <ClInclude Include="Passes\insnfree\insnfree.h" />
