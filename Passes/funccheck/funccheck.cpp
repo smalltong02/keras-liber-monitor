@@ -52,8 +52,11 @@ namespace cchips {
         if (Func->IsUnknown()) return error_func_unknown;
         if (!Func->GetFuncName().length()) return error_func_name;
         if (!Func->GetFuncAddress()) return error_func_address;
-        if (Func->empty()) return error_func_empty;
         if (!Func->GetParent()) return error_func_wrong_parent;
+        if (Func->GetFuncTypeDword() & Function::func_type::func_linkage) {
+            return error_success;
+        }
+        if (Func->empty()) return error_func_empty;
 
         bool bend = false;
         for (auto& block : *Func) {

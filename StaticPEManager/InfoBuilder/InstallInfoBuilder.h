@@ -297,14 +297,25 @@ namespace cchips {
                         info.publisher = register_info.RegGetString(key, "Publisher");
                         info.install_source = register_info.RegGetString(key, "InstallSource");
                         info.uninstall_location = register_info.RegGetString(key, "UninstallString");
-                        //bool bpatch = false;
-                        //if (info.soft_name.length()) {
-                        //    if (info.soft_name.length() > 2) {
-                        //        if (info.soft_name.at(0) == L'K' && info.soft_name.at(0) == L'B') {
-                        //            bpatch = true;
-                        //        }
-                        //    }
-                        //}
+
+                        if (contain_invalid_utf8char(info.soft_name)) {
+                            info.soft_name = stringto_hexstring(info.soft_name);
+                        }
+                        if (contain_invalid_utf8char(info.soft_version)) {
+                            info.soft_version = stringto_hexstring(info.soft_version);
+                        }
+                        if (contain_invalid_utf8char(info.install_location)) {
+                            info.install_location = stringto_hexstring(info.install_location);
+                        }
+                        if (contain_invalid_utf8char(info.publisher)) {
+                            info.publisher = stringto_hexstring(info.publisher);
+                        }
+                        if (contain_invalid_utf8char(info.install_source)) {
+                            info.install_source = stringto_hexstring(info.install_source);
+                        }
+                        if (contain_invalid_utf8char(info.uninstall_location)) {
+                            info.uninstall_location = stringto_hexstring(info.uninstall_location);
+                        }
 
                         if (key_str.at(key_str.length() - 1) != '\\')
                             key_str.append("\\");

@@ -118,6 +118,9 @@ void CFileVersionInfo::SetFileInfo(PCWSTR pKey, PCWSTR pValue)
 #else
 		wcstombs(szTemp, pValue, 256);
 		m_strCompanyName = szTemp;
+		if (contain_invalid_utf8char(m_strCompanyName)) {
+			m_strCompanyName = stringto_hexstring(m_strCompanyName);
+		}
 #endif
 	}
 	else if(wcscmp(pKey, L"FileDescription") == 0)
@@ -127,6 +130,9 @@ void CFileVersionInfo::SetFileInfo(PCWSTR pKey, PCWSTR pValue)
 #else
 		wcstombs(szTemp, pValue, 256);
 		m_strFileDescription = szTemp;
+		if (contain_invalid_utf8char(m_strFileDescription)) {
+			m_strFileDescription = stringto_hexstring(m_strFileDescription);
+		}
 #endif
 	}
 	else if(wcscmp(pKey, L"FileVersion") == 0)
@@ -136,6 +142,9 @@ void CFileVersionInfo::SetFileInfo(PCWSTR pKey, PCWSTR pValue)
 #else
 		wcstombs(szTemp, pValue, 256);
 		m_strFileVersion = szTemp;
+		if (contain_invalid_utf8char(m_strFileVersion)) {
+			m_strFileVersion = stringto_hexstring(m_strFileVersion);
+		}
 #endif
 	}
 	else if(wcscmp(pKey, L"InternalName") == 0)
@@ -145,6 +154,9 @@ void CFileVersionInfo::SetFileInfo(PCWSTR pKey, PCWSTR pValue)
 #else
 		wcstombs(szTemp, pValue, 256);
 		m_strInternalName = szTemp;
+		if (contain_invalid_utf8char(m_strInternalName)) {
+			m_strInternalName = stringto_hexstring(m_strInternalName);
+		}
 #endif
 	}
 	else if(wcscmp(pKey, L"LegalCopyright") == 0)
@@ -154,6 +166,9 @@ void CFileVersionInfo::SetFileInfo(PCWSTR pKey, PCWSTR pValue)
 #else
 		wcstombs(szTemp, pValue, 256);
 		m_strLegalCopyright = szTemp;
+		if (contain_invalid_utf8char(m_strLegalCopyright)) {
+			m_strLegalCopyright = stringto_hexstring(m_strLegalCopyright);
+		}
 #endif
 	}
 	else if(wcscmp(pKey, L"OriginalFilename") == 0)
@@ -163,6 +178,9 @@ void CFileVersionInfo::SetFileInfo(PCWSTR pKey, PCWSTR pValue)
 #else
 		wcstombs(szTemp, pValue, 256);
 		m_strOriginalFileName = szTemp;
+		if (contain_invalid_utf8char(m_strOriginalFileName)) {
+			m_strOriginalFileName = stringto_hexstring(m_strOriginalFileName);
+		}
 #endif
 	}
 	else if(wcscmp(pKey, L"ProductName") == 0)
@@ -172,6 +190,9 @@ void CFileVersionInfo::SetFileInfo(PCWSTR pKey, PCWSTR pValue)
 #else
 		wcstombs(szTemp, pValue, 256);
 		m_strProductName = szTemp;
+		if (contain_invalid_utf8char(m_strProductName)) {
+			m_strProductName = stringto_hexstring(m_strProductName);
+		}
 #endif
 	}
 	else if(wcscmp(pKey, L"ProductVersion") == 0)
@@ -181,6 +202,9 @@ void CFileVersionInfo::SetFileInfo(PCWSTR pKey, PCWSTR pValue)
 #else
 		wcstombs(szTemp, pValue, 256);
 		m_strProductVersion = szTemp;
+		if (contain_invalid_utf8char(m_strProductVersion)) {
+			m_strProductVersion = stringto_hexstring(m_strProductVersion);
+		}
 #endif
 	}
 	else if(wcscmp(pKey, L"LegalTrademarks") == 0)
@@ -190,6 +214,9 @@ void CFileVersionInfo::SetFileInfo(PCWSTR pKey, PCWSTR pValue)
 #else
 		wcstombs(szTemp, pValue, 256);
 		m_strLegalTrademarks = szTemp;
+		if (contain_invalid_utf8char(m_strLegalTrademarks)) {
+			m_strLegalTrademarks = stringto_hexstring(m_strLegalTrademarks);
+		}
 #endif
 	}
 	else if(wcscmp(pKey, L"Comments") == 0)
@@ -199,6 +226,9 @@ void CFileVersionInfo::SetFileInfo(PCWSTR pKey, PCWSTR pValue)
 #else
 		wcstombs(szTemp, pValue, 256);
 		m_strComments = szTemp;
+		if (contain_invalid_utf8char(m_strComments)) {
+			m_strComments = stringto_hexstring(m_strComments);
+		}
 #endif
 	}
 	else if(wcscmp(pKey, L"PrivateBuild") == 0)
@@ -208,6 +238,9 @@ void CFileVersionInfo::SetFileInfo(PCWSTR pKey, PCWSTR pValue)
 #else
 		wcstombs(szTemp, pValue, 256);
 		m_strPrivateBuild = szTemp;
+		if (contain_invalid_utf8char(m_strPrivateBuild)) {
+			m_strPrivateBuild = stringto_hexstring(m_strPrivateBuild);
+		}
 #endif
 	}
 	else if(wcscmp(pKey, L"SpecialBuild") == 0)
@@ -217,6 +250,9 @@ void CFileVersionInfo::SetFileInfo(PCWSTR pKey, PCWSTR pValue)
 #else
 		wcstombs(szTemp, pValue, 256);
 		m_strSpecialBuild = szTemp;
+		if (contain_invalid_utf8char(m_strSpecialBuild)) {
+			m_strSpecialBuild = stringto_hexstring(m_strSpecialBuild);
+		}
 #endif
 	}
 }
@@ -361,6 +397,43 @@ BOOL CFileVersionInfo::Create(LPCTSTR lpszFileName)
 			m_strPrivateBuild = std::string((LPCTSTR)lpInfo);
 		if (VerQueryValue(lpData, (LPTSTR)(LPCTSTR)(strSubBlock + "SpecialBuild").c_str(), &lpInfo, &unInfoLen))
 			m_strSpecialBuild = std::string((LPCTSTR)lpInfo);
+
+		if (contain_invalid_utf8char(m_strCompanyName)) {
+			m_strCompanyName = stringto_hexstring(m_strCompanyName);
+		}
+		if (contain_invalid_utf8char(m_strFileDescription)) {
+			m_strFileDescription = stringto_hexstring(m_strFileDescription);
+		}
+		if (contain_invalid_utf8char(m_strFileVersion)) {
+			m_strFileVersion = stringto_hexstring(m_strFileVersion);
+		}
+		if (contain_invalid_utf8char(m_strInternalName)) {
+			m_strInternalName = stringto_hexstring(m_strInternalName);
+		}
+		if (contain_invalid_utf8char(m_strLegalCopyright)) {
+			m_strLegalCopyright = stringto_hexstring(m_strLegalCopyright);
+		}
+		if (contain_invalid_utf8char(m_strOriginalFileName)) {
+			m_strOriginalFileName = stringto_hexstring(m_strOriginalFileName);
+		}
+		if (contain_invalid_utf8char(m_strProductName)) {
+			m_strProductName = stringto_hexstring(m_strProductName);
+		}
+		if (contain_invalid_utf8char(m_strProductVersion)) {
+			m_strProductVersion = stringto_hexstring(m_strProductVersion);
+		}
+		if (contain_invalid_utf8char(m_strComments)) {
+			m_strComments = stringto_hexstring(m_strComments);
+		}
+		if (contain_invalid_utf8char(m_strLegalTrademarks)) {
+			m_strLegalTrademarks = stringto_hexstring(m_strLegalTrademarks);
+		}
+		if (contain_invalid_utf8char(m_strPrivateBuild)) {
+			m_strPrivateBuild = stringto_hexstring(m_strPrivateBuild);
+		}
+		if (contain_invalid_utf8char(m_strSpecialBuild)) {
+			m_strSpecialBuild = stringto_hexstring(m_strSpecialBuild);
+		}
 
 		if(m_strFileVersion.empty())
 			RawGetFileInfo(lpData, dwFileVersionInfoSize);

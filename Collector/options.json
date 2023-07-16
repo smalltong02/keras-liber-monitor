@@ -1,7 +1,7 @@
 {
-  "Name": "CollectPEInfo",
-  "Version": "1.0.0.0",
-  "CreateDate": "20//12//2021 2:24PM",
+  "Name": "Collector",
+  "Version": "1.0.0.1",
+  "CreateDate": "11//07//2023 20:16PM",
   "Description": "Collect PE file information",
 
   "config": {

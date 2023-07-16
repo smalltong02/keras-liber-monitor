@@ -490,44 +490,59 @@ namespace cchips {
         bool                    empty() const { return m_basicblocks.empty(); }
 
         using func_type = enum {
-            func_oep,
-            func_normal,
-            func_linkage,
-            func_export,
-            func_max,
+            func_oep = 1,
+            func_normal = 2,
+            func_linkage = 4,
+            func_export = 8,
         };
 
         Function() = delete;
-        Function(std::shared_ptr<Module> parent, std::string& func_name, unsigned int func_no, std::uint8_t* func_address, func_type type = func_normal) : m_parent(parent), CBaseStruc(base_function), m_func_name(func_name), m_func_address(func_address), m_func_type(type), m_func_no(func_no) {}
+        Function(std::shared_ptr<Module> parent, std::string& func_name, unsigned int func_no, std::uint8_t* func_address, std::uint32_t type = func_normal) : m_parent(parent), CBaseStruc(base_function), m_func_name(func_name), m_func_address(func_address), m_func_type(type), m_func_no(func_no) {}
         ~Function() = default;
         bool Initialize();
         
         const std::string& GetFuncName() const { return m_func_name; }
+        const std::string& GetLinkageName() const { return m_linkage_name; }
         unsigned int getFunctionNo() const { return m_func_no; }
         unsigned long long GetFuncAddress() const { return reinterpret_cast<unsigned long long>(m_func_address); }
         std::uint64_t GetBaseAddress() const { return GetFuncAddress(); }
         std::string GetFuncType() const {
-            switch (m_func_type)
-            {
-            case func_oep:
-                return "EntryPoint";
-            case func_normal:
-                return "Normal";
-            case func_linkage:
-                return "Linkage";
-            case func_export:
-                return "Export";
-            default:
-                ;
+
+            std::string func_type;
+            if (m_func_type & func_oep) {
+                func_type = "EntryPoint";
             }
-            return "unknown";
+            if (m_func_type & func_normal) {
+                if (func_type.length()) {
+                    func_type += std::string(" | ");
+                }
+                func_type += "Normal";
+            }
+            if (m_func_type & func_linkage) {
+                if (func_type.length()) {
+                    func_type += std::string(" | ");
+                }
+                func_type += "Linkage";
+            }
+            if (m_func_type & func_export) {
+                if (func_type.length()) {
+                    func_type += std::string(" | ");
+                }
+                func_type += "Export";
+            }
+            if (!func_type.length()) {
+                func_type = "Unknown";
+            }
+            return func_type;
         }
         void SetFuncType(func_type type) { m_func_type = type; }
-        bool IsUnknown() const { if (m_func_type >= func_max) return true; return false; }
-        bool IsOep() const { if (m_func_type == func_oep) return true; return false; }
-        bool IsNormal() const { if (m_func_type == func_normal) return true; return false; }
-        bool IsLinkage() const { if (m_func_type == func_linkage) return true; return false; }
-        bool IsExport() const { if (m_func_type == func_export) return true; return false; }
+        std::uint32_t GetFuncTypeDword() const { return m_func_type; }
+        void SetLinkageName(const std::string& name) { m_linkage_name = name; }
+        bool IsUnknown() const { if (!IsOep() && !IsNormal() && !IsLinkage() && !IsExport()) return true; return false; }
+        bool IsOep() const { if (m_func_type & func_oep) return true; return false; }
+        bool IsNormal() const { if (m_func_type & func_normal) return true; return false; }
+        bool IsLinkage() const { if (m_func_type & func_linkage) return true; return false; }
+        bool IsExport() const { if (m_func_type & func_export) return true; return false; }
         bool Decode(JumpTargets& jump_targets);
         bool getJumpTarget(JumpTargets& jump_targets, JumpTarget& jt);
         void decodeJumpTarget(JumpTargets& jump_targets, const JumpTarget& jt);
@@ -542,10 +557,12 @@ namespace cchips {
             if (type == JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_FALSE) {
                 pre_block->addNextBlock(post_block);
                 post_block->addPreBlock(pre_block);
+                pre_block->clrBlockType(BasicBlock::block_end);
                 return true;
             }
             else if (type == JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_TRUE) {
                 pre_block->addBranchBlock(post_block);
+                pre_block->setBlockType(BasicBlock::block_branch);
                 post_block->addPreBlock(pre_block);
                 return true;
             }
@@ -594,8 +611,9 @@ namespace cchips {
         const LoopListType& getLoops() const { return m_loops; }
     private:
         unsigned int m_func_no;
-        func_type m_func_type;
+        std::uint32_t m_func_type;
         std::string m_func_name;
+        std::string m_linkage_name;
         std::uint8_t* m_func_address;
         LoopListType m_loops;
         BasicBlockListType m_basicblocks;
@@ -612,12 +630,14 @@ namespace cchips {
                 func_internal,
                 func_dsymbol,
             };
-            func_type type;
-            unsigned long long ordinal_number;
-            std::uint8_t* address;
-            std::uint8_t* to_address;
+            func_type type = func_internal;
+            bool blinkage = false;
+            unsigned long long ordinal_number = 0;
+            std::uint8_t* address = nullptr;
+            std::uint8_t* to_address = nullptr;
             std::string file_name;
             std::string func_name;
+            std::string linkage_name;
         };
 
         GlobalIFunc(const std::shared_ptr<Module> parent, std::unique_ptr<func_struc> func_st) : m_parent(parent), CBaseStruc(base_globalifunc), m_func_pointer(std::move(func_st)) {}
@@ -632,6 +652,15 @@ namespace cchips {
             if(m_func_pointer)
                 return reinterpret_cast<std::uint64_t>(m_func_pointer->to_address); 
             return 0;
+        }
+        bool Islinkagefunc() const {
+            return m_func_pointer->blinkage;
+        }
+        std::string GetlinkageName() const {
+            if (Islinkagefunc()) {
+                return m_func_pointer->linkage_name;
+            }
+            return {};
         }
         bool IsMainfunc(const std::string& funcname) const {
             for (auto& str : _main_func_universal_name) {
@@ -674,6 +703,7 @@ namespace cchips {
     public:
         using GLOBAL_SYMBOLTABLE = std::map<PVOID, std::shared_ptr<GlobalVariable>>;
         using FUNCTION_SYMBOLTABLE = std::map<PVOID, std::shared_ptr<Function>>;
+        using BASICBLOCK_SYMBOLTABLE = std::map<PVOID, std::shared_ptr<BasicBlock>>;
         using GLOBALIFUNC_SYMBOLTABLE = std::map<PVOID, std::shared_ptr<GlobalIFunc>>;
 
         using global_iterator = GLOBAL_SYMBOLTABLE::iterator;
@@ -695,8 +725,10 @@ namespace cchips {
             const std::uint8_t* base_address = nullptr;
             const std::uint8_t* end_address = nullptr;
             std::unique_ptr<PeFormat> pe_format = nullptr;
+            RangesToDecode decode_ranges;
             std::unique_ptr<PeLib::PeFile> GetPeFile(const std::string& path);
             void InitializePeStructure(std::unique_ptr<PeLib::PeFile> pe_file);
+            void InitializeRanges();
         public:
             ModuleContext(const std::string& path) {
                 auto file = GetPeFile(path);
@@ -708,6 +740,7 @@ namespace cchips {
                     base_address = file->getLoadedBytesData();
                     end_address = base_address + file->getLoadedFileLength();
                     InitializePeStructure(std::move(file));
+                    InitializeRanges();
                 }
             }
             ModuleContext(const std::uint8_t* address) { 
@@ -755,6 +788,7 @@ namespace cchips {
                 }
                 return 0; 
             }
+            RangesToDecode& GetRangesToDecode() { return decode_ranges; }
             bool isLoadingFile() const { if (pe_format) return pe_format->isLoadingFile(); else return false; }
             bool isLoadingMemory() const { if (pe_format) return pe_format->isLoadingMemory(); else return false; }
             std::uint64_t getValidRvaAddressFromFileAddress(std::uint64_t address) const { if (pe_format) return pe_format->getValidRvaAddressFromFileAddress(address); else return address; }
@@ -802,6 +836,7 @@ namespace cchips {
             m_globalvariable_list.clear();
             m_function_list.clear();
             m_globalifunc_list.clear();
+            m_basicblock_list.clear();
             ClrInsnCounts();
         }
         void SetPrecacheAddress(std::uint8_t* address) { m_precache_address = address; }
@@ -868,13 +903,48 @@ namespace cchips {
             }
             return nullptr;
         }
+        bool RemeberBasicBlock(std::shared_ptr<BasicBlock>& block) {
+            if (!block) return false;
+            auto addr = block->getAddress();
+            if (!addr) return false;
+            auto it = m_basicblock_list.find(addr);
+            if (it != m_basicblock_list.end())
+                return true;
+            m_basicblock_list[addr] = block;
+            return true;
+        }
+        std::string GetNamedFuncOffsets(std::uint8_t* addr) const {
+            if (!addr) return {};
+            auto it = m_basicblock_list.find(addr);
+            if (it == m_basicblock_list.end())
+                return {};
+            if (!it->second)
+                return {};
+            auto& block = it->second;
+            auto& func = block->GetParent();
+            if (!func) return {};
+            std::string name = func->GetFuncName();
+            if (!name.length())
+                return {};
+            auto block_addr = block->GetBaseAddress();
+            auto func_addr = func->GetFuncAddress();
+            std::stringstream ss;
+            if (block_addr >= func_addr) {
+                ss << name << "+0x" << std::hex << (block_addr - func_addr);
+            }
+            else {
+                ss << name << "-0x" << std::hex << (func_addr - block_addr);
+            }
+            return ss.str();
+        }
         std::uint64_t GetBaseAddress() const { 
             if(m_module_context)
                 return reinterpret_cast<std::uint64_t>(m_module_context->GetBaseAddress());
             return 0;
         }
         std::shared_ptr<Abi> getAbi() const { return m_abi; }
-        std::shared_ptr<CBaseStruc> GetBaseObjectAtAddress(std::uint8_t* address) const;
+        std::shared_ptr<CBaseStruc> GetBaseObjectAtAddress(std::uint8_t* address, CBaseStruc::base_type basetype = base_invalid) const;
+        bool LinkInsntoGlobal(CapInsn& insn, std::uint8_t* addr) const;
         bool AddGlobalIFunc(std::unique_ptr<GlobalIFunc::func_struc> func_st);
         const GLOBALIFUNC_SYMBOLTABLE& GetGlobalIFuncs() const { return m_globalifunc_list; }
         ReportObject& GetReportObject() { return m_report_object; }
@@ -895,6 +965,7 @@ namespace cchips {
         std::unique_ptr<ModuleContext> m_module_context = nullptr;
         GLOBAL_SYMBOLTABLE m_globalvariable_list;
         FUNCTION_SYMBOLTABLE m_function_list;
+        BASICBLOCK_SYMBOLTABLE m_basicblock_list;
         GLOBALIFUNC_SYMBOLTABLE m_globalifunc_list;
         std::unique_ptr<ControlFlowGraph> m_cfgraph;
         ReportObject m_report_object;

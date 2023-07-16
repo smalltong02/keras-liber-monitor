@@ -1,4 +1,5 @@
 #include "StringsFeature.h"
+#include "utf8.h"
 
 namespace cchips {
     const size_t kShortestRun = 5;
@@ -62,7 +63,9 @@ namespace cchips {
                                 if (ascii_count >= kShortestRun)
                                 {
                                     std::string str((const char*)address + ascii_start, ascii_count);
-
+                                    if (contain_invalid_utf8char(str)) {
+                                        str = stringto_hexstring(str);
+                                    }
                                     inside_strings.PushBack(cchips::RapidValue(str.c_str(), allocator), allocator);
                                     //log_output("ascii str: %s\n", str.c_str());
                                 }
@@ -93,6 +96,9 @@ namespace cchips {
                                     if (uni_count >= kShortestRun)
                                     {
                                         std::string str = to_byte_string(temp_wstr);
+                                        if (contain_invalid_utf8char(str)) {
+                                            str = stringto_hexstring(str);
+                                        }
                                         inside_strings.PushBack(cchips::RapidValue(str.c_str(), allocator), allocator);
                                         //log_output("unicode str: %s\n", str.c_str());
                                     }

@@ -1,5 +1,6 @@
 #pragma once
 #include "capstone\include\capstone.h"
+#include "Range.h"
 #include "NativeObject.h"
 #include "PackageWrapper.h"
 #include <string>
@@ -11,6 +12,79 @@ namespace cchips {
     class BasicBlock;
     class Function;
     class Module;
+
+    class RangesToDecode {
+    public:
+        using AddressRange = Range<std::uint64_t>;
+        using AddressRangeContainer = RangeContainer<std::uint64_t>;
+        RangesToDecode() = default;
+        ~RangesToDecode() = default;
+
+        void addPrimary(std::uint64_t s, std::uint64_t e) {
+            s = align(s, archInsnAlign);
+            if (e > s)
+            {
+                _primaryRanges.insert(s, e);
+            }
+        }
+        void addPrimary(AddressRange& r) {
+            addPrimary(r.getStart(), r.getEnd());
+        }
+        void addAlternative(std::uint64_t s, std::uint64_t e) {
+            s = align(s, archInsnAlign);
+            if (e > s)
+            {
+                _alternativeRanges.insert(s, e);
+            }
+        }
+        void addAlternative(const AddressRange& r) {
+            addAlternative(r.getStart(), r.getEnd());
+        }
+        void promoteAlternativeToPrimary() {
+            _primaryRanges = std::move(_alternativeRanges);
+            _strict = true;
+        }
+
+        void remove(std::uint64_t s, std::uint64_t e) {
+            e = align(e, archInsnAlign);
+            _primaryRanges.remove(s, e);
+            _alternativeRanges.remove(s, e);
+        }
+        void remove(const AddressRange& r) {
+            remove(r.getStart(), r.getEnd());
+        }
+
+        bool isStrict() const { return _strict; }
+        bool primaryEmpty() const { return _primaryRanges.empty(); }
+        bool alternativeEmpty() const { return _alternativeRanges.empty(); }
+
+        const AddressRange& primaryFront() const { return *_primaryRanges.begin(); }
+        const AddressRange& alternativeFront() const { return *_alternativeRanges.begin(); }
+
+        const AddressRange* getPrimary(std::uint64_t a) const { return _primaryRanges.getRange(a); }
+        const AddressRange* getAlternative(std::uint64_t a) const { return _alternativeRanges.getRange(a); }
+        const AddressRange* get(std::uint64_t a) const {
+            auto* p = getPrimary(a);
+            return p ? p : getAlternative(a);
+        }
+
+        void setArchitectureInstructionAlignment(unsigned a) {
+            archInsnAlign = a;
+        }
+
+    private:
+        std::uint64_t align(
+            const std::uint64_t& s,
+            unsigned a)
+        {
+            return a && s % a ? std::uint64_t(s + a - (s % a)) : s;
+        }
+
+        AddressRangeContainer _primaryRanges;
+        AddressRangeContainer _alternativeRanges;
+        unsigned archInsnAlign = 0;
+        bool _strict = false;
+    };
 
     class CBaseStruc {
     public:
@@ -69,7 +143,11 @@ namespace cchips {
         }
         CapInsn(cs_insn* insn, size_t count = 1) : CBaseStruc(base_instruction), m_type(insn_normal), m_address(nullptr), m_id(0), m_size(0), m_insn(std::move(insn)), m_count(count) {
             if (m_insn) {
-                m_mnemonic_str = std::string(m_insn->mnemonic) + std::string(" ") + std::string(m_insn->op_str);
+                m_mnemonic_str = std::string(m_insn->mnemonic);
+                std::string op_str = m_insn->op_str;
+                if (op_str.length()) {
+                    m_mnemonic_str = m_mnemonic_str + std::string(" ") + op_str;
+                }
                 m_mnemonic_bytes.resize(m_insn->size);
                 memcpy(&m_mnemonic_bytes[0], m_insn->bytes, m_insn->size);
             }

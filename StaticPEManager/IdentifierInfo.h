@@ -32,7 +32,7 @@ public:
         return true;
     }
 
-    std::string GetIdentifier() const { return m_identifier; }
+    const std::string& GetIdentifier() const { return m_identifier; }
 
 private:
     std::string CalculateIdentifier(const fs::path& file_path, _identifier_type type)

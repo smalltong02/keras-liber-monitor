@@ -25,6 +25,9 @@ namespace cchips {
                 if (!json_result)
                     return false;
                 if (fs::is_regular_file(file_path)) {
+                    if (contain_invalid_utf8char(file_path.string())) {
+                        file_path = fs::path(stringto_hexstring(file_path.string()));
+                    }
                     if (m_options_info.bfilename) {
                         json_result->AddTopMember("filename", cchips::RapidValue(file_path.filename().string().c_str(), json_result->GetAllocator()));
                     }

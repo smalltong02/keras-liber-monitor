@@ -22,7 +22,6 @@ namespace cchips {
     bool BBInit::run(std::shared_ptr<BasicBlock>& Block)
     {
         if (!Block) return false;
-        if (!Block->IsUnknown() && !Block->IsStart()) return false;
         if (!Block->size()) {
             //std::uint64_t address = (std::uint64_t)Block->getAddress();
             //std::cout << "Block: " << std::hex << address << " is empty!" << std::endl;
@@ -58,14 +57,14 @@ namespace cchips {
         }
         else if (cchips::GetCapstoneImplment().InIntGroup(insn)) {
             block->setBlockType(BasicBlock::block_sequnce);
-            if (insn.GetInsnId() != X86_INS_INT1 && insn.GetInsnId() != X86_INS_INT3) {
+            //if (insn.GetInsnId() != X86_INS_INT1 && insn.GetInsnId() != X86_INS_INT3) {
                 block->setBlockType(BasicBlock::block_end);
-            }
-            else {
-                std::shared_ptr<BasicBlock> after_block = function->getBasicBlockAfter(block->getAddress());
-                if (!after_block) return false;
-                return function->linkBasicBlock(block, after_block, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_FALSE);
-            }
+            //}
+            //else {
+            //    std::shared_ptr<BasicBlock> after_block = function->getBasicBlockAfter(block->getAddress());
+            //    if (!after_block) return false;
+            //    return function->linkBasicBlock(block, after_block, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_FALSE);
+            //}
         }
         else {
             block->setBlockType(BasicBlock::block_sequnce);
@@ -87,75 +86,84 @@ namespace cchips {
         std::uint8_t* next_addr = nullptr;
         std::uint8_t* jmp_addr = nullptr;
         if (x86_op_type op_type; GetCapstoneImplment().GetJmpAddress(cur_module, insn, next_addr, jmp_addr, op_type)) {
-            block->setBlockType(BasicBlock::block_branch);
             std::shared_ptr<BasicBlock> post_block = function->getBasicBlockAtAddress(next_addr);
             if (post_block) {
                 function->linkBasicBlock(block, post_block, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_FALSE);
             }
-            if (jmp_addr) {
-                if (op_type == X86_OP_MEM) {
-                    tls_check_struct *tls = check_get_tls();
-                    if (tls) {
-                        tls->active = 1;
-                        if (setjmp(tls->jb) == 0) {
-                            jmp_addr = *reinterpret_cast<std::uint8_t**>(jmp_addr);
-                            tls->active = 0;
-                        }
-                        else {
-                            //execption occur
-                            tls->active = 0;
-                        }
-                    }
-                }
-                std::shared_ptr<BasicBlock> jmp_block = function->getBasicBlockAtAddress(jmp_addr);
-                if (jmp_block) {
-                    insn.setPointerObject(jmp_block);
-                    insn.updateMnemonic(jmp_block->GetName());
-                    function->linkBasicBlock(block, jmp_block, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_TRUE);
-                }
-                else if (std::shared_ptr<CBaseStruc> jmpto_base; jmpto_base = cur_module->GetBaseObjectAtAddress(jmp_addr)) {
-                    switch (jmpto_base->GetBaseType())
-                    {
-                    case CBaseStruc::base_function:
-                    {
-                        std::shared_ptr<Function> post_func = std::static_pointer_cast<Function>(jmpto_base);
-                        if (!post_func) break;
-                        insn.setPointerObject(jmpto_base);
-                        insn.updateMnemonic(post_func->GetFuncName(), CapInsn::insn_intfunc);
-                        block->clrBlockType(BasicBlock::block_branch);
+            if (!jmp_addr) {
+                block->setBlockType(BasicBlock::block_end);
+            }
+            else {
+                if (cur_module->LinkInsntoGlobal(insn, jmp_addr)) {
+                    if (insn.GetInsnType() == CapInsn::insn_linkfunc) {
                         block->setBlockType(BasicBlock::block_linkage);
+                    }
+                    if (!block->GetNextBlock()) {
                         block->setBlockType(BasicBlock::block_end);
                     }
-                    break;
-                    case CBaseStruc::base_globalifunc:
-                    {
-                        std::shared_ptr<GlobalIFunc> post_ifunc = std::static_pointer_cast<GlobalIFunc>(jmpto_base);
-                        if (!post_ifunc) break;
-                        insn.setPointerObject(jmpto_base);
-                        insn.updateMnemonic(post_ifunc->GetFullName(), CapInsn::insn_linkfunc);
-                        block->clrBlockType(BasicBlock::block_branch);
-                        block->setBlockType(BasicBlock::block_linkage);
-                        block->setBlockType(BasicBlock::block_end);
-                    }
-                    break;
-                    case CBaseStruc::base_globalvariable:
-                    {
-                        std::shared_ptr<GlobalVariable> post_ifunc = std::static_pointer_cast<GlobalVariable>(jmpto_base);
-                        if (!post_ifunc) break;
-                        insn.setPointerObject(jmpto_base);
-                        insn.updateMnemonic(post_ifunc->GetName(), CapInsn::insn_linkvar);
-                        block->clrBlockType(BasicBlock::block_branch);
-                        block->setBlockType(BasicBlock::block_linkage);
-                        block->setBlockType(BasicBlock::block_end);
-                    }
-                    break;
-                    default:
-                        // don't know.
-                        ;
+                    else {
+                        block->setBlockType(BasicBlock::block_sequnce);
                     }
                 }
                 else {
-                    // maybe error.
+                    if (op_type == X86_OP_MEM) {
+                        tls_check_struct* tls = check_get_tls();
+                        if (tls) {
+                            tls->active = 1;
+                            if (setjmp(tls->jb) == 0) {
+                                if (cur_module->GetContext()->isLoadingFile()) {
+                                    if (cur_module->GetContext()->GetBits() == 64) {
+                                        jmp_addr = (std::uint8_t*)(*reinterpret_cast<std::uint64_t*>(jmp_addr));
+                                    }
+                                    else {
+                                        jmp_addr = (std::uint8_t*)(*reinterpret_cast<std::uint32_t*>(jmp_addr));
+                                    }
+                                    jmp_addr = (std::uint8_t*)(cur_module->GetContext()->getValidOffsetFromMemRva((std::uint64_t)jmp_addr));
+                                }
+                                else {
+                                    jmp_addr = *reinterpret_cast<std::uint8_t**>(jmp_addr);
+                                }
+                                if (!jmp_addr) {
+                                    block->setBlockType(BasicBlock::block_end);
+                                    return false;
+                                }
+                                tls->active = 0;
+                            }
+                            else {
+                                //execption occur
+                                tls->active = 0;
+                            }
+                        }
+                    }
+                    std::shared_ptr<BasicBlock> jmp_block = function->getBasicBlockAtAddress(jmp_addr);
+                    if (jmp_block) {
+                        insn.setPointerObject(jmp_block);
+                        insn.updateMnemonic(jmp_block->GetName());
+                        function->linkBasicBlock(block, jmp_block, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_TRUE);
+                    }
+                    else if (cur_module->LinkInsntoGlobal(insn, jmp_addr)) {
+                        if (insn.GetInsnType() == CapInsn::insn_linkfunc) {
+                            block->setBlockType(BasicBlock::block_linkage);
+                        }
+                        if (!block->GetNextBlock()) {
+                            block->setBlockType(BasicBlock::block_end);
+                        }
+                        else {
+                            block->setBlockType(BasicBlock::block_sequnce);
+                        }
+                    }
+                    else {
+                        auto name = cur_module->GetNamedFuncOffsets(jmp_addr);
+                        if (name.length()) {
+                            insn.updateMnemonic(name);
+                            if (!block->GetNextBlock()) {
+                                block->setBlockType(BasicBlock::block_end);
+                            }
+                            else {
+                                block->setBlockType(BasicBlock::block_sequnce);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -215,81 +223,62 @@ namespace cchips {
         if (!function) return;
         std::shared_ptr<Module> cur_module = function->GetParent();
         if (!cur_module) return;
+        if (function->getFunctionNo() == 1955) {
+            int aaa = 0;
+            aaa = 1;
+        }
         std::uint8_t* call_addr = nullptr;
         Range<std::uint8_t*> image_range;
         image_range.setStartEnd(const_cast<std::uint8_t*>(cur_module->GetContext()->GetBaseAddress()), const_cast<std::uint8_t*>(cur_module->GetContext()->GetEndAddress()));
         if (x86_op_type op_type; GetCapstoneImplment().GetCallAddress(insn, call_addr, op_type)) {
             if (call_addr) {
-                if (op_type == X86_OP_MEM) {
-                    tls_check_struct *tls = check_get_tls();
-                    if (tls) {
-                        tls->active = 1;
-                        if (setjmp(tls->jb) == 0) {
-                            if (cur_module->GetContext()->isLoadingFile()) {
-                                call_addr = (std::uint8_t*)(*reinterpret_cast<std::uint32_t*>(call_addr));
+                if (!cur_module->LinkInsntoGlobal(insn, call_addr)) {
+                    if (op_type == X86_OP_MEM) {
+                        tls_check_struct* tls = check_get_tls();
+                        if (tls) {
+                            tls->active = 1;
+                            if (setjmp(tls->jb) == 0) {
+                                if (cur_module->GetContext()->isLoadingFile()) {
+                                    if (cur_module->GetContext()->GetBits() == 64) {
+                                        call_addr = (std::uint8_t*)(*reinterpret_cast<std::uint64_t*>(call_addr));
+                                    }
+                                    else {
+                                        call_addr = (std::uint8_t*)(*reinterpret_cast<std::uint32_t*>(call_addr));
+                                    }
+                                    call_addr = (std::uint8_t*)(cur_module->GetContext()->getValidOffsetFromMemRva((std::uint64_t)call_addr));
+                                }
+                                else {
+                                    call_addr = *reinterpret_cast<std::uint8_t**>(call_addr);
+                                }
+                                if (!call_addr)
+                                    return;
+                                tls->active = 0;
                             }
                             else {
-                                call_addr = *reinterpret_cast<std::uint8_t**>(call_addr);
+                                //execption occur
+                                tls->active = 0;
                             }
-                            if (!call_addr)
-                                return;
-                            tls->active = 0;
+                        }
+                    }
+                    std::shared_ptr<BasicBlock> call_block = function->getBasicBlockAtAddress(call_addr);
+                    if (call_block) {
+                        // Confuse, call address in basicblock.
+                    }
+                    else if (!cur_module->LinkInsntoGlobal(insn, call_addr)) {
+                        if (image_range.contains(call_addr)) {
+                            if (!cur_module->AddFunction(std::string(""), call_addr)) return;
+                            std::shared_ptr<Function> func = cur_module->GetFunction(call_addr);
+                            if (!func) return;
+                            insn.setPointerObject(func);
+                            insn.updateMnemonic(func->GetFuncName(), CapInsn::insn_intfunc);
+                            //std::shared_ptr<FunctionPassManager> funcs_manager = std::static_pointer_cast<FunctionPassManager>(GetPassRegistry().getPassManager(Pass::passmanager_function));
+                            //if (!funcs_manager) return;
+                            //funcs_manager->Run(func);
                         }
                         else {
-                            //execption occur
-                            tls->active = 0;
+                            // report, feature.
+                            // check stack? heap? or other module.
                         }
-                    }
-                }
-                std::shared_ptr<BasicBlock> call_block = function->getBasicBlockAtAddress(call_addr);
-                if (call_block) {
-                    // Confuse, call address in basicblock.
-                }
-                else if (std::shared_ptr<CBaseStruc> callto_base; callto_base = cur_module->GetBaseObjectAtAddress(call_addr)) {
-                    if (callto_base) {
-                        switch (callto_base->GetBaseType())
-                        {
-                        case CBaseStruc::base_function:
-                        {
-                            std::shared_ptr<Function> post_func = std::static_pointer_cast<Function>(callto_base);
-                            insn.setPointerObject(callto_base);
-                            insn.updateMnemonic(post_func->GetFuncName(), CapInsn::insn_intfunc);
-                        }
-                        break;
-                        case CBaseStruc::base_globalifunc:
-                        {
-                            std::shared_ptr<GlobalIFunc> post_ifunc = std::static_pointer_cast<GlobalIFunc>(callto_base);
-                            insn.setPointerObject(callto_base);
-                            insn.updateMnemonic(post_ifunc->GetFullName(), CapInsn::insn_linkfunc);
-                        }
-                        break;
-                        case CBaseStruc::base_globalvariable:
-                        {
-                            std::shared_ptr<GlobalVariable> post_ifunc = std::static_pointer_cast<GlobalVariable>(callto_base);
-                            insn.setPointerObject(callto_base);
-                            insn.updateMnemonic(post_ifunc->GetName(), CapInsn::insn_linkvar);
-                        }
-                        break;
-                        default:
-                            // don't know.
-                            ;
-                        }
-                    }
-                }
-                else {
-                    if (image_range.contains(call_addr)) {
-                        if (!cur_module->AddFunction(std::string(""), call_addr)) return;
-                        std::shared_ptr<Function> func = cur_module->GetFunction(call_addr);
-                        if (!func) return;
-                        insn.setPointerObject(func);
-                        insn.updateMnemonic(func->GetFuncName(), CapInsn::insn_intfunc);
-                        //std::shared_ptr<FunctionPassManager> funcs_manager = std::static_pointer_cast<FunctionPassManager>(GetPassRegistry().getPassManager(Pass::passmanager_function));
-                        //if (!funcs_manager) return;
-                        //funcs_manager->Run(func);
-                    }
-                    else {
-                        // report, feature.
-                        // check stack? heap? or other module.
                     }
                 }
             }

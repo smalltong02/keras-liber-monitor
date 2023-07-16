@@ -60,12 +60,12 @@ namespace cchips {
         const std::string& GetPeType() { return m_petype_desc; }
         const std::string& GetSubsystem() { return m_subsystem_desc; }
         CIdentifierInfo& GetIdentifierInfo() { return m_iden_info; }
-        std::unique_ptr<cchips::CRapidJsonWrapper> GetBaseInfo() { return std::move(m_json_baseinfo); }
-        std::unique_ptr<cchips::CRapidJsonWrapper> GetVersionInfo() { return std::move(m_json_versioninfo); }
-        std::unique_ptr<cchips::CRapidJsonWrapper> GetInstalledInfo() { return std::move(m_json_installinfo); }
-        std::unique_ptr<cchips::CRapidJsonWrapper> GetVerifyInfo() { return std::move(m_json_verifyinfo); }
-        std::unique_ptr<cchips::CRapidJsonWrapper> GetPeInsideInfo() { return std::move(m_json_peinside); }
-        std::unique_ptr<cchips::CRapidJsonWrapper> GetInsnFlowInfo() { return std::move(m_json_insnflow); }
+        std::unique_ptr<cchips::CRapidJsonWrapper>& GetBaseInfo() { return m_json_baseinfo; }
+        std::unique_ptr<cchips::CRapidJsonWrapper>& GetVersionInfo() { return m_json_versioninfo; }
+        std::unique_ptr<cchips::CRapidJsonWrapper>& GetInstalledInfo() { return m_json_installinfo; }
+        std::unique_ptr<cchips::CRapidJsonWrapper>& GetVerifyInfo() { return m_json_verifyinfo; }
+        std::unique_ptr<cchips::CRapidJsonWrapper>& GetPeInsideInfo() { return m_json_peinside; }
+        std::unique_ptr<cchips::CRapidJsonWrapper>& GetInsnFlowInfo() { return m_json_insnflow; }
         void SetPeInsideInfo(std::unique_ptr<cchips::CRapidJsonWrapper> peinside) { m_json_peinside = std::move(peinside); }
         void SetInsnFlowInfo(std::unique_ptr<cchips::CRapidJsonWrapper> insnflow) { m_json_insnflow = std::move(insnflow); }
         void SetJsonBaseInfo(std::unique_ptr<cchips::CRapidJsonWrapper> baseinfo) { m_json_baseinfo = std::move(baseinfo); }

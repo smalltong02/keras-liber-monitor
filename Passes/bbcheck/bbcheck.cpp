@@ -103,9 +103,17 @@ namespace cchips {
             }
         }
         if (block_type & BasicBlock::block_end) {
-            if (Block->GetNextBlock() != nullptr ||
-                Block->GetBranchBlock() != nullptr)
+            if (Block->GetNextBlock() != nullptr)
                 return error_block_link;
+            if (Block->GetBranchBlock() != nullptr) {
+                auto& insn = Block->getEndInsn();
+                if (!insn) {
+                    return error_block_link;
+                }
+                if (!GetCapstoneImplment().InCondBranchGroup(*insn)) {
+                    return error_block_link;
+                }
+            }
         }
 
         for (auto& pre : Block->GetPreBlockList()) {

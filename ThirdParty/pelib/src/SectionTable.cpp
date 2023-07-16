@@ -77,7 +77,7 @@ namespace cchips {
             return;
         }
 
-        bytes = std::string_view(reinterpret_cast<const char*>(address), (std::min)(loadsize, sOwner->getSizeOfImage() - offset));
+        bytes = std::string_view(reinterpret_cast<const char*>(address), (std::min)(loadsize, (size_t)(sOwner->getSizeOfImage() - offset)));
         loaded = true;
     }
 } // namespace cchips

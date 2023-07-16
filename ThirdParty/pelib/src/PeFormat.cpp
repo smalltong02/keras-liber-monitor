@@ -2411,18 +2411,30 @@ namespace cchips {
     bool PeFormat::getExportedFunction(unsigned long long index, Export& exportedFunction) const
     {
         if (!IsValid()) return false;
+        exportedFunction.Clear();
         switch (pe_file->getBits()) {
         case 32:
         {
+            auto iddrva = static_cast<PeLib::PeFileT<32>*>(pe_file.get())->peHeader().getIddExportRva();
+            auto iddsize = static_cast<PeLib::PeFileT<32>*>(pe_file.get())->peHeader().getIddExportSize();
             PeLib::ExportDirectoryT<32>& exports = static_cast<PeLib::PeFileT<32>*>(pe_file.get())->expDir();
             if (index >= exports.calcNumberOfFunctions())
             {
                 return false;
             }
             if (pe_file->isLoadingFile()) {
-                exportedFunction.setAddress(getValidOffsetFromRva(exports.getAddressOfFunction(index)) + reinterpret_cast<unsigned long long>(getLoadedBytesData()));
+                auto iddoffset = static_cast<PeLib::PeFileT<32>*>(pe_file.get())->peHeader().rvaToOffset(iddrva);
+                auto funcoffset = getValidOffsetFromRva(exports.getAddressOfFunction(index));
+                if (funcoffset > iddoffset && iddoffset < iddoffset + iddsize) {
+                    exportedFunction.setLinkage();
+                }
+                exportedFunction.setAddress(funcoffset + reinterpret_cast<unsigned long long>(getLoadedBytesData()));
             }
             else {
+                auto funcrva = exports.getAddressOfFunction(index);
+                if (funcrva > iddrva && funcrva < iddrva + iddsize) {
+                    exportedFunction.setLinkage();
+                }
                 exportedFunction.setAddress(exports.getAddressOfFunction(index) + static_cast<PeLib::PeFileT<32>*>(pe_file.get())->peHeader().getImageBase());
             }
             exportedFunction.setOrdinalNumber(exports.getFunctionOrdinal(index));
@@ -2432,15 +2444,26 @@ namespace cchips {
         break;
         case 64:
         {
+            auto iddrva = static_cast<PeLib::PeFileT<64>*>(pe_file.get())->peHeader().getIddExportRva();
+            auto iddsize = static_cast<PeLib::PeFileT<64>*>(pe_file.get())->peHeader().getIddExportSize();
             PeLib::ExportDirectoryT<64>& exports = static_cast<PeLib::PeFileT<64>*>(pe_file.get())->expDir();
             if (index >= exports.calcNumberOfFunctions())
             {
                 return false;
             }
             if (pe_file->isLoadingFile()) {
-                exportedFunction.setAddress(getValidOffsetFromRva(exports.getAddressOfFunction(index)) + reinterpret_cast<unsigned long long>(getLoadedBytesData()));
+                auto iddoffset = static_cast<PeLib::PeFileT<64>*>(pe_file.get())->peHeader().rvaToOffset(iddrva);
+                auto funcoffset = getValidOffsetFromRva(exports.getAddressOfFunction(index));
+                if (funcoffset > iddoffset && iddoffset < iddoffset + iddsize) {
+                    exportedFunction.setLinkage();
+                }
+                exportedFunction.setAddress(funcoffset + reinterpret_cast<unsigned long long>(getLoadedBytesData()));
             }
             else {
+                auto funcrva = exports.getAddressOfFunction(index);
+                if (funcrva > iddrva && funcrva < iddrva + iddsize) {
+                    exportedFunction.setLinkage();
+                }
                 exportedFunction.setAddress(exports.getAddressOfFunction(index) + static_cast<PeLib::PeFileT<64>*>(pe_file.get())->peHeader().getImageBase());
             }
             exportedFunction.setOrdinalNumber(exports.getFunctionOrdinal(index));
@@ -2732,6 +2755,9 @@ namespace cchips {
             return rva;
         rva -= imagebase;
         auto offset = getValidOffsetFromRva(rva);
+        if (offset == -1) {
+            return 0;
+        }
         return offset + (uint64_t)getLoadedBytesData();
     }
 

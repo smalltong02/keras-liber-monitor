@@ -2,6 +2,7 @@
 #include <chrono>
 #include "..\JsonOptions.h"
 #include "..\FileInfo.h"
+#include "utf8.h"
 
 namespace cchips {
 

@@ -35,7 +35,7 @@ namespace cchips {
         bool isInfo() const { return getType() == Type::INFO_SEG; }
         bool isSomeData() const { return isData() || isCodeAndData() || isConstData(); }
         bool isSomeCode() const { return isCode() || isCodeAndData(); }
-        bool isDataOnly() const { return isData() || isConstData(); }
+        bool isDataOnly() const { return isData() || isConstData() || isDebug() || isBss() || isInfo(); }
         bool isReadOnly() const { return isCode() || isConstData(); }
         /// @}
 
@@ -62,9 +62,9 @@ namespace cchips {
         unsigned long long getVirtualAddress() const { return virtual_address; }
         unsigned long long getEndAddress() const {
             unsigned long long size = 0;
-            if (!getSizeInMemory(size))
+            if (!(size = getSizeInFile()))
             {
-                size = getSizeInFile();
+                getSizeInMemory(size);
             }
 
             return size ? getAddress() + size : getAddress() + 1;

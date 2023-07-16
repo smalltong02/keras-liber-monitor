@@ -130,7 +130,7 @@ namespace cchips {
                 output_jsonformat,
                 output_pipeformat,
                 output_ipformat,
-                output_sqliteformat,
+                output_mongodbformat,
             };
 
             std::string identifier;
@@ -199,8 +199,8 @@ namespace cchips {
                 else if (_stricmp(outputtype.c_str(), "traffic") == 0) {
                     format = _outputtype::output_ipformat;
                 }
-                else if (_stricmp(outputtype.c_str(), "sqlite") == 0) {
-                    format = _outputtype::output_sqliteformat;
+                else if (_stricmp(outputtype.c_str(), "mongodb") == 0) {
+                    format = _outputtype::output_mongodbformat;
                 }
 
                 return format;

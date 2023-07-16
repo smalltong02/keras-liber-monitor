@@ -447,6 +447,9 @@
     <ClCompile Include="Passes\cfgraph\cfgraph.cpp">
       <Filter>Passes\cfgraph</Filter>
     </ClCompile>
+    <ClCompile Include="StaticPEManager\StaticFileManager.cpp">
+      <Filter>StaticPEManager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FlagsObject.h">

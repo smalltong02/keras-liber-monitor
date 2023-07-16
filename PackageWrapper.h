@@ -133,6 +133,12 @@ namespace cchips {
         RapidDocument::AllocatorType& GetAllocator() {
             return (*m_document).GetAllocator();
         }
+        std::uint64_t Capacity() const {
+            if (m_document) {
+                return m_document->Capacity();
+            }
+            return 0;
+        }
         bool AddTopMember(const std::string& name, std::unique_ptr<RapidValue> value) {
             if (!IsValid()) return false;
             if (auto anyvalue{ GetMember(name) }; !anyvalue.has_value()) {

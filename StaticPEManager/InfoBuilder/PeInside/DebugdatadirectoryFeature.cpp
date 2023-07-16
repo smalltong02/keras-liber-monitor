@@ -24,7 +24,10 @@ namespace cchips {
                         vpdb.AddMember("timestamp", RapidValue(pdb->getTimeStamp()), allocator);
                         vpdb.AddMember("age", RapidValue(pdb->getAge()), allocator);
                         vpdb.AddMember("path", RapidValue(pdb->getPath().c_str(), allocator), allocator);
-                        vpdbinfos->AddMember(cchips::RapidValue(pdb->getGuid().c_str(), allocator), vpdb, allocator);
+                        auto guid = pdb->getGuid();
+                        if (!guid.length())
+                            guid = "unknown";
+                        vpdbinfos->AddMember(cchips::RapidValue(guid.c_str(), allocator), vpdb, allocator);
                     }
                     return json_result->AddTopMember("pdbinfos", std::move(vpdbinfos));
                 }

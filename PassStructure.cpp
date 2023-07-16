@@ -4,6 +4,7 @@
 #include "PassStructure.h"
 #include "rapidjson/prettywriter.h"
 #include "PassSupport.h"
+#include "utf8.h"
 
 namespace cchips {
 
@@ -71,24 +72,7 @@ namespace cchips {
                 if (!func_ptr->func_name.length()) continue;
                 import_entry->getOrdinalNumber(func_ptr->ordinal_number);
                 func_ptr->address = reinterpret_cast<std::uint8_t*>(import_entry->getAddress());
-                tls_check_struct *tls = check_get_tls();
-                if (tls) {
-                    tls->active = 1;
-                    if (setjmp(tls->jb) == 0) {
-                        if (GetContext()->isLoadingFile()) {
-                            func_ptr->to_address = (std::uint8_t*)(*reinterpret_cast<std::uint32_t*>(func_ptr->address));
-                        }
-                        else {
-                            func_ptr->to_address = *reinterpret_cast<std::uint8_t**>(func_ptr->address);
-                        }
-                        tls->active = 0;
-                    }
-                    else {
-                        //execption occur
-                        tls->active = 0;
-                        continue;
-                    }
-                }
+                func_ptr->to_address = func_ptr->address;
                 AddGlobalIFunc(std::move(func_ptr));
             }
         }
@@ -107,6 +91,19 @@ namespace cchips {
                 export_entry->getOrdinalNumber(func_ptr->ordinal_number);
                 func_ptr->address = reinterpret_cast<std::uint8_t*>(export_entry->getAddress());
                 func_ptr->to_address = func_ptr->address;
+                if (export_entry->isLinkage()) {
+                    func_ptr->blinkage = true;
+                    Range<std::uint8_t*> section_range;
+                    section_range.setStartEnd(const_cast<std::uint8_t*>(m_module_context->GetBaseAddress()), const_cast<std::uint8_t*>(m_module_context->GetEndAddress()));
+                    if (section_range.contains(func_ptr->address)) {
+                        if (isPrintableChar(*(char*)func_ptr->address)) {
+                            func_ptr->linkage_name = std::string((char*)func_ptr->address);
+                        }
+                    }
+                    if(!func_ptr->linkage_name.length()) {
+                        func_ptr->linkage_name = func_ptr->func_name;
+                    }
+                }
                 AddGlobalIFunc(std::move(func_ptr));
             }
         }
@@ -156,7 +153,8 @@ namespace cchips {
     {
         if (!Valid()) return false;
         if (!func_address) return false;
-        Function::func_type type = Function::func_normal;
+        std::uint32_t type = Function::func_normal;
+        std::string linkage_name;
         if (func_name.length() == 0) {
 
             if (!GetLinkageFuncName(func_name, func_address)) {
@@ -166,6 +164,7 @@ namespace cchips {
             }
             else {
                 type = Function::func_linkage;
+                linkage_name = func_name;
             }
         }
         PVOID address = reinterpret_cast<PVOID>(func_address);
@@ -174,16 +173,21 @@ namespace cchips {
             if (func_address == m_module_context->GetOEP()) {
                 type = Function::func_oep;
             }
-            if (std::shared_ptr<CBaseStruc> callto_base; callto_base = GetBaseObjectAtAddress(func_address)) {
-                if (callto_base && callto_base->GetBaseType() == base_globalifunc) {
-                    auto& dynamic_gfunc = std::dynamic_pointer_cast<GlobalIFunc>(callto_base);
-                    if (dynamic_gfunc && dynamic_gfunc->GetFuncType() == GlobalIFunc::func_struc::func_type::func_export) {
-                        type = Function::func_export;
+            if (std::shared_ptr<CBaseStruc> callto_base; callto_base = GetBaseObjectAtAddress(func_address, base_globalifunc)) {
+                auto& dynamic_gfunc = std::dynamic_pointer_cast<GlobalIFunc>(callto_base);
+                if (dynamic_gfunc && dynamic_gfunc->GetFuncType() == GlobalIFunc::func_struc::func_type::func_export) {
+                    type = Function::func_export;
+                    if (dynamic_gfunc->Islinkagefunc()) {
+                        type |= Function::func_linkage;
+                        linkage_name = dynamic_gfunc->GetlinkageName();
                     }
                 }
             }
             std::shared_ptr<Function> func_ptr = std::make_shared<Function>(shared_from_this(), func_name, m_function_list.size(), func_address, type);
             if (!func_ptr) return false;
+            if (type & Function::func_linkage) {
+                func_ptr->SetLinkageName(linkage_name);
+            }
             m_function_list[address] = std::move(func_ptr);
             return true;
         }
@@ -311,115 +315,36 @@ namespace cchips {
     void Module::ModuleContext::InitializePeStructure(std::unique_ptr<PeLib::PeFile> pe_file)
     {
         ASSERT(pe_file);
-        //tls_check_struct *tls = check_get_tls();
-        //if (tls) {
-        //    tls->active = 1;
-        //    if (setjmp(tls->jb) == 0) {
-        //        pe_file->readMzHeader();
-        //        pe_file->readPeHeader();
-        //        pe_file->readImportDirectory();
-        //        pe_file->readExportDirectory();
-        //        pe_file->readIatDirectory();
-        //        tls->active = 0;
-        //    }
-        //    else {
-        //        //execption occur
-        //        tls->active = 0;
-        //        pe_file = nullptr;
-        //        module_format = FileDetector::format_unknown;
-        //        return;
-        //    }
-        //}
-
-        //if (tls) {
-        //    tls->active = 1;
-        //    if (setjmp(tls->jb) == 0) {
-        //        pe_file->readBoundImportDirectory();
-        //        tls->active = 0;
-        //    }
-        //    else {
-        //        //execption occur
-        //        tls->active = 0;
-        //    }
-        //}
-        //if (tls) {
-        //    tls->active = 1;
-        //    if (setjmp(tls->jb) == 0) {
-        //        pe_file->readDelayImportDirectory();
-        //        tls->active = 0;
-        //    }
-        //    else {
-        //        //execption occur
-        //        tls->active = 0;
-        //    }
-        //}
-        //if (tls) {
-        //    tls->active = 1;
-        //    if (setjmp(tls->jb) == 0) {
-        //        pe_file->readCoffSymbolTable();
-        //        tls->active = 0;
-        //    }
-        //    else {
-        //        //execption occur
-        //        tls->active = 0;
-        //    }
-        //}
-        //if (tls) {
-        //    tls->active = 1;
-        //    if (setjmp(tls->jb) == 0) {
-        //        pe_file->readDebugDirectory();
-        //        tls->active = 0;
-        //    }
-        //    else {
-        //        //execption occur
-        //        tls->active = 0;
-        //    }
-        //}
-        //if (tls) {
-        //    tls->active = 1;
-        //    if (setjmp(tls->jb) == 0) {
-        //        pe_file->readTlsDirectory();
-        //        tls->active = 0;
-        //    }
-        //    else {
-        //        //execption occur
-        //        tls->active = 0;
-        //    }
-        //}
-        //if (tls) {
-        //    tls->active = 1;
-        //    if (setjmp(tls->jb) == 0) {
-        //        pe_file->readResourceDirectory();
-        //        tls->active = 0;
-        //    }
-        //    else {
-        //        //execption occur
-        //        tls->active = 0;
-        //    }
-        //}
-        //if (tls) {
-        //    tls->active = 1;
-        //    if (setjmp(tls->jb) == 0) {
-        //        pe_file->readSecurityDirectory();
-        //        tls->active = 0;
-        //    }
-        //    else {
-        //        //execption occur
-        //        tls->active = 0;
-        //    }
-        //}
-        //if (tls) {
-        //    tls->active = 1;
-        //    if (setjmp(tls->jb) == 0) {
-        //        pe_file->readComHeaderDirectory();
-        //        tls->active = 0;
-        //    }
-        //    else {
-        //        //execption occur
-        //        tls->active = 0;
-        //    }
-        //}
         pe_format = std::make_unique<PeFormat>(std::move(pe_file));
+        return;
+    }
+
+    void Module::ModuleContext::InitializeRanges()
+    {
+        decode_ranges.setArchitectureInstructionAlignment(0);
+        if (!pe_format || !pe_format->IsValid())
+            return;
+        const auto seccounts = pe_format->getDeclaredNumberOfSections();
+        for (std::size_t i = 0; i < seccounts; ++i)
+        {
+            const auto& fsec = pe_format->getPeSection(i);
+            if (fsec)
+            {
+                auto start = fsec->getAddress();
+                auto end = fsec->getEndAddress();
+                if (end > start) {
+                    if (fsec->isSomeCode()) {
+                        decode_ranges.addPrimary(start, end);
+                    }
+                    else if (fsec->isSomeData() || fsec->isUndefined()) {
+                        decode_ranges.addAlternative(start, end);
+                    }
+                }
+            }
+        }
+        if (decode_ranges.primaryEmpty()) {
+            decode_ranges.promoteAlternativeToPrimary();
+        }
         return;
     }
 
@@ -449,18 +374,65 @@ namespace cchips {
         return std::make_unique<PeLib::PeFile32>(path);
     }
 
-    std::shared_ptr<CBaseStruc> Module::GetBaseObjectAtAddress(std::uint8_t* address) const
+    std::shared_ptr<CBaseStruc> Module::GetBaseObjectAtAddress(std::uint8_t* address, CBaseStruc::base_type basetype) const
     {
-        auto func = m_function_list.find(address);
-        if (func != m_function_list.end())
-            return func->second;
-        auto ifunc = m_globalifunc_list.find(address);
-        if (ifunc != m_globalifunc_list.end())
-            return ifunc->second;
-        auto variable = m_globalvariable_list.find(address);
-        if (variable != m_globalvariable_list.end())
-            return variable->second;
+        if (basetype == base_invalid || basetype == base_function) {
+            auto func = m_function_list.find(address);
+            if (func != m_function_list.end())
+                return func->second;
+        }
+        if (basetype == base_invalid || basetype == base_globalifunc) {
+            auto ifunc = m_globalifunc_list.find(address);
+            if (ifunc != m_globalifunc_list.end())
+                return ifunc->second;
+        }
+        if (basetype == base_invalid || basetype == base_globalvariable) {
+            auto variable = m_globalvariable_list.find(address);
+            if (variable != m_globalvariable_list.end())
+                return variable->second;
+        }
         return nullptr;
+    }
+
+    bool Module::LinkInsntoGlobal(CapInsn& insn, std::uint8_t* addr) const
+    {
+        if (!addr) return false;
+        if (std::shared_ptr<CBaseStruc> callto_base; callto_base = GetBaseObjectAtAddress(addr)) {
+            if (callto_base) {
+                switch (callto_base->GetBaseType())
+                {
+                case CBaseStruc::base_function:
+                {
+                    std::shared_ptr<Function> post_func = std::static_pointer_cast<Function>(callto_base);
+                    insn.setPointerObject(callto_base);
+                    insn.updateMnemonic(post_func->GetFuncName(), CapInsn::insn_intfunc);
+                    return true;
+                }
+                break;
+                case CBaseStruc::base_globalifunc:
+                {
+                    std::shared_ptr<GlobalIFunc> post_ifunc = std::static_pointer_cast<GlobalIFunc>(callto_base);
+                    insn.setPointerObject(callto_base);
+                    insn.updateMnemonic(post_ifunc->GetFullName(), CapInsn::insn_linkfunc);
+                    return true;
+                }
+                break;
+                case CBaseStruc::base_globalvariable:
+                {
+                    std::shared_ptr<GlobalVariable> post_ifunc = std::static_pointer_cast<GlobalVariable>(callto_base);
+                    insn.setPointerObject(callto_base);
+                    insn.updateMnemonic(post_ifunc->GetName(), CapInsn::insn_linkvar);
+                    return true;
+                }
+                break;
+                default:
+                    // don't know.
+                    ;
+                }
+            }
+        }
+
+        return false;
     }
 
     void Module::dump(const std::string& output_file, Cfg_view_flags flags) const
@@ -535,9 +507,9 @@ namespace cchips {
             }
         }
         m_report_object.dump(*module_value, allocator);
-        if (m_cfgraph) {
-            m_cfgraph->dump(*module_value, allocator);
-        }
+        //if (m_cfgraph) {
+        //    m_cfgraph->dump(*module_value, allocator);
+        //}
 
         document->CopyRapidValue(std::move(module_value));
         return;
@@ -545,12 +517,12 @@ namespace cchips {
 
     bool Function::Initialize()
     {
-        if (!m_parent.lock()) return false;
+        std::shared_ptr<Module> cur_module = m_parent.lock();
+        if (!cur_module) return false;
         if (!m_func_name.length()) return false;
         if (!m_func_address) return false;
-        if (m_func_type >= func_max) return false;
         m_basicblocks.clear();
-        if (m_func_type == func_linkage) return true;
+        if (m_func_type & func_linkage) return true;
         JumpTargets jump_targets;
         jump_targets.push(m_func_address, JumpTarget::jmp_type::JMP_ENTRY_POINT, JumpTarget::from_type(0, JumpTarget::jmp_type::JMP_UNKNOWN));
         return Decode(jump_targets);
@@ -561,6 +533,12 @@ namespace cchips {
         RapidValue func_value;
         func_value.SetObject();
         func_value.AddMember("func_name", RapidValue(GetFuncName().c_str(), allocator), allocator);
+        if (contain_invalid_utf8char(GetLinkageName())) {
+            func_value.AddMember("linkage_name", RapidValue(GetFuncName().c_str(), allocator), allocator);
+        }
+        else {
+            func_value.AddMember("linkage_name", RapidValue(GetLinkageName().c_str(), allocator), allocator);
+        }
         func_value.AddMember("func_no", RapidValue(getFunctionNo()), allocator);
         std::stringstream ss;
         ss << "0x" << std::hex << GetFuncAddress();
@@ -595,10 +573,19 @@ namespace cchips {
         size_t predict_size = 0;
         std::shared_ptr<Module> parent = m_parent.lock();
         if (!parent) return predict_size;
-        std::shared_ptr<PeCoffSection> section = parent->GetContext()->GetPeFormat()->getPeSection(address);
-        if (section) {
-            predict_size = section->getPredictAddress(address) - reinterpret_cast<unsigned long long>(address);
+        auto& ranges = parent->GetContext()->GetRangesToDecode();
+        auto addr_range = ranges.getPrimary((std::uint64_t)address);
+        if (!addr_range) {
+            addr_range = ranges.getAlternative((std::uint64_t)address);
         }
+        if (!addr_range) {
+            return predict_size;
+        }
+        predict_size = addr_range->getEnd() - (std::uint64_t)address;
+        //std::shared_ptr<PeCoffSection> section = parent->GetContext()->GetPeFormat()->getPeSection(address);
+        //if (section) {
+        //    predict_size = section->getPredictAddress(address) - reinterpret_cast<unsigned long long>(address);
+        //}
         std::shared_ptr<BasicBlock> after_block = getBasicBlockAfter(address);
         if (after_block) {
             std::uint8_t* after_addr = after_block->getAddress();
@@ -662,6 +649,10 @@ namespace cchips {
         if (exsit_block == m_basicblocks.end()) {
             m_basicblocks[jt.getToAddress()] = basic_block;
         }
+        std::shared_ptr<Module> cur_module = m_parent.lock();
+        if (cur_module) {
+            cur_module->RemeberBasicBlock(basic_block);
+        }
         return basic_block;
     }
 
@@ -707,8 +698,10 @@ namespace cchips {
         Range<std::uint8_t*> image_range;
         image_range.setStartEnd(const_cast<std::uint8_t*>(parent->GetContext()->GetBaseAddress()), const_cast<std::uint8_t*>(parent->GetContext()->GetEndAddress()));
         if (x86_op_type op_type; GetCapstoneImplment().GetJmpAddress(parent, *cap_insn, next_addr, jmp_addr, op_type)) {
-            if (!jmp_addr)
+            if (!jmp_addr) {
+                cur_block->AddCapInsn(std::move(std::shared_ptr<CapInsn>(cap_insn.release())));
                 return;
+            }
             if (section_range.contains(next_addr)) {
                 if (!getBasicBlockAtAddress(next_addr)) {
                     jump_targets.push(next_addr, JumpTarget::jmp_type::JMP_NORMAL, JumpTarget::from_type(insn_code, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_FALSE));
@@ -717,14 +710,31 @@ namespace cchips {
             else {
                 // Cross section? feature.
             }
-            if (image_range.contains(jmp_addr)) {
+            do {
+                if (parent->LinkInsntoGlobal(*cap_insn, jmp_addr))
+                    break;
+                if (!image_range.contains(jmp_addr))
+                    break;
                 if (op_type == X86_OP_MEM) {
-                    tls_check_struct *tls = check_get_tls();
+                    tls_check_struct* tls = check_get_tls();
                     if (tls) {
                         tls->active = 1;
                         if (setjmp(tls->jb) == 0) {
-                            jmp_addr = *reinterpret_cast<std::uint8_t**>(jmp_addr);
+                            if (parent->GetContext()->isLoadingFile()) {
+                                if (parent->GetContext()->GetBits() == 64) {
+                                    jmp_addr = (std::uint8_t*)(*reinterpret_cast<std::uint64_t*>(jmp_addr));
+                                }
+                                else {
+                                    jmp_addr = (std::uint8_t*)(*reinterpret_cast<std::uint32_t*>(jmp_addr));
+                                }
+                                jmp_addr = (std::uint8_t*)(parent->GetContext()->getValidOffsetFromMemRva((std::uint64_t)jmp_addr));
+                            }
+                            else {
+                                jmp_addr = *reinterpret_cast<std::uint8_t**>(jmp_addr);
+                            }
                             tls->active = 0;
+                            if (!image_range.contains(jmp_addr))
+                                break;
                         }
                         else {
                             //execption occur
@@ -744,33 +754,10 @@ namespace cchips {
                         }
                     }
                 }
-                else if (std::shared_ptr<CBaseStruc> jmpto_base; jmpto_base = parent->GetBaseObjectAtAddress(jmp_addr)) {
-                    switch (jmpto_base->GetBaseType())
-                    {
-                    case CBaseStruc::base_function:
-                    case CBaseStruc::base_globalvariable:
-                    {
-                    }
-                    break;
-                    case CBaseStruc::base_globalifunc:
-                    {
-                        std::shared_ptr<GlobalIFunc> post_ifunc = std::static_pointer_cast<GlobalIFunc>(jmpto_base);
-                        if (!post_ifunc) break;
-                        if (post_ifunc->IsMainfunc(post_ifunc->GetFullName())) {
-                            //jump_targets.push(jmp_addr, JumpTarget::jmp_type::JMP_NORMAL, JumpTarget::from_type(insn_code, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_TRUE));
-                        }
-                    }
-                    break;
-                    default:
-                        ;
-                    }
+                else if (!parent->LinkInsntoGlobal(*cap_insn, jmp_addr)) {
+                    jump_targets.push(jmp_addr, JumpTarget::jmp_type::JMP_NORMAL, JumpTarget::from_type(insn_code, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_TRUE));
                 }
-                else {
-                    if (image_range.contains(jmp_addr)) {
-                        jump_targets.push(jmp_addr, JumpTarget::jmp_type::JMP_NORMAL, JumpTarget::from_type(insn_code, JumpTarget::jmp_type::JMP_CONTROL_FLOW_BR_TRUE));
-                    }
-                }
-            }
+            } while (0);
             cur_block->AddCapInsn(std::move(std::shared_ptr<CapInsn>(cap_insn.release())));
         }
         return;
@@ -834,14 +821,22 @@ namespace cchips {
         if (!parent)
             return;
         size_t predict_size = GetPredictSize(jump_targets, start);
-        if (!predict_size)
+        if (!predict_size) {
+            if (!size()) {
+                std::shared_ptr<BasicBlock> current_block = CreateBasicBlock(jt);
+                if (!current_block)
+                    return;
+                current_block->setBlockType(BasicBlock::block_end);
+            }
             return;
+        }
         std::shared_ptr<BasicBlock> current_block = CreateBasicBlock(jt);
         if (!current_block)
             return;
         //linktoFromBasicBlock(current_block, jt);
         std::uint8_t* insn_code = start;
-        while (std::unique_ptr<CapInsn> cap_insn = cchips::GetCapstoneImplment().DisasmOneInsn(insn_code, predict_size)) {
+        std::unique_ptr<CapInsn> cap_insn = cchips::GetCapstoneImplment().DisasmOneInsn(insn_code, predict_size);
+        while (cap_insn) {
             size_t code_size = cap_insn->size();
             if (GetCapstoneImplment().InJmpGroup(*cap_insn)) {
                 processJmpInstruction(current_block, std::move(cap_insn), insn_code, jump_targets);
@@ -856,20 +851,25 @@ namespace cchips {
                 break;
             }
             else if (cchips::GetCapstoneImplment().InIntGroup(*cap_insn)) {
-                if (cap_insn->GetInsnId() != X86_INS_INT1 && cap_insn->GetInsnId() != X86_INS_INT3) {
+                //if (cap_insn->GetInsnId() != X86_INS_INT1 && cap_insn->GetInsnId() != X86_INS_INT3) {
                     current_block->AddCapInsn(std::move(std::shared_ptr<CapInsn>(cap_insn.release())));
                     break;
-                }
-                current_block->AddCapInsn(std::move(std::shared_ptr<CapInsn>(cap_insn.release())));
+                //}
+                //current_block->AddCapInsn(std::move(std::shared_ptr<CapInsn>(cap_insn.release())));
             }
             else {
                 current_block->AddCapInsn(std::move(std::shared_ptr<CapInsn>(cap_insn.release())));
             }
             if (predict_size <= code_size) {
+                current_block->setBlockType(BasicBlock::block_end);
                 break;
             }
             insn_code += code_size;
             predict_size -= code_size;
+            cap_insn = cchips::GetCapstoneImplment().DisasmOneInsn(insn_code, predict_size);
+            if (!cap_insn) {
+                current_block->setBlockType(BasicBlock::block_end);
+            }
         }
     }
 
@@ -925,6 +925,8 @@ namespace cchips {
         if (!cap_insn) return false;
         if (!cap_insn->valid()) return false;
         GetParent()->GetParent()->IncInsnCounts();
+        auto& ranges = GetParent()->GetParent()->GetContext()->GetRangesToDecode();
+        ranges.remove(cap_insn->address(), cap_insn->address() + cap_insn->size());
         m_size += cap_insn->size();
         cap_insn->SetParent(shared_from_this());
         m_capinsns.emplace_back(cap_insn);
@@ -1210,12 +1212,16 @@ namespace cchips {
     {
         RapidValue database_value;
         database_value.SetObject();
+        std::uint64_t flowcount = 0;
         for (auto& database : m_cfg_database) {
             RapidValue flow_value;
             flow_value.SetArray();
             for (auto& flowname : database.second) {
+                flowcount++;
                 flow_value.PushBack(RapidValue(flowname.c_str(), allocator), allocator);
             }
+            std::string count_name = database.first + "_count";
+            database_value.AddMember(RapidValue(count_name.c_str(), allocator), flowcount, allocator);
             database_value.AddMember(RapidValue(database.first.c_str(), allocator), flow_value, allocator);
         }
         json_object.AddMember("cfgflowgraph", database_value, allocator);

@@ -13,6 +13,10 @@ namespace cchips {
     public:
         using moderror_code = enum {
             error_success = 0,
+            error_mod_non_prefin,
+            error_func_non_postfin,
+            error_block_non_postfin,
+            error_insn_non_postfin,
         };
 
 #define MODSTATUS_SUCCESS(st) (st >= 0)

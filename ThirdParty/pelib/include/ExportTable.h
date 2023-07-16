@@ -10,6 +10,7 @@ namespace cchips {
         unsigned long long address = 0;
         unsigned long long ordinalNumber = 0;
         bool ordinalNumberIsValid = false;
+        bool blinkage = false;
     public:
         virtual ~Export() = default;
 
@@ -18,12 +19,20 @@ namespace cchips {
         std::string getName() const { return name; }
         unsigned long long getAddress() const { return address; }
         bool getOrdinalNumber(unsigned long long &exportOrdinalNumber) const;
+        void Clear() {
+            name.clear();
+            address = 0;
+            ordinalNumber = 0;
+            ordinalNumberIsValid = false;
+            blinkage = false;
+        }
         /// @}
 
         /// @name Setters
         /// @{
         void setName(std::string exportName) { name = exportName; }
         void setAddress(unsigned long long exportAddress) { address = exportAddress; }
+        void setLinkage() { blinkage = true; }
         void setOrdinalNumber(unsigned long long exportOrdinalNumber) {
             ordinalNumber = exportOrdinalNumber;
             ordinalNumberIsValid = true;
@@ -35,6 +44,7 @@ namespace cchips {
         virtual bool isUsedForExphash() const { return false; }
         void invalidateOrdinalNumber() { ordinalNumberIsValid = false; }
         bool hasEmptyName() const { return name.empty(); }
+        bool isLinkage() const { return blinkage; }
         /// @}
     };
 
