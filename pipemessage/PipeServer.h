@@ -102,7 +102,8 @@ protected:
             break;
         case ERROR_PIPE_CONNECTED:
             // Pipe is already connected with a client, so signal an event
-            if (SetEvent(overlap->hEvent)) break;
+            SetEvent(overlap->hEvent); 
+            break;
         default: {
 #ifdef CCHIPS_EXTERNAL_USE
             LOG(ERROR) << "ConnectNamedPipe() failed with error code " << GetLastError();

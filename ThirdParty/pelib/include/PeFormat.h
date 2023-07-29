@@ -135,6 +135,7 @@ namespace cchips {
         std::size_t getDeclaredNumberOfDataDirectories() const;
 
         const std::shared_ptr<Section> getEpSection();
+        const std::shared_ptr<PeCoffSection> getResSection();
         const std::unique_ptr<ImportTable>& getImportTable() { return importTable; }
         const std::unique_ptr<ExportTable>& getExportTable() { return exportTable; }
         const std::unique_ptr<ResourceTable>& getResourceTable() { return resourceTable; }
@@ -150,7 +151,7 @@ namespace cchips {
         const std::shared_ptr<PeCoffSection> getPeSection(const std::string &secName) const;
         const std::shared_ptr<PeCoffSection> getPeSection(unsigned long long secIndex) const;
         const std::shared_ptr<PeCoffSection> getPeSection(std::uint8_t* address) const;
-        const std::shared_ptr<PeCoffSection> getPeSectionByRva(unsigned long long rva) const;
+        const std::shared_ptr<PeCoffSection> getSectionByRva(unsigned long long rva) const;
         unsigned long long getDecodableStartAddr(std::uint8_t* address) const;
         std::size_t getLoadedFileLength() const;
         const unsigned char* getLoadedBytesData() const;

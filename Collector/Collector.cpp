@@ -4,18 +4,6 @@
 #include <iostream>
 #include "StaticPEManager\StaticFileManager.h"
 
-std::string to_byte_stringa(const std::wstring& input)
-{
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    return converter.to_bytes(input);
-}
-
-std::wstring to_wide_stringa(const std::string& input)
-{
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    return converter.from_bytes(input);
-}
-
 void info(const char* fmt, ...)
 {
     va_list args;
@@ -36,6 +24,7 @@ int main()
 
     if (argc < 3) {
         info(
+            "feature collection toolkit v 1.0c\n\n"
             "Usage: %S <options..>\n"
             "Options:\n"
             "  --path                    scan path\n"
@@ -64,10 +53,10 @@ int main()
         return -1;
     }
 
-    std::string scan_path = to_byte_stringa(scan_pathw);
+    std::string scan_path = to_byte_string(scan_pathw);
     std::string output_path;
     if (output_pathw.length()) {
-        output_path = to_byte_stringa(output_pathw);
+        output_path = to_byte_string(output_pathw);
     }
     else {
         std::filesystem::path path = std::filesystem::current_path();

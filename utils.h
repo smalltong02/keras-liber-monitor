@@ -3,6 +3,7 @@
 #include <WbemCli.h>
 #include <WMIUtils.h>
 #include <OCIdl.h>
+#include <chrono>
 #include <vector>
 #include <codecvt>
 #include <variant>
@@ -127,7 +128,7 @@ template <typename Func>
 inline void getExecutionTime(const std::string& title, Func func) {
     const auto sta = std::chrono::steady_clock::now();
     func();
-    const std::chrono::duration<double> dur = std::chrono::steady_clock::now() - sta;
+    const std::chrono::template duration<double> dur = std::chrono::steady_clock::now() - sta;
     std::cout << title << ": " << dur.count() << " sec." << std::endl;
 }
 

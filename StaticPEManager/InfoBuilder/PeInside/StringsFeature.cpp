@@ -31,17 +31,24 @@ namespace cchips {
             std::unique_ptr<cchips::RapidValue> vfeature = std::make_unique<cchips::RapidValue>();
             if (!vfeature) return false;
             vfeature->SetObject();
+            auto& importtable = pe_format->getImportTable();
+            auto& exporttable = pe_format->getExportTable();
+            auto& res = pe_format->getResSection();
             const auto secCounter = pe_format->getDeclaredNumberOfSections();
             for (std::size_t i = 0; i < secCounter; ++i)
             {
                 const auto fsec = pe_format->getPeSection(i);
-                if (fsec)
+                if (!UnporcessSection(fsec, res))
                 {
                     cchips::RapidValue vsection;
                     vsection.SetObject();
                     vsection.AddMember("sec_no", cchips::RapidValue(i), allocator);
                     vsection.AddMember("sec_name", cchips::RapidValue(fsec->getName().c_str(), allocator), allocator);
                     vsection.AddMember("characteristics", cchips::RapidValue(fsec->getPeCoffFlags()), allocator);
+                    unsigned long long sizeinmemory = 0;
+                    fsec->getSizeInMemory(sizeinmemory);
+                    std::string_view bytes = fsec->getBytes(0, sizeinmemory);
+                    vsection.AddMember("entropy", RapidValue(getEntropy(bytes)), allocator);
                     char* address = (char*)fsec->getAddress();
                     auto addr_size = fsec->getSizeInFile();
                     if (address && addr_size) {
@@ -66,7 +73,13 @@ namespace cchips {
                                     if (contain_invalid_utf8char(str)) {
                                         str = stringto_hexstring(str);
                                     }
-                                    inside_strings.PushBack(cchips::RapidValue(str.c_str(), allocator), allocator);
+                                    do {
+                                        if (importtable && importtable->hasImport(str))
+                                            break;
+                                        if (exporttable && exporttable->hasExport(str))
+                                            break;
+                                        inside_strings.PushBack(cchips::RapidValue(str.c_str(), allocator), allocator);
+                                    } while (0);
                                     //log_output("ascii str: %s\n", str.c_str());
                                 }
                                 ascii_count = 0;
@@ -99,7 +112,13 @@ namespace cchips {
                                         if (contain_invalid_utf8char(str)) {
                                             str = stringto_hexstring(str);
                                         }
-                                        inside_strings.PushBack(cchips::RapidValue(str.c_str(), allocator), allocator);
+                                        do {
+                                            if (importtable && importtable->hasImport(str))
+                                                break;
+                                            if (exporttable && exporttable->hasExport(str))
+                                                break;
+                                            inside_strings.PushBack(cchips::RapidValue(str.c_str(), allocator), allocator);
+                                        } while (0);
                                         //log_output("unicode str: %s\n", str.c_str());
                                     }
                                     uni_count = 0;
@@ -124,6 +143,21 @@ namespace cchips {
         catch (const std::exception& e)
         {
         }
+        return false;
+    }
+
+    bool CStringsFeatureBuilder::UnporcessSection(const std::shared_ptr<PeCoffSection> sec, const std::shared_ptr<PeCoffSection> res) const {
+        if (!sec)
+            return true;
+        if (res) {
+            if (sec->getAddress() == res->getAddress()) {
+                return true;
+            }
+        }
+        if (sec->isBss() ||
+            sec->isInfo() ||
+            sec->isUndefined())
+            return true;
         return false;
     }
 } // namespace cchips

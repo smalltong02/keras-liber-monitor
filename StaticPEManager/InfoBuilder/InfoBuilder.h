@@ -9,7 +9,6 @@ namespace cchips {
     class CInfoBuilder
     {
     public:
-
         virtual ~CInfoBuilder() = default;
         virtual bool Initialize(std::unique_ptr<CJsonOptions>& json_options) = 0;
 

@@ -9,14 +9,14 @@
     "filetype": "^(?i)PE$",
     "subsystem": "^(?i)WIN_GUI$|^(?i)WIN_CUI$|^(?i)NATIVE$",
     "petype": "^(?i)EXE$",
-    "outputtype": "json",
+    "outputtype": "memory",
     "runningmode": 0,
     "bbaseinfo": true,
     "bversioninfo": true,
     "binstallinfo": true,
     "bsigninfo": true,
     "bpeinsideinfo": true,
-    "bpeinsnflowinfo": true
+    "bpeinsnflowinfo": false
   },
 
   "base_info": {

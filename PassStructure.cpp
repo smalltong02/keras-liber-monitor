@@ -33,7 +33,7 @@ namespace cchips {
         break;
 
         default:
-            ;
+            break;
         }
         return (m_abi != nullptr);
     }
@@ -427,7 +427,7 @@ namespace cchips {
                 break;
                 default:
                     // don't know.
-                    ;
+                    break;
                 }
             }
         }
@@ -1096,7 +1096,7 @@ namespace cchips {
             }
             break;
             default:
-                ;
+                break;
             }
         }
         else if (m_invariant.index() == 1) {
@@ -1182,7 +1182,7 @@ namespace cchips {
             }
             break;
             default:
-                ;
+                break;
             }
         }
         else if (m_invariant.index() == 1) {

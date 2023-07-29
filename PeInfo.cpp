@@ -309,7 +309,8 @@ namespace cchips {
                 case 64:
                     signature = static_cast<PeLib::PeFileT<64>*>(file.get())->peHeader().getNtSignature();
                     break;
-                default:;
+                default:
+                    break;
                 }
                 tls->active = 0;
             }
@@ -352,7 +353,7 @@ namespace cchips {
             case 64:
                 return (base_address + static_cast<PeLib::PeFileT<64>*>(file.get())->peHeader().getAddressOfEntryPoint());
             default:
-                ;
+                break;
             }
             return nullptr;
         }
@@ -396,7 +397,7 @@ namespace cchips {
             case 64:
                 return static_cast<PeLib::PeFileT<64>*>(file.get())->peHeader().getSizeOfImage();
             default:
-                ;
+                break;
             }
             return 0;
         }

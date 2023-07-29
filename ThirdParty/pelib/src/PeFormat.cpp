@@ -406,7 +406,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
 
         switch (machine)
@@ -420,7 +420,7 @@ namespace cchips {
         case PeLib::PELIB_IMAGE_FILE_MACHINE_AMD64:
             return 8;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -433,7 +433,9 @@ namespace cchips {
 
     bool PeFormat::isExecutable() const
     {
-        return !isDll();
+        if (isDll())
+            return false;
+        return !isSys();
     }
 
     bool PeFormat::isSys() const
@@ -462,7 +464,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -493,7 +495,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -517,7 +519,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -574,7 +576,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -661,7 +663,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -688,7 +690,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -710,7 +712,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -738,7 +740,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -760,7 +762,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -782,7 +784,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -804,7 +806,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -826,7 +828,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -848,7 +850,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -870,7 +872,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -892,7 +894,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -914,7 +916,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -936,7 +938,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -958,7 +960,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -980,7 +982,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -1002,7 +1004,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -1024,7 +1026,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -1046,7 +1048,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -1170,7 +1172,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -1199,7 +1201,7 @@ namespace cchips {
             }
             break;
             default:
-                ;
+                break;
             }
         }
         return true;
@@ -1230,7 +1232,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -1274,7 +1276,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -1330,14 +1332,14 @@ namespace cchips {
         return nullptr;
     }
 
-    const std::shared_ptr<PeCoffSection> PeFormat::getPeSectionByRva(unsigned long long rva) const
+    const std::shared_ptr<PeCoffSection> PeFormat::getSectionByRva(unsigned long long rva) const
     {
         for (const auto& sec : sections)
         {
             auto address = sec->getVirtualAddress();
             unsigned long long size = 0;
             sec->getSizeInMemory(size);
-            if (sec && address <= rva && (address + size) >= rva)
+            if (sec && address <= rva && (address + size) > rva)
             {
                 return std::static_pointer_cast<PeCoffSection>(sec);
             }
@@ -1556,7 +1558,7 @@ namespace cchips {
 
     bool PeFormat::getXByte(std::uint64_t rva, std::uint64_t x, std::uint64_t& res, Endianness e) const
     {
-        const auto secSeg = getPeSectionByRva(rva);
+        const auto secSeg = getSectionByRva(rva);
         if (!secSeg || x * getByteLength() > sizeof(res) * CHAR_BIT)
         {
             return false;
@@ -1615,7 +1617,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -1659,7 +1661,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -1745,7 +1747,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -1815,7 +1817,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -1987,7 +1989,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -2106,7 +2108,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return nullptr;
     }
@@ -2144,7 +2146,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -2187,7 +2189,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -2263,7 +2265,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return nullptr;
     }
@@ -2308,7 +2310,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return result;
     }
@@ -2381,7 +2383,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -2403,7 +2405,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return {};
     }
@@ -2472,7 +2474,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -2517,7 +2519,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return result;
     }
@@ -2565,7 +2567,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return nullptr;
     }
@@ -2587,7 +2589,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -2634,7 +2636,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return result;
     }
@@ -2804,7 +2806,7 @@ namespace cchips {
                 }
                 break;
                 default:
-                    ;
+                    break;
                 }
 
                 // Only if the pointer to raw data is not zero
@@ -2997,7 +2999,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -3019,7 +3021,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -3041,7 +3043,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -3063,7 +3065,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -3085,7 +3087,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -3107,7 +3109,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -3182,7 +3184,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -3249,7 +3251,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return nullptr;
     }
@@ -4053,7 +4055,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
     }
 
@@ -4066,7 +4068,33 @@ namespace cchips {
         }
         if (!ep) return nullptr;
 
-        return getPeSectionByRva(ep);
+        return getSectionByRva(ep);
+    }
+
+    const std::shared_ptr<PeCoffSection> PeFormat::getResSection()
+    {
+        if (!IsValid()) return 0;
+        switch (pe_file->getBits()) {
+        case 32:
+        {
+            PeLib::PeHeaderT<32>& pe_header32 = static_cast<PeLib::PeFileT<32>*>(pe_file.get())->peHeader();
+            unsigned long long res = pe_header32.getIddResourceRva();
+            if (!res) return nullptr;
+            return getSectionByRva(res);
+        }
+        break;
+        case 64:
+        {
+            PeLib::PeHeaderT<64>& pe_header64 = static_cast<PeLib::PeFileT<64>*>(pe_file.get())->peHeader();
+            unsigned long long res = pe_header64.getIddResourceRva();
+            if (!res) return nullptr;
+            return getSectionByRva(res);
+        }
+        break;
+        default:
+            break;
+        }
+        return nullptr;
     }
 
     void PeFormat::scanForSectionAnomalies()
@@ -4400,7 +4428,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -4485,7 +4513,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -4514,7 +4542,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -4536,7 +4564,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -4558,7 +4586,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return false;
     }
@@ -4634,7 +4662,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -4656,7 +4684,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -4678,7 +4706,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -4700,7 +4728,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -4722,7 +4750,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -4750,7 +4778,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -4772,7 +4800,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -4794,7 +4822,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -4816,7 +4844,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -4838,7 +4866,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -4927,7 +4955,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -4949,7 +4977,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -4996,7 +5024,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return info;
     }

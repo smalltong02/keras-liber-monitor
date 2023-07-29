@@ -46,7 +46,7 @@ namespace cchips {
     class CTraverseDriveEngine
     {
     public:
-        using fi_callback = std::function<bool(const std::string&, const std::string&)>;
+        using fi_callback = std::function<bool (const std::string&, std::string&)>;
 
         static CTraverseDriveEngine& GetInstance()
         {
@@ -59,19 +59,19 @@ namespace cchips {
             return;
         }
 
-        bool TraverseDrive(unsigned int drive_idx, const std::string& output_path) {
+        bool TraverseDrive(unsigned int drive_idx, std::string& output_path) {
             if (drive_idx >= m_disk_drive.GetDriveCount())
                 return false;
             return TraverseDrive(m_disk_drive.GetDrive(drive_idx), output_path);
         }
 
-        bool TraverseDrive(const std::string& drive, const std::string& output_path) {
+        bool TraverseDrive(const std::string& drive, std::string& output_path) {
             m_ndirectory_totals = 0;
             m_nfile_totals = 0;
             return TraverseDirectory(drive, output_path);
         }
 
-        void TraverseAllDrive(const std::string& output_path) {
+        void TraverseAllDrive(std::string& output_path) {
             m_ndirectory_totals = 0;
             m_nfile_totals = 0;
             for (auto& disk : m_disk_drive) {
@@ -88,9 +88,9 @@ namespace cchips {
         ~CTraverseDriveEngine() {
         }
 
-        bool TraverseDirectory(const std::string& dir_path, const std::string& output_path) {
+        bool TraverseDirectory(const std::string& dir_path, std::string& output_path) {
             if (dir_path.empty()) return false;
-            info_log("search directory: %s ...", dir_path.c_str());
+            //info_log("search directory: %s ...", dir_path.c_str());
             try {
                 for (auto& de : fs::directory_iterator(dir_path)) {
                     auto file_path = de.path();

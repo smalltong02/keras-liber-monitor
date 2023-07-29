@@ -14,6 +14,7 @@ namespace fs = std::filesystem;
 
 #define OP_CONFIG "config"
 #define CF_IDENTIFIER "identifier"
+#define CF_FILETYPE "filetype"
 #define CF_PETYPE "petype"
 #define CF_SUBSYSTEM "subsystem"
 #define CF_OUTPUTTYPE "outputtype"
@@ -131,9 +132,11 @@ namespace cchips {
                 output_pipeformat,
                 output_ipformat,
                 output_mongodbformat,
+                output_memformat,
             };
 
             std::string identifier;
+            std::string filetype;
             std::string petype;
             std::string subsystem;
             std::string outputtype;
@@ -155,6 +158,17 @@ namespace cchips {
                     }
                 }
                 return RE2::FullMatch(type_str, *_pattern_subsystem);
+            }
+            bool MatchFileType(const std::string& file_str) const {
+                if (!_pattern_filetype) {
+                    if (petype.length()) {
+                        _pattern_filetype = std::make_unique<RE2>(filetype, RE2::Quiet);
+                    }
+                    if (!_pattern_filetype) {
+                        return false;
+                    }
+                }
+                return RE2::FullMatch(file_str, *_pattern_filetype);
             }
             bool MatchPeType(const std::string& pe_str) const {
                 if (!_pattern_petype) {
@@ -202,12 +216,16 @@ namespace cchips {
                 else if (_stricmp(outputtype.c_str(), "mongodb") == 0) {
                     format = _outputtype::output_mongodbformat;
                 }
+                else if (_stricmp(outputtype.c_str(), "memory") == 0) {
+                    format = _outputtype::output_memformat;
+                }
 
                 return format;
             }
         private:
             mutable std::unique_ptr<RE2> _pattern_subsystem{};
             mutable std::unique_ptr<RE2> _pattern_petype{};
+            mutable std::unique_ptr<RE2> _pattern_filetype{};
         };
 
         using _base_info = struct {

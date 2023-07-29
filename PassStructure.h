@@ -295,7 +295,7 @@ namespace cchips {
             case block_unknown:
                 return "unknown";
             default:
-                ;
+                break;
             }
             std::string block_type;
             if (m_block_type & block_start) {
@@ -853,7 +853,7 @@ namespace cchips {
                 case 64:
                     return "x64";
                 default:
-                    ;
+                    break;
                 }
             }
             return "unknown";

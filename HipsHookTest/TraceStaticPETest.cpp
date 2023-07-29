@@ -84,12 +84,13 @@ TEST_F(TraceStaticPETest, CStaticFileManager_Class_Test)
     ASSERT_TRUE(options->Parse());
     auto& manager = GetCStaticFileManager();
     ASSERT_TRUE(manager.Initialize(std::move(options)));
+    std::string output = "..\\outputs";
     for (auto& file : m_file_list) {
-        manager.Scan(file, "..\\outputs");
+        manager.Scan(file, output);
     }
     //ASSERT_EQ(manager.GetSuccessScanCount(), 10);
     manager.ClrSuccessScanCount();
-    manager.Scan(m_folder, "..\\outputs");
+    manager.Scan(m_folder, output);
     //ASSERT_EQ(manager.GetSuccessScanCount(), 21);
 }
 #endif

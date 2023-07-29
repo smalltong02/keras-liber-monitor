@@ -43,7 +43,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }
@@ -78,7 +78,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
     }
 
@@ -121,7 +121,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return bret;
     }
@@ -161,7 +161,7 @@ namespace cchips {
         }
         break;
         default:
-            ;
+            break;
         }
         return 0;
     }

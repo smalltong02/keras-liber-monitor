@@ -40,6 +40,7 @@ std::string W2AString(const std::wstring& str)
 
 std::string StringToLower(const std::string& str)
 {
+    if (!str.length()) return {};
     std::string lower_str = str;
     transform(lower_str.begin(), lower_str.end(), lower_str.begin(), ::tolower);
     return lower_str;

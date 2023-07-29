@@ -23,24 +23,24 @@ namespace cchips {
                 std::unique_ptr<cchips::RapidValue> vexports = std::make_unique<cchips::RapidValue>();
                 if (!vexports) return false;
                 vexports->SetObject();
-                vexports->AddMember("Characteristics", export_info.characteristics, allocator);
-                vexports->AddMember("Time_Date_Stamp", export_info.timestamp, allocator);
-                vexports->AddMember("Major_Version", export_info.major_version, allocator);
-                vexports->AddMember("Minor_Version", export_info.minor_version, allocator);
-                vexports->AddMember("Dll_Name", cchips::RapidValue(export_tables->getName().c_str(), export_tables->getName().length(), allocator), allocator);
-                vexports->AddMember("Base", export_info.characteristics, allocator);
-                vexports->AddMember("Number_Of_Functions", export_info.characteristics, allocator);
-                vexports->AddMember("Number_Of_Names", export_info.characteristics, allocator);
-                vexports->AddMember("Address_Of_Functions", export_info.characteristics, allocator);
-                vexports->AddMember("Address_Of_Names", export_info.characteristics, allocator);
-                vexports->AddMember("Address_Of_Names_Ordinals", export_info.characteristics, allocator);
+                vexports->AddMember("characteristics", export_info.characteristics, allocator);
+                vexports->AddMember("time_date_stamp", export_info.timestamp, allocator);
+                vexports->AddMember("major_version", export_info.major_version, allocator);
+                vexports->AddMember("minor_version", export_info.minor_version, allocator);
+                vexports->AddMember("dll_name", cchips::RapidValue(export_tables->getName().c_str(), export_tables->getName().length(), allocator), allocator);
+                vexports->AddMember("base", export_info.characteristics, allocator);
+                vexports->AddMember("number_of_functions", export_info.characteristics, allocator);
+                vexports->AddMember("number_of_names", export_info.characteristics, allocator);
+                vexports->AddMember("address_of_Functions", export_info.characteristics, allocator);
+                vexports->AddMember("address_of_names", export_info.characteristics, allocator);
+                vexports->AddMember("address_of_names_ordinals", export_info.characteristics, allocator);
             
                 cchips::RapidValue functions;
                 functions.SetArray();
                 for (auto& entry : *export_tables) {
                     functions.PushBack(cchips::RapidValue(entry.getName().c_str(), allocator), allocator);
                 }
-                vexports->AddMember("Functions", functions, allocator);
+                vexports->AddMember("functions", functions, allocator);
                 return json_result->AddTopMember("exports", std::move(vexports));
             }
         }

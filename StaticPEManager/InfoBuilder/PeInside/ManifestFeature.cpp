@@ -37,7 +37,7 @@ namespace cchips {
                         if (type) {
                             velement.AddMember("type", RapidValue(type, allocator), allocator);
                         }
-                        vmanifest->AddMember("assembly identity", velement, allocator);
+                        vmanifest->AddMember("assembly_identity", velement, allocator);
                     }
                     tinyxml2::XMLElement* descriptionElement = assemblyElement->FirstChildElement("description");
                     if (descriptionElement) {
@@ -66,7 +66,7 @@ namespace cchips {
                                 if (type) {
                                     velement.AddMember("type", RapidValue(type, allocator), allocator);
                                 }
-                                vmanifest->AddMember("dependent assembly", velement, allocator);
+                                vmanifest->AddMember("dependent_assembly", velement, allocator);
                             }
                         }
                     }
@@ -86,7 +86,7 @@ namespace cchips {
                                 if (uiAccess) {
                                     velement.AddMember("uiaccess", RapidValue(uiAccess, allocator), allocator);
                                 }
-                                vmanifest->AddMember("requested execution level", velement, allocator);
+                                vmanifest->AddMember("requested_execution_level", velement, allocator);
                             }
                         }
                     }

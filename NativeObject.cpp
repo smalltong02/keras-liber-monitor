@@ -45,7 +45,7 @@ namespace cchips {
                     }
                     break;
                     default:
-                        ;
+                        break;
                     }
                 }
             }

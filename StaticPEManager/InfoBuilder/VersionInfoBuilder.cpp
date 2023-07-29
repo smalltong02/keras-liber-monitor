@@ -515,9 +515,9 @@ std::string CFileVersionInfo::GetFileTypeStr() const
 	case VFT_FONT:
 		return "Font";
 	case VFT_STATIC_LIB:
-		return "Static library";
+		return "Static_library";
 	case VFT_VXD:
-		return "Virtual device";
+		return "Virtual_device";
 	}
 	return "Unknown";
 }

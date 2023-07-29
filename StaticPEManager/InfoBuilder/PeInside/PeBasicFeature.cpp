@@ -68,7 +68,7 @@ namespace cchips {
             vpeinfo->AddMember("has_overlay", cchips::RapidValue(pe_format->hasOverlay()), allocator);
             vpeinfo->AddMember("entropy", cchips::RapidValue(pe_format->caculateEntropy()), allocator);
         
-            return json_result->AddTopMember("PEinfo", std::move(vpeinfo));
+            return json_result->AddTopMember("peinfo", std::move(vpeinfo));
         }
         catch (const std::exception& e)
         {
