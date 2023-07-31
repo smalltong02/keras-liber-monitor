@@ -1,0 +1,484 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{0AF0B80E-E7DC-38DC-B899-E871446F2F09}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.22000.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>mongocxx_shared</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">mongocxx_shared.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">mongocxx</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.dll</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">mongocxx_shared.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">mongocxx</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.dll</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">mongocxx_shared.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">mongocxx</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.dll</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">mongocxx_shared.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">mongocxx</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.dll</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>\include;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src\common;E:\github-project\ThirdParty\boost_1_73_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;MONGO_CXX_DRIVER_COMPILING;CMAKE_INTDIR="Debug";MONGOCXX_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;MONGO_CXX_DRIVER_COMPILING;CMAKE_INTDIR=\"Debug\";MONGOCXX_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>\include;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src\common;E:\github-project\ThirdParty\boost_1_73_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>\include;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src\common;E:\github-project\ThirdParty\boost_1_73_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\Debug\mongoc-1.0.lib;..\bsoncxx\Debug\bsoncxx.lib;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\Debug\bson-1.0.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/Debug/mongocxx.lib</ImportLibrary>
+      <ProgramDataBaseFile>E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/Debug/mongocxx.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>\include;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src\common;E:\github-project\ThirdParty\boost_1_73_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;MONGO_CXX_DRIVER_COMPILING;CMAKE_INTDIR="Release";MONGOCXX_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;MONGO_CXX_DRIVER_COMPILING;CMAKE_INTDIR=\"Release\";MONGOCXX_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>\include;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src\common;E:\github-project\ThirdParty\boost_1_73_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>\include;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src\common;E:\github-project\ThirdParty\boost_1_73_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\Release\mongoc-1.0.lib;..\bsoncxx\Release\bsoncxx.lib;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\Release\bson-1.0.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/Release/mongocxx.lib</ImportLibrary>
+      <ProgramDataBaseFile>E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/Release/mongocxx.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>\include;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src\common;E:\github-project\ThirdParty\boost_1_73_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;MONGO_CXX_DRIVER_COMPILING;CMAKE_INTDIR="MinSizeRel";MONGOCXX_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;MONGO_CXX_DRIVER_COMPILING;CMAKE_INTDIR=\"MinSizeRel\";MONGOCXX_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>\include;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src\common;E:\github-project\ThirdParty\boost_1_73_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>\include;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src\common;E:\github-project\ThirdParty\boost_1_73_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\MinSizeRel\mongoc-1.0.lib;..\bsoncxx\MinSizeRel\bsoncxx.lib;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\MinSizeRel\bson-1.0.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/MinSizeRel/mongocxx.lib</ImportLibrary>
+      <ProgramDataBaseFile>E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/MinSizeRel/mongocxx.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>\include;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src\common;E:\github-project\ThirdParty\boost_1_73_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;MONGO_CXX_DRIVER_COMPILING;CMAKE_INTDIR="RelWithDebInfo";MONGOCXX_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;MONGO_CXX_DRIVER_COMPILING;CMAKE_INTDIR=\"RelWithDebInfo\";MONGOCXX_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>\include;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src\common;E:\github-project\ThirdParty\boost_1_73_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>\include;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\bsoncxx\..;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\src\mongoc;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\src\bson;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\src\libbson\..\..\src\common;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\..\..\src\common;E:\github-project\ThirdParty\boost_1_73_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\RelWithDebInfo\mongoc-1.0.lib;..\bsoncxx\RelWithDebInfo\bsoncxx.lib;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\RelWithDebInfo\bson-1.0.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/RelWithDebInfo/mongocxx.lib</ImportLibrary>
+      <ProgramDataBaseFile>E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/RelWithDebInfo/mongocxx.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\CMakeLists.txt">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/src/mongocxx/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0 -BE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build --check-stamp-file E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files\CMake\share\cmake-3.16\Modules\BasicConfigVersion-SameMajorVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\WriteBasicConfigVersionFile.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\exportheader.cmake.in;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-targets.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-targets.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\CMakeFiles\3.16.3\CMakeCCompiler.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\cmake\MongocxxUtil.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\libmongocxx-config.cmake.in;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\mongocxx-config.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/src/mongocxx/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0 -BE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build --check-stamp-file E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files\CMake\share\cmake-3.16\Modules\BasicConfigVersion-SameMajorVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\WriteBasicConfigVersionFile.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\exportheader.cmake.in;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-targets.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-targets.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\CMakeFiles\3.16.3\CMakeCCompiler.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\cmake\MongocxxUtil.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\libmongocxx-config.cmake.in;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\mongocxx-config.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/src/mongocxx/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0 -BE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build --check-stamp-file E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files\CMake\share\cmake-3.16\Modules\BasicConfigVersion-SameMajorVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\WriteBasicConfigVersionFile.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\exportheader.cmake.in;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-targets.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-targets.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\CMakeFiles\3.16.3\CMakeCCompiler.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\cmake\MongocxxUtil.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\libmongocxx-config.cmake.in;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\mongocxx-config.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/src/mongocxx/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0 -BE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build --check-stamp-file E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files\CMake\share\cmake-3.16\Modules\BasicConfigVersion-SameMajorVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\WriteBasicConfigVersionFile.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\exportheader.cmake.in;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-targets.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-targets.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\CMakeFiles\3.16.3\CMakeCCompiler.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\cmake\MongocxxUtil.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\libmongocxx-config.cmake.in;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\mongocxx-config.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\bulk_write.cpp">
+      <ObjectFileName>$(IntDir)/bulk_write.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\client.cpp">
+      <ObjectFileName>$(IntDir)/client.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\client_encryption.cpp">
+      <ObjectFileName>$(IntDir)/client_encryption.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\client_session.cpp">
+      <ObjectFileName>$(IntDir)/client_session.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\change_stream.cpp">
+      <ObjectFileName>$(IntDir)/change_stream.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\collection.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cursor.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\database.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\command_failed_event.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\command_started_event.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\command_succeeded_event.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\heartbeat_failed_event.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\heartbeat_started_event.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\heartbeat_succeeded_event.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\server_changed_event.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\server_closed_event.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\server_description.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\server_opening_event.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\topology_changed_event.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\topology_closed_event.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\topology_description.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\topology_opening_event.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\exception\error_code.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\exception\operation_exception.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\exception\server_error_code.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\gridfs\bucket.cpp">
+      <ObjectFileName>$(IntDir)/gridfs/bucket.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\gridfs\downloader.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\gridfs\uploader.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\hint.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\index_model.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\index_view.cpp">
+      <ObjectFileName>$(IntDir)/index_view.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\instance.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\logger.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\model\delete_many.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\model\delete_one.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\model\insert_one.cpp">
+      <ObjectFileName>$(IntDir)/model/insert_one.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\model\replace_one.cpp">
+      <ObjectFileName>$(IntDir)/model/replace_one.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\model\update_many.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\model\update_one.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\model\write.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\aggregate.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\apm.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\auto_encryption.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\bulk_write.cpp">
+      <ObjectFileName>$(IntDir)/options/bulk_write.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\change_stream.cpp">
+      <ObjectFileName>$(IntDir)/options/change_stream.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\client.cpp">
+      <ObjectFileName>$(IntDir)/options/client.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\client_encryption.cpp">
+      <ObjectFileName>$(IntDir)/options/client_encryption.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\client_session.cpp">
+      <ObjectFileName>$(IntDir)/options/client_session.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\count.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\estimated_document_count.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\create_collection.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\data_key.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\delete.cpp">
+      <ObjectFileName>$(IntDir)/options/delete.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\distinct.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\encrypt.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\find_one_and_delete.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\find_one_and_replace.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\find_one_and_update.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\find.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\gridfs\bucket.cpp">
+      <ObjectFileName>$(IntDir)/options/gridfs/bucket.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\gridfs\upload.cpp">
+      <ObjectFileName>$(IntDir)/options/gridfs/upload.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\index.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\index_view.cpp">
+      <ObjectFileName>$(IntDir)/options/index_view.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\insert.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\pool.cpp">
+      <ObjectFileName>$(IntDir)/options/pool.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\range.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\replace.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\rewrap_many_datakey.cpp">
+      <ObjectFileName>$(IntDir)/options/rewrap_many_datakey.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\server_api.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\tls.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\transaction.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\update.cpp">
+      <ObjectFileName>$(IntDir)/options/update.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\pipeline.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\pool.cpp">
+      <ObjectFileName>$(IntDir)/pool.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\private\conversions.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\private\libbson.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\private\libmongoc.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\private\numeric_casting.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\read_concern.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\read_preference.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\bulk_write.cpp">
+      <ObjectFileName>$(IntDir)/result/bulk_write.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\delete.cpp">
+      <ObjectFileName>$(IntDir)/result/delete.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\gridfs\upload.cpp">
+      <ObjectFileName>$(IntDir)/result/gridfs/upload.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\insert_many.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\insert_one.cpp">
+      <ObjectFileName>$(IntDir)/result/insert_one.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\replace_one.cpp">
+      <ObjectFileName>$(IntDir)/result/replace_one.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\rewrap_many_datakey.cpp">
+      <ObjectFileName>$(IntDir)/result/rewrap_many_datakey.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\update.cpp">
+      <ObjectFileName>$(IntDir)/result/update.cpp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\uri.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\validation_criteria.cpp" />
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\write_concern.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\ZERO_CHECK.vcxproj">
+      <Project>{000E0712-7C46-35F5-BF61-65B803733D5C}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\bsoncxx\bsoncxx_shared.vcxproj">
+      <Project>{80B13B78-10DF-3C48-B961-448648DC610C}</Project>
+      <Name>bsoncxx_shared</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -155,19 +155,28 @@ int main()
         return fasttext_model->train();
     }
     else if (_stricmp(model.c_str(), "gru") == 0) {
-        cchips::CGruModel gru_model(input_path, output_path, modelbin_path, dictbin_path, ratio, false);
-        if (!gru_model) {
-            return false;
-        }
-        if (btest) {
-            torch::load(gru_model, modelbin_path);
-            return gru_model->test();
-        }
         if (bpredict) {
-            return gru_model->predict();
+            cchips::CGruModel gru_model("", output_path, modelbin_path, dictbin_path, ratio, false);
+            torch::load(gru_model, modelbin_path);
+            gru_model->SetkParam(k);
+            if (gru_model->predict(input_path)) {
+                gru_model->outputPredictResult();
+            }
         }
-        if (gru_model->train()) {
-            torch::save(gru_model, output_path);
+        else {
+            cchips::CGruModel gru_model(input_path, output_path, modelbin_path, dictbin_path, ratio, false);
+            if (!gru_model) {
+                return -1;
+            }
+            if (btest) {
+                torch::load(gru_model, modelbin_path);
+                if (gru_model->test()) {
+                    gru_model->outputTestFesult();
+                }
+            }
+            if (gru_model->train()) {
+                torch::save(gru_model, output_path);
+            }
         }
     }
     return 0;

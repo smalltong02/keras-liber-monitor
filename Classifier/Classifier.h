@@ -45,6 +45,18 @@ namespace cchips {
         std::uint32_t getWorddim() const { return m_word_dim; }
         std::uint32_t getLabelnum() const { return m_label.size(); }
         std::uint32_t getBatchsize() const { return m_batchsize; }
+        std::string getLabel(std::uint32_t index) const {
+            if (index >= m_label.size()) {
+                return {};
+            }
+            for (auto& str : m_label) {
+                if (index == 0) {
+                    return str;
+                }
+                index--;
+            }
+            return {};
+        }
         std::uint32_t findLabelidx(const std::string& label) const {
             std::uint32_t index = 0;
             if (!m_label.size()) return std::uint32_t(-1);
@@ -60,8 +72,19 @@ namespace cchips {
         }
         bool LoadDict(dict_type type = dict_word2vec);
         std::tuple<std::tuple<torch::Tensor, torch::Tensor>, torch::Tensor> LoadBatch(const std::vector<torch::data::Example<>>& batch) const;
+        std::tuple<torch::Tensor, torch::Tensor> LoadSample(const std::string& input);
 
     private:
+        void initLabelVec() {
+            m_label.clear();
+            m_label.insert("__label_cert_manage_tool__");
+            m_label.insert("__label_forticlient__");
+            m_label.insert("__label_putty__");
+            m_label.insert("__label_teams__");
+            m_label.insert("__label_unknown__");
+            return;
+        }
+
         bool LoadDataset(const std::string& path)
         {
             if (path.empty()) {
@@ -81,11 +104,7 @@ namespace cchips {
             if (!infile.is_open()) {
                 return false;
             }
-            m_label.insert("__label_cert_manage_tool__");
-            m_label.insert("__label_forticlient__");
-            m_label.insert("__label_putty__");
-            m_label.insert("__label_teams__");
-            m_label.insert("__label_unknown__");
+            initLabelVec();
             m_dataset.clear();
             std::string line;
             std::uint32_t loading_count = 0;
@@ -205,6 +224,9 @@ namespace cchips {
     };
     
     class CGruModelImpl : public torch::nn::Module {
+    private:
+#define _invalid_accuracy float(-1)
+#define _default_training_epochs 100
     public:
         CGruModelImpl(const std::string& path, const std::string& output, const std::string& modelbin, const std::string& dictbin_path, std::uint32_t ratio = 8, bool bcpu = true) {
             m_input = path;
@@ -244,9 +266,39 @@ namespace cchips {
 
         bool train();
         bool test();
-        bool predict();
+        bool predict(const std::string& input_path);
+        void SetkParam(std::uint32_t k) {
+            m_k = k;
+        }
+        void outputTestFesult() const {
+            if (m_accuracy != _invalid_accuracy) {
+                std::cout << "accuracy: " << std::fixed << std::setprecision(2) << m_accuracy << "%" << std::endl;
+            }
+            return;
+        }
+        void outputPredictResult() const {
+            if (m_predict_result.defined()) {
+                auto results = m_predict_result[0] * 100;
+                std::vector<std::pair<float, std::int32_t>> precision;
+                for (int i = 0; i < results.size(0); ++i) {
+                    precision.push_back(std::pair<float, std::int32_t>(results[i].item<float>(), i));
+                }
+                std::sort(precision.begin(), precision.end(),
+                    [](const std::pair<float, std::int32_t>& a, const std::pair<float, std::int32_t>& b) {
+                        return a.first > b.first;
+                    });
+                if (m_k == 1) {
+                    std::cout << m_datasets->getLabel(precision[0].second) << std::endl;
+                }
+                else {
+                    for (int i = 0; i < m_k; i++) {
+                        std::cout << m_datasets->getLabel(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
+                    }
+                }
+            }
+            return;
+        }
     private:
-#define _default_training_epochs 100
         torch::Tensor forward(torch::Tensor input);
         bool m_valid = false;
         bool m_bcpu = true;
@@ -255,6 +307,9 @@ namespace cchips {
         std::string m_modelbin;
         std::string m_dictbin;
         std::uint32_t m_ratio = 0;
+        std::uint32_t m_k = 1;
+        float m_accuracy = _invalid_accuracy;
+        torch::Tensor m_predict_result;
         std::uint32_t m_num_epochs = _default_training_epochs;
         std::unique_ptr<CDataSets> m_datasets = nullptr;
         torch::nn::GRU m_grumodel{ nullptr };

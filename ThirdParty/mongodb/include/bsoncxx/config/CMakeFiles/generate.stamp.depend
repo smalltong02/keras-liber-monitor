@@ -1,0 +1,6 @@
+# CMake generation dependency list for this directory.
+E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/src/bsoncxx/config/CMakeLists.txt
+E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/src/bsoncxx/config/config.hpp.in
+E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/src/bsoncxx/config/libbsoncxx.pc.in
+E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/src/bsoncxx/config/private/config.hh.in
+E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/src/bsoncxx/config/version.hpp.in

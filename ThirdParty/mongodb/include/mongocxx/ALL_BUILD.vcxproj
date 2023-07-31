@@ -1,0 +1,236 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{2CC9E8F2-9C6D-36BA-A9DA-0E60F881C15F}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.22000.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>ALL_BUILD</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\CMakeLists.txt">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/src/mongocxx/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0 -BE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build --check-stamp-file E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files\CMake\share\cmake-3.16\Modules\BasicConfigVersion-SameMajorVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\WriteBasicConfigVersionFile.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\exportheader.cmake.in;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-targets.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-targets.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\CMakeFiles\3.16.3\CMakeCCompiler.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\cmake\MongocxxUtil.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\libmongocxx-config.cmake.in;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\mongocxx-config.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/src/mongocxx/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0 -BE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build --check-stamp-file E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files\CMake\share\cmake-3.16\Modules\BasicConfigVersion-SameMajorVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\WriteBasicConfigVersionFile.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\exportheader.cmake.in;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-targets.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-targets.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\CMakeFiles\3.16.3\CMakeCCompiler.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\cmake\MongocxxUtil.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\libmongocxx-config.cmake.in;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\mongocxx-config.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/src/mongocxx/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0 -BE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build --check-stamp-file E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files\CMake\share\cmake-3.16\Modules\BasicConfigVersion-SameMajorVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\WriteBasicConfigVersionFile.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\exportheader.cmake.in;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-targets.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-targets.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\CMakeFiles\3.16.3\CMakeCCompiler.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\cmake\MongocxxUtil.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\libmongocxx-config.cmake.in;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\mongocxx-config.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/src/mongocxx/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0 -BE:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build --check-stamp-file E:/github-project/ThirdParty/mongo-cxx-driver-r3.8.0/build/src/mongocxx/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files\CMake\share\cmake-3.16\Modules\BasicConfigVersion-SameMajorVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\WriteBasicConfigVersionFile.cmake;C:\Program Files\CMake\share\cmake-3.16\Modules\exportheader.cmake.in;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libbson\bson\bson-targets.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config-version.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-1.0-config.cmake;E:\github-project\ThirdParty\mongo-c-driver-1.24.2\build\src\libmongoc\mongoc\mongoc-targets.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\CMakeFiles\3.16.3\CMakeCCompiler.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\cmake\MongocxxUtil.cmake;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\libmongocxx-config.cmake.in;E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cmake\mongocxx-config.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\ZERO_CHECK.vcxproj">
+      <Project>{000E0712-7C46-35F5-BF61-65B803733D5C}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\mongocxx_mocked.vcxproj">
+      <Project>{00BDE380-3468-32AE-8CEC-9736228740DD}</Project>
+      <Name>mongocxx_mocked</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\mongocxx_shared.vcxproj">
+      <Project>{0AF0B80E-E7DC-38DC-B899-E871446F2F09}</Project>
+      <Name>mongocxx_shared</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\test\test_client_side_encryption_specs.vcxproj">
+      <Project>{74B8218C-3DCA-3A38-8822-64084DDFDEAF}</Project>
+      <Name>test_client_side_encryption_specs</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\test\test_command_monitoring_specs.vcxproj">
+      <Project>{DC7E9A0C-DC85-3595-AB30-43815E8D6062}</Project>
+      <Name>test_command_monitoring_specs</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\test\test_crud_specs.vcxproj">
+      <Project>{29700EB7-EB69-33E3-A541-9CD9EDFDE675}</Project>
+      <Name>test_crud_specs</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\test\test_driver.vcxproj">
+      <Project>{6D4ED687-AD05-3B82-B2BB-4294C25B7662}</Project>
+      <Name>test_driver</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\test\test_gridfs_specs.vcxproj">
+      <Project>{4D77BEA2-2504-32EB-BEAB-2EB9202AB8D6}</Project>
+      <Name>test_gridfs_specs</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\test\test_instance.vcxproj">
+      <Project>{DD15651A-541F-34A9-A2AA-3088629FB201}</Project>
+      <Name>test_instance</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\test\test_logging.vcxproj">
+      <Project>{D67EF4B8-DFF7-3AD0-8D47-6417CA9A3136}</Project>
+      <Name>test_logging</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\test\test_mongohouse_specs.vcxproj">
+      <Project>{FBFD70A2-659C-304D-A19B-A666A8AA5122}</Project>
+      <Name>test_mongohouse_specs</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\test\test_read_write_concern_specs.vcxproj">
+      <Project>{128EC64C-EF95-3563-9D13-96BA35C4E1AA}</Project>
+      <Name>test_read_write_concern_specs</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\test\test_retryable_reads_specs.vcxproj">
+      <Project>{F63704AA-E479-33F9-A635-C99C22D9411F}</Project>
+      <Name>test_retryable_reads_specs</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\test\test_transactions_specs.vcxproj">
+      <Project>{316C138B-2398-3615-8D29-E8A763FCCEF1}</Project>
+      <Name>test_transactions_specs</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\test\test_unified_format_spec.vcxproj">
+      <Project>{67B6F6DE-2792-3DA4-8B88-1F4E1419B844}</Project>
+      <Name>test_unified_format_spec</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\build\src\mongocxx\test\test_versioned_api.vcxproj">
+      <Project>{292B7CB6-F56E-3C3B-9FB8-5FAD3E773E58}</Project>
+      <Name>test_versioned_api</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

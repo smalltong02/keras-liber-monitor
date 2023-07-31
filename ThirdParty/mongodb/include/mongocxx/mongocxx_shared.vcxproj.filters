@@ -1,0 +1,286 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\bulk_write.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\client.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\client_encryption.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\client_session.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\change_stream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\collection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\cursor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\database.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\command_failed_event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\command_started_event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\command_succeeded_event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\heartbeat_failed_event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\heartbeat_started_event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\heartbeat_succeeded_event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\server_changed_event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\server_closed_event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\server_description.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\server_opening_event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\topology_changed_event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\topology_closed_event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\topology_description.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\events\topology_opening_event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\exception\error_code.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\exception\operation_exception.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\exception\server_error_code.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\gridfs\bucket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\gridfs\downloader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\gridfs\uploader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\hint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\index_model.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\index_view.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\instance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\logger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\model\delete_many.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\model\delete_one.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\model\insert_one.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\model\replace_one.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\model\update_many.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\model\update_one.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\model\write.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\aggregate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\apm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\auto_encryption.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\bulk_write.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\change_stream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\client.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\client_encryption.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\client_session.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\count.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\estimated_document_count.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\create_collection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\data_key.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\delete.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\distinct.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\encrypt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\find_one_and_delete.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\find_one_and_replace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\find_one_and_update.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\find.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\gridfs\bucket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\gridfs\upload.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\index.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\index_view.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\insert.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\pool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\range.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\replace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\rewrap_many_datakey.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\server_api.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\tls.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\transaction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\options\update.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\pipeline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\pool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\private\conversions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\private\libbson.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\private\libmongoc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\private\numeric_casting.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\read_concern.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\read_preference.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\bulk_write.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\delete.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\gridfs\upload.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\insert_many.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\insert_one.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\replace_one.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\rewrap_many_datakey.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\result\update.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\uri.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\validation_criteria.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\write_concern.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\mongocxx\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{93475BF6-626C-3922-B825-98FE1997C1E9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

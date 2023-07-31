@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\array\element.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\array\value.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\array\view.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\builder\core.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\decimal128.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\document\element.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\document\value.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\document\view.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\exception\error_code.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\json.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\oid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\private\itoa.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\string\view_or_value.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\types.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\types\bson_value\value.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\types\bson_value\view.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\validate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\github-project\ThirdParty\mongo-cxx-driver-r3.8.0\src\bsoncxx\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{93475BF6-626C-3922-B825-98FE1997C1E9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

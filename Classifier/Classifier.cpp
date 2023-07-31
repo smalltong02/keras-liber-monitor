@@ -92,11 +92,10 @@ namespace cchips {
     CDataSets::CDataSets(const std::string& dataset_path, const std::string& dictbin_path, std::uint32_t ratio)
         : m_ratio(ratio)
     {
-        if (!fs::is_regular_file(dataset_path)) {
-            return;
-        }
-        if (!LoadDataset(dataset_path)) {
-            return;
+        if (fs::is_regular_file(dataset_path)) {
+            if (!LoadDataset(dataset_path)) {
+                return;
+            }
         }
         m_dictpath = dictbin_path;
         m_valid = true;
@@ -411,6 +410,29 @@ namespace cchips {
         return { {data, lengths}, target };
     }
 
+    std::tuple<torch::Tensor, torch::Tensor> CDataSets::LoadSample(const std::string& input) {
+        if (!input.length()) {
+            return {};
+        }
+        initLabelVec();
+        m_dataset.clear();
+        m_dataset.push_back(std::pair(getLabel(0), input));
+        std::cout << "LoadDataset: " << 1 << std::endl;
+        auto sample = get(0);
+        if (!sample.data.defined()) {
+            return {};
+        }
+        std::vector<torch::Tensor> data_batch;
+        std::vector<std::int32_t> lengths_vec;
+        int64_t dim_size = sample.data.size(0);
+        lengths_vec.push_back(dim_size);
+        data_batch.push_back(sample.data);
+        torch::Tensor lengths = torch::tensor(lengths_vec, torch::kLong);
+        torch::Tensor data = torch::stack(data_batch);
+        data = torch::transpose(data, 0, 1);
+        return { data, lengths };
+    }
+
     bool CFastTextModel::train() {
         if (!IsValid()) {
             return false;
@@ -654,7 +676,7 @@ namespace cchips {
         m_linearmodel->eval();
         std::cout << "GRU Model testing start... " << std::endl;
         try {
-            std::atomic_uint32_t _incorrects = 0;
+            std::atomic_uint32_t corrects = 0;
             torch::NoGradGuard no_grad;
             auto data_loader = torch::data::make_data_loader(
                 *m_datasets,
@@ -673,17 +695,25 @@ namespace cchips {
                         targets = targets.cuda();
                     }
                     auto outputs = forward(inputs);
+                    //auto probabilities = torch::softmax(outputs, -1);
                     torch::Tensor predictions = torch::argmax(outputs, 1);
                     //std::cout << outputs << std::endl;
                     auto t1 = predictions[0].item<int>();
                     auto t2 = targets[0].item<int>();
-                    if (t1 != t2) {
-                        std::cout << t1 << " " << t2 << std::endl;
-                        _incorrects++;
+                    //std::cout << probabilities << std::endl;
+                    //auto results = probabilities[0] * 100;
+                    //for (int i = 0; i < results.size(0); ++i) {
+                        //std::cout << std::fixed << std::setprecision(2) << results[i].item<float>() << "%" << " ";
+                    //}
+                    //std::cout << std::endl;
+                    if (t1 == t2) {
+                        //std::cout << t1 << " " << t2 << std::endl;
+                        corrects++;
                     }
                 }
             }
-            std::cout << "incorrects: " << _incorrects;
+            m_accuracy = ((float)corrects / (float)m_datasets->size().value()) * 100;
+            return true;
         }
         catch (const std::exception& e) {
             std::cout << "Exception occurred during GRU model testing: " << e.what() << std::endl;
@@ -692,14 +722,55 @@ namespace cchips {
         return true;
     }
     
-    bool CGruModelImpl::predict() {
+    bool CGruModelImpl::predict(const std::string& input_path) {
         if (!m_valid) {
             return false;
         }
         m_grumodel->eval();
         m_linearmodel->eval();
+        m_predict_result = torch::Tensor();
         try {
-            
+            std::unique_ptr<cchips::CJsonOptions> options = std::make_unique<cchips::CJsonOptions>("CFGRES", IDR_JSONPE_CFG);
+            if (!options || !options->Parse()) {
+                std::cout << "load config error." << std::endl;
+                return false;
+            }
+            auto& staticmanager = cchips::GetCStaticFileManager();
+            if (!staticmanager.Initialize(std::move(options))) {
+                std::cout << "Initialize failed!" << std::endl;
+                return false;
+            }
+            std::string output;
+            if (!staticmanager.Scan(input_path, output, false) || !output.length()) {
+                std::cout << "scan: " << input_path << " failed" << std::endl;
+                return false;
+            }
+            auto& corpusmanager = cchips::GetCTextCorpusManager().GetInstance();
+            corpusmanager.Initialize(output);
+            if (!corpusmanager.GeneratingModelDatasets("fasttext", output, "")) {
+                std::cout << "generating fasttext corpus failed!" << std::endl;
+                return false;
+            }
+            if (!output.length()) {
+                return false;
+            }
+
+            std::atomic_uint32_t corrects = 0;
+            torch::NoGradGuard no_grad;
+            torch::Tensor inputs, lengths;
+            std::tie(inputs, lengths) = m_datasets->LoadSample(output);
+            if (inputs.defined()) {
+                if (m_bcpu) {
+                    inputs = inputs.cpu();
+                }
+                else {
+                    inputs = inputs.cuda();
+                }
+                auto outputs = forward(inputs);
+                m_predict_result = torch::softmax(outputs, -1);
+                //auto t1 = predictions[0].item<int>();
+                //std::cout << "predict: " << t1 << " label: " << m_datasets->getLabel(t1) << std::endl;
+            }
         }
         catch (const std::exception& e) {
             std::cout << "Exception occurred during GRU model predicting: " << e.what() << std::endl;
