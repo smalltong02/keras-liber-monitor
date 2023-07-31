@@ -314,10 +314,6 @@ namespace cchips {
                 break;
             }
         }
-        for (; word_counts < m_sequences_size; word_counts++) {
-            sequences.push_back(m_dict[SPECIAL_CORPUS_PAD]);
-        }
-
         int M = sequences.size();
         int N = _max_word_dim;
         torch::TensorOptions options(torch::kFloat32);
@@ -384,24 +380,35 @@ namespace cchips {
     torch::optional<size_t> CDataSets::size() const {
         return m_dataset.size();
     }
-    std::tuple<torch::Tensor, torch::Tensor> CDataSets::LoadBatch(const std::vector<torch::data::Example<>>& batch) const {
+    std::tuple<std::tuple<torch::Tensor, torch::Tensor>, torch::Tensor> CDataSets::LoadBatch(const std::vector<torch::data::Example<>>& batch) const {
         if (!batch.size()) {
             return {};
         }
         std::vector<torch::Tensor> data_batch;
         std::vector<torch::Tensor> target_batch;
-
+        auto batchsize = batch.size();
+        auto expand = m_sequences_size;
+        std::vector<std::int32_t> lengths_vec;
         for (const auto& bat : batch) {
-            data_batch.push_back(bat.data);
+            int64_t dim_size = bat.data.size(0);
+            lengths_vec.push_back(dim_size);
+            //torch::Tensor randomsor = torch::zeros({ expand - dim_size, bat.data.size(1)});
+            ////int elements_to_copy = std::min(randomsor.size(0), bat.data.size(0));
+            ////randomsor.slice(0, 0, elements_to_copy).copy_(bat.data.slice(0, 0, elements_to_copy));
+            //std::cout << randomsor.sizes() << std::endl;
+            //std::vector<torch::Tensor> tensors_to_cat = { bat.data, randomsor };
+            //torch::Tensor expanded_data = torch::cat(tensors_to_cat, 0);
+            //std::cout << expanded_data.sizes() << std::endl;
+            data_batch.push_back(bat.data/*expanded_data*/);
             target_batch.push_back(bat.target);
         }
-
+        torch::Tensor lengths = torch::tensor(lengths_vec, torch::kLong);
         torch::Tensor data = torch::stack(data_batch);
         torch::Tensor target = torch::cat(target_batch);
         data = torch::transpose(data, 0, 1);
-//        std::cout << data.sizes() << std::endl;
-//        std::cout << target.sizes() << std::endl;
-        return {data, target};
+        //std::cout << data.sizes() << std::endl;
+        //std::cout << target.sizes() << std::endl;
+        return { {data, lengths}, target };
     }
 
     bool CFastTextModel::train() {
@@ -540,38 +547,60 @@ namespace cchips {
         }
     }
 
-    torch::Tensor CGruModel::forward(torch::Tensor input)
+    torch::Tensor CGruModelImpl::forward(torch::Tensor input)
     {
         if (!m_valid) {
             return {};
         }
-        torch::Tensor gru_output, gru_h_n;
-        std::tie(gru_output, gru_h_n) = m_grumodel->forward(input);
-        torch::Tensor last_output = gru_output.select(0, gru_output.size(0) - 1);
+        //auto packed_input = torch::nn::utils::rnn::pack_padded_sequence(input, lengths, false, false);
+        torch::Tensor gru_output, gru_h0_n;
+        //std::cout << input.sizes() << std::endl;
+        std::tie(gru_output, gru_h0_n) = m_grumodel->forward(input);
+        //std::cout << packed_input.batch_sizes() << std::endl;
+        //gru_output = torch::nn::utils::rnn::pad_packed_sequence(gru_output, false, 0)[0];
+        //torch::Tensor indices = lengths.to(torch::kLong);
+        //indices = indices.cuda();
+        torch::Tensor last_output = gru_output[-1];
+        gru_output = torch::transpose(gru_output, 0, 1);
+        //std::cout << last_output << std::endl;
+        //std::vector<torch::Tensor> tensor_vec;
+        //for (int index = 0; index < indices.size(0); index++) {
+        //    tensor_vec.push_back(gru_output[index][6]/*gru_output[index][indices[index]]*/);
+        //    std::cout << gru_output[index][6] << std::endl;
+        //}
+        //torch::Tensor last_output = torch::stack(gru_output);
+        //std::cout << last_output.sizes() << std::endl;
+        //torch::Tensor last_output = torch::mean(gru_output, 0);
+        //std::cout << last_output << std::endl;
         torch::Tensor output = m_linearmodel->forward(last_output);
         return output;
     }
 
-    bool CGruModel::train() {
+    bool CGruModelImpl::train() {
         if (!m_valid) {
             return false;
         }
+        m_grumodel->train();
+        m_linearmodel->train();
         std::cout << "GRU Model training start... " << std::endl;
         torch::nn::CrossEntropyLoss criterion;
         torch::optim::SGD optimizer(parameters(), torch::optim::SGDOptions(0.01));
+        int step_size = 10;
+        float gamma = 0.1;
+        torch::optim::StepLR scheduler(optimizer, step_size, gamma);
         try {
             for (int epoch = 0; epoch < m_num_epochs; ++epoch) {
                 auto data_loader = torch::data::make_data_loader(
                     *m_datasets,
-                    torch::data::DataLoaderOptions().batch_size(m_datasets->getBatchsize()).workers(10));
+                    torch::data::DataLoaderOptions().batch_size(1/*m_datasets->getBatchsize()*/).workers(10));
                 std::uint32_t num_samples = 0;
                 std::uint32_t num_batches = 0;
                 std::float_t average_loss = 0.0;
                 std::float_t total_loss = 0.0;
                 for (const auto& batch : *data_loader)
                 {
-                    torch::Tensor inputs, targets;
-                    std::tie(inputs, targets) = m_datasets->LoadBatch(batch);
+                    torch::Tensor inputs, lengths, targets;
+                    std::tie(std::tie(inputs, lengths), targets) = m_datasets->LoadBatch(batch);
                     if (inputs.defined() && targets.defined()) {
                         if (m_bcpu) {
                             inputs = inputs.cpu();
@@ -585,6 +614,8 @@ namespace cchips {
                         //std::cout << targets.sizes() << std::endl;
 
                         auto outputs = forward(inputs);
+                        //std::cout << outputs << std::endl;
+                        //std::cout << targets << std::endl;
                         auto loss = criterion(outputs, targets);
                         optimizer.zero_grad();
                         loss.backward();
@@ -608,33 +639,67 @@ namespace cchips {
         std::cout << "GRU Model training end... " << std::endl;
         if (m_output.length()) {
             std::cout << "save GRU Model..." << std::endl;
-            torch::serialize::OutputArchive output_archive;
-            save(output_archive);
-            output_archive.save_to(m_output);
+            //torch::serialize::OutputArchive output_archive;
+            //save(output_archive);
+            //output_archive.save_to(m_output);
         }
         return true; 
     }
 
-    bool CGruModel::test() {
+    bool CGruModelImpl::test() {
         if (!m_valid) {
             return false;
         }
+        m_grumodel->eval();
+        m_linearmodel->eval();
+        std::cout << "GRU Model testing start... " << std::endl;
         try {
-
+            std::atomic_uint32_t _incorrects = 0;
+            torch::NoGradGuard no_grad;
+            auto data_loader = torch::data::make_data_loader(
+                *m_datasets,
+                torch::data::DataLoaderOptions().batch_size(1).workers(10));
+            for (const auto& batch : *data_loader)
+            {
+                torch::Tensor inputs, lengths, targets;
+                std::tie(std::tie(inputs, lengths), targets) = m_datasets->LoadBatch(batch);
+                if (inputs.defined() && targets.defined()) {
+                    if (m_bcpu) {
+                        inputs = inputs.cpu();
+                        targets = targets.cpu();
+                    }
+                    else {
+                        inputs = inputs.cuda();
+                        targets = targets.cuda();
+                    }
+                    auto outputs = forward(inputs);
+                    torch::Tensor predictions = torch::argmax(outputs, 1);
+                    //std::cout << outputs << std::endl;
+                    auto t1 = predictions[0].item<int>();
+                    auto t2 = targets[0].item<int>();
+                    if (t1 != t2) {
+                        std::cout << t1 << " " << t2 << std::endl;
+                        _incorrects++;
+                    }
+                }
+            }
+            std::cout << "incorrects: " << _incorrects;
         }
         catch (const std::exception& e) {
-            std::cout << "Exception occurred during GRU model predicting: " << e.what() << std::endl;
+            std::cout << "Exception occurred during GRU model testing: " << e.what() << std::endl;
             return false;
         }
         return true;
     }
     
-    bool CGruModel::predict() {
+    bool CGruModelImpl::predict() {
         if (!m_valid) {
             return false;
         }
+        m_grumodel->eval();
+        m_linearmodel->eval();
         try {
-
+            
         }
         catch (const std::exception& e) {
             std::cout << "Exception occurred during GRU model predicting: " << e.what() << std::endl;

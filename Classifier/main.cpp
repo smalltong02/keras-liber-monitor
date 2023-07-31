@@ -33,6 +33,7 @@ int main()
             "  --model_path                            the path of modelbin.\n"
             "  [--ratio] [8 | 6]                       training ratio.\n"
             "  [--predict]                             predicting the sample using the chosen model.\n"
+            "  [--test]                                test the samples using the chosen model.\n"
             "  [--output]                              output to logfile.\n",
             argv[0]
         );
@@ -40,6 +41,7 @@ int main()
     }
 
     bool bpredict = false;
+    bool btest = false;
     std::wstring modelw;
     std::wstring modelbin_pathw;
     std::wstring dictbin_pathw;
@@ -72,6 +74,10 @@ int main()
             bpredict = true;
             continue;
         }
+        if (wcscmp(argv[idx], L"--test") == 0) {
+            btest = true;
+            continue;
+        }
         if (wcscmp(argv[idx], L"--output") == 0) {
             output_pathw = argv[++idx];
             continue;
@@ -96,7 +102,12 @@ int main()
         info("error argument.\n");
         return -1;
     }
-    if (!bpredict && (!ratiow.length() || !output_pathw.length())) {
+    if (bpredict && btest) {
+        info("error argument.\n");
+        return -1;
+    }
+
+    if (!bpredict && !btest && (!ratiow.length() || !output_pathw.length())) {
         info("error argument.\n");
         return -1;
     }
@@ -144,14 +155,20 @@ int main()
         return fasttext_model->train();
     }
     else if (_stricmp(model.c_str(), "gru") == 0) {
-        std::unique_ptr<cchips::CGruModel> gru_model = std::make_unique<cchips::CGruModel>(input_path, output_path, modelbin_path, dictbin_path, ratio, false);
+        cchips::CGruModel gru_model(input_path, output_path, modelbin_path, dictbin_path, ratio, false);
         if (!gru_model) {
             return false;
+        }
+        if (btest) {
+            torch::load(gru_model, modelbin_path);
+            return gru_model->test();
         }
         if (bpredict) {
             return gru_model->predict();
         }
-        return gru_model->train();
+        if (gru_model->train()) {
+            torch::save(gru_model, output_path);
+        }
     }
     return 0;
 }

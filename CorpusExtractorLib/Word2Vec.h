@@ -10,6 +10,7 @@
 #include <mutex>
 #include <fstream>
 #include <algorithm>
+#include <atomic>
 
 namespace cchips {
 
@@ -45,7 +46,7 @@ namespace cchips {
         }
 
         void Initialize(const std::string& train_file, const std::string& output_file, const std::string& save_vocab_file, const std::string& read_vocab_file, std::uint32_t size = 100, \
-            std::uint32_t window = 5, real threshold = 1e-3, std::uint32_t hs = 0, std::uint32_t negative = 5, std::uint32_t threads = 12, std::uint32_t iter = 5, std::uint32_t min_count = 0, \
+            std::uint32_t window = 5, real threshold = 1e-3, std::uint32_t hs = 0, std::uint32_t negative = 5, std::uint32_t threads = 1, std::uint32_t iter = 5, std::uint32_t min_count = 0, \
             real alpha = 0.025, std::uint32_t classes = 0, std::uint32_t debug = 2, std::uint32_t binary = 0, std::uint32_t cbow = 1) {
             m_bvalid = false;
             m_train_file = train_file;
@@ -175,6 +176,7 @@ namespace cchips {
                 }
                 iofile.close();
             } while (0);
+
             //printf("Task finished.\n");
             return;
         }
@@ -261,7 +263,7 @@ namespace cchips {
         }
         // Adds a word to the vocabulary
         int AddWordToVocab(char* word) {
-            unsigned int hash, length = strlen(word) + 1;
+            unsigned int hash, length = strlen(word);
             if (length > _max_string) length = _max_string;
             m_vocab[m_vocab_size].word = std::string(word, length);
             m_vocab[m_vocab_size].cn = 0;
@@ -300,7 +302,6 @@ namespace cchips {
                 if ((m_vocab[a].cn < m_min_count) && (a != 0)) {
                     //m_vocab_size--;
                     m_vocab[a].word.clear();
-                    m_vocab[a].word = nullptr;
                 }
                 else {
                     // Hash will be re-computed, as after the sorting it is not actual
@@ -721,7 +722,7 @@ namespace cchips {
         }
 
     private:
-        static const std::uint32_t _max_string = 100;
+        static const std::uint32_t _max_string = 150;
         static const std::uint32_t _exp_table_size = 1000;
         static const std::int32_t _max_exp = 6;
         static const std::uint32_t _max_sentence_length = 1000;
@@ -748,7 +749,7 @@ namespace cchips {
         std::uint64_t m_layer1_size = 100;
         std::uint64_t m_train_words = 0;
         std::uint64_t m_real_train_words = 0;
-        std::uint64_t m_word_count_actual = 0;
+        std::atomic_uint64_t m_word_count_actual = 0;
         std::uint64_t m_iter = 5;
         std::uint64_t m_file_size = 0;
         std::uint64_t m_classes = 0;

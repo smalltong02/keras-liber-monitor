@@ -8,6 +8,7 @@
 #include <opencv2/opencv.hpp>
 #include <torch/torch.h>
 #include <torch/data.h>
+#include <torch/script.h>
 #include "CorpusExtractorLib/Word2Vec.h"
 #include "StaticPEManager/StaticFileManager.h"
 #include "CorpusExtractorLib/TextCorpusManager.h"
@@ -53,12 +54,12 @@ namespace cchips {
                 }
                 index++;
             }
-            if(index < m_label.size())
+            if(index <= m_label.size())
                 return index;
             return std::uint32_t(-1);
         }
         bool LoadDict(dict_type type = dict_word2vec);
-        std::tuple<torch::Tensor, torch::Tensor> LoadBatch(const std::vector<torch::data::Example<>>& batch) const;
+        std::tuple<std::tuple<torch::Tensor, torch::Tensor>, torch::Tensor> LoadBatch(const std::vector<torch::data::Example<>>& batch) const;
 
     private:
         bool LoadDataset(const std::string& path)
@@ -80,17 +81,22 @@ namespace cchips {
             if (!infile.is_open()) {
                 return false;
             }
+            m_label.insert("__label_cert_manage_tool__");
+            m_label.insert("__label_forticlient__");
+            m_label.insert("__label_putty__");
+            m_label.insert("__label_teams__");
+            m_label.insert("__label_unknown__");
             m_dataset.clear();
             std::string line;
             std::uint32_t loading_count = 0;
             while (std::getline(infile, line)) {
                 size_t pos = line.find_first_of(' ');
                 if (pos != std::string::npos && pos != 0) {
-                    m_label.insert(line.substr(0, pos));
+                    //m_label.insert(line.substr(0, pos));
                     m_dataset.push_back(std::pair(line.substr(0, pos), line.substr(pos + 1)));
                 }
                 loading_count++;
-                //if (loading_count >= 1000) break;
+                //if (loading_count >= 20) break;
             }
             std::cout << "LoadDataset: " << loading_count << std::endl;
             infile.close();
@@ -197,10 +203,10 @@ namespace cchips {
         torch::nn::Linear ln{nullptr};
         std::tuple<torch::Tensor, torch::Tensor> hidden_cell;
     };
-
-    class CGruModel : public torch::nn::Module {
+    
+    class CGruModelImpl : public torch::nn::Module {
     public:
-        CGruModel(const std::string& path, const std::string& output, const std::string& modelbin, const std::string& dictbin_path, std::uint32_t ratio = 8, bool bcpu = true) {
+        CGruModelImpl(const std::string& path, const std::string& output, const std::string& modelbin, const std::string& dictbin_path, std::uint32_t ratio = 8, bool bcpu = true) {
             m_input = path;
             m_output = output;
             m_ratio = ratio;
@@ -218,8 +224,8 @@ namespace cchips {
                 return;
             }
             std::uint32_t input_size = m_datasets->getWorddim();
-            m_linearmodel = torch::nn::Linear(input_size / 2, 5);//m_datasets->getLabelnum());
-            m_grumodel = torch::nn::GRU(torch::nn::GRUOptions(input_size, input_size/2).num_layers(1));
+            m_linearmodel = torch::nn::Linear(input_size, 5);//m_datasets->getLabelnum());
+            m_grumodel = torch::nn::GRU(torch::nn::GRUOptions(input_size, input_size).num_layers(1));
             register_module("gru", m_grumodel);
             register_module("linear", m_linearmodel);
             if (m_bcpu) {
@@ -234,7 +240,7 @@ namespace cchips {
             }
             m_valid = true;
         }
-        ~CGruModel() = default;
+        ~CGruModelImpl() = default;
 
         bool train();
         bool test();
@@ -242,7 +248,6 @@ namespace cchips {
     private:
 #define _default_training_epochs 100
         torch::Tensor forward(torch::Tensor input);
-
         bool m_valid = false;
         bool m_bcpu = true;
         std::string m_input;
@@ -296,4 +301,6 @@ namespace cchips {
         ft_submodel m_subtype;
         std::unique_ptr<fasttext::FastText> m_ftmodel = nullptr;
     };
+
+    TORCH_MODULE(CGruModel);
 } // namespace cchips
