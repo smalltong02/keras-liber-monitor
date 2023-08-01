@@ -19,6 +19,15 @@ namespace cchips {
 
     namespace fs = std::filesystem;
 
+    using ml_model = enum {
+        mmodel_unknown,
+        mmodel_fasttext,
+        mmodel_gru,
+        mmodel_lstm,
+        mmodel_bert,
+        mmodel_gpt,
+    };
+
     class CDataSets : public torch::data::Dataset<CDataSets> {
     public:
 #define _max_file_size 1024 * 1024 * 1024 // 1G
@@ -235,6 +244,15 @@ namespace cchips {
             m_modelbin = modelbin;
             m_dictbin = dictbin_path;
             m_bcpu = bcpu;
+            if (m_bcpu) {
+                m_device = std::make_unique<torch::Device>(torch::kCPU);
+            }
+            else {
+                m_device = std::make_unique<torch::Device>(torch::kCUDA);
+            }
+            if (!m_device) {
+                return;
+            }
             m_datasets = std::make_unique<CDataSets>(m_input, m_dictbin, ratio);
             if (!m_datasets || !m_datasets->IsValid()) {
                 return;
@@ -250,16 +268,9 @@ namespace cchips {
             m_grumodel = torch::nn::GRU(torch::nn::GRUOptions(input_size, input_size).num_layers(1));
             register_module("gru", m_grumodel);
             register_module("linear", m_linearmodel);
-            if (m_bcpu) {
-                to(torch::kCPU);
-                m_grumodel->to(torch::kCPU);
-                m_linearmodel->to(torch::kCPU);
-            }
-            else {
-                to(torch::kCUDA);
-                m_grumodel->to(torch::kCUDA);
-                m_linearmodel->to(torch::kCUDA);
-            }
+            to(*m_device);
+            m_grumodel->to(*m_device);
+            m_linearmodel->to(*m_device);
             m_valid = true;
         }
         ~CGruModelImpl() = default;
@@ -310,11 +321,110 @@ namespace cchips {
         std::uint32_t m_k = 1;
         float m_accuracy = _invalid_accuracy;
         torch::Tensor m_predict_result;
+        std::unique_ptr<torch::Device> m_device = nullptr;
         std::uint32_t m_num_epochs = _default_training_epochs;
         std::unique_ptr<CDataSets> m_datasets = nullptr;
         torch::nn::GRU m_grumodel{ nullptr };
         torch::nn::Linear m_linearmodel { nullptr };
     };
+    TORCH_MODULE(CGruModel);
+
+    class CLstmModelImpl : public torch::nn::Module {
+    private:
+#define _invalid_accuracy float(-1)
+#define _default_training_epochs 100
+    public:
+        CLstmModelImpl(const std::string& path, const std::string& output, const std::string& modelbin, const std::string& dictbin_path, std::uint32_t ratio = 8, bool bcpu = true) {
+            m_input = path;
+            m_output = output;
+            m_ratio = ratio;
+            m_modelbin = modelbin;
+            m_dictbin = dictbin_path;
+            m_bcpu = bcpu;
+            if (m_bcpu) {
+                m_device = std::make_unique<torch::Device>(torch::kCPU);
+            }
+            else {
+                m_device = std::make_unique<torch::Device>(torch::kCUDA);
+            }
+            if (!m_device) {
+                return;
+            }
+            m_datasets = std::make_unique<CDataSets>(m_input, m_dictbin, ratio);
+            if (!m_datasets || !m_datasets->IsValid()) {
+                return;
+            }
+            if (!m_dictbin.length() && !m_datasets->MakeDict()) {
+                return;
+            }
+            if (!m_datasets->LoadDict()) {
+                return;
+            }
+            std::uint32_t input_size = m_datasets->getWorddim();
+            m_linearmodel = torch::nn::Linear(input_size, 5);//m_datasets->getLabelnum());
+            m_lstmmodel = torch::nn::LSTM(torch::nn::LSTMOptions(input_size, input_size).num_layers(1));
+            register_module("lstm", m_lstmmodel);
+            register_module("linear", m_linearmodel);
+            to(*m_device);
+            m_lstmmodel->to(*m_device);
+            m_linearmodel->to(*m_device);
+            m_valid = true;
+        }
+        ~CLstmModelImpl() = default;
+
+        bool train();
+        bool test();
+        bool predict(const std::string& input_path);
+        void SetkParam(std::uint32_t k) {
+            m_k = k;
+        }
+        void outputTestFesult() const {
+            if (m_accuracy != _invalid_accuracy) {
+                std::cout << "accuracy: " << std::fixed << std::setprecision(2) << m_accuracy << "%" << std::endl;
+            }
+            return;
+        }
+        void outputPredictResult() const {
+            if (m_predict_result.defined()) {
+                auto results = m_predict_result[0] * 100;
+                std::vector<std::pair<float, std::int32_t>> precision;
+                for (int i = 0; i < results.size(0); ++i) {
+                    precision.push_back(std::pair<float, std::int32_t>(results[i].item<float>(), i));
+                }
+                std::sort(precision.begin(), precision.end(),
+                    [](const std::pair<float, std::int32_t>& a, const std::pair<float, std::int32_t>& b) {
+                        return a.first > b.first;
+                    });
+                if (m_k == 1) {
+                    std::cout << m_datasets->getLabel(precision[0].second) << std::endl;
+                }
+                else {
+                    for (int i = 0; i < m_k; i++) {
+                        std::cout << m_datasets->getLabel(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
+                    }
+                }
+            }
+            return;
+        }
+    private:
+        torch::Tensor forward(torch::Tensor input);
+        bool m_valid = false;
+        bool m_bcpu = true;
+        std::string m_input;
+        std::string m_output;
+        std::string m_modelbin;
+        std::string m_dictbin;
+        std::uint32_t m_ratio = 0;
+        std::uint32_t m_k = 1;
+        float m_accuracy = _invalid_accuracy;
+        torch::Tensor m_predict_result;
+        std::unique_ptr<torch::Device> m_device = nullptr;
+        std::uint32_t m_num_epochs = _default_training_epochs;
+        std::unique_ptr<CDataSets> m_datasets = nullptr;
+        torch::nn::LSTM m_lstmmodel{ nullptr };
+        torch::nn::Linear m_linearmodel { nullptr };
+    };
+    TORCH_MODULE(CLstmModel);
 
     class CFastTextModel {
     public:
@@ -356,6 +466,4 @@ namespace cchips {
         ft_submodel m_subtype;
         std::unique_ptr<fasttext::FastText> m_ftmodel = nullptr;
     };
-
-    TORCH_MODULE(CGruModel);
 } // namespace cchips

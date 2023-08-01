@@ -451,22 +451,6 @@ namespace cchips {
         if (!fs::is_regular_file(m_input)) {
             return false;
         }
-
-        //CDataSets datasets(m_ratio);
-        //if (!datasets.splitDatasets(m_input)) {
-        //    return false;
-        //}
-        //std::vector<fs::path> trainsets;
-        //std::vector<fs::path> testsets;
-        //if (!datasets.getTrainSets(trainsets)) {
-        //    return false;
-        //}
-        //if (!datasets.getTestSets(testsets)) {
-        //    return false;
-        //}
-        //if (!trainsets.size() || !testsets.size()) {
-        //    return false;
-        //}
         fasttext::Args args = fasttext::Args();
         
         args.input = m_input;
@@ -575,15 +559,15 @@ namespace cchips {
             return {};
         }
         //auto packed_input = torch::nn::utils::rnn::pack_padded_sequence(input, lengths, false, false);
-        torch::Tensor gru_output, gru_h0_n;
+        torch::Tensor tensor_output, tensor_h0_n;
         //std::cout << input.sizes() << std::endl;
-        std::tie(gru_output, gru_h0_n) = m_grumodel->forward(input);
+        std::tie(tensor_output, tensor_h0_n) = m_grumodel->forward(input);
         //std::cout << packed_input.batch_sizes() << std::endl;
         //gru_output = torch::nn::utils::rnn::pad_packed_sequence(gru_output, false, 0)[0];
         //torch::Tensor indices = lengths.to(torch::kLong);
         //indices = indices.cuda();
-        torch::Tensor last_output = gru_output[-1];
-        gru_output = torch::transpose(gru_output, 0, 1);
+        torch::Tensor last_output = tensor_output[-1];
+        tensor_output = torch::transpose(tensor_output, 0, 1);
         //std::cout << last_output << std::endl;
         //std::vector<torch::Tensor> tensor_vec;
         //for (int index = 0; index < indices.size(0); index++) {
@@ -602,9 +586,9 @@ namespace cchips {
         if (!m_valid) {
             return false;
         }
+        std::cout << "GRU Model training start... " << std::endl;
         m_grumodel->train();
         m_linearmodel->train();
-        std::cout << "GRU Model training start... " << std::endl;
         torch::nn::CrossEntropyLoss criterion;
         torch::optim::SGD optimizer(parameters(), torch::optim::SGDOptions(0.01));
         int step_size = 10;
@@ -624,20 +608,15 @@ namespace cchips {
                     torch::Tensor inputs, lengths, targets;
                     std::tie(std::tie(inputs, lengths), targets) = m_datasets->LoadBatch(batch);
                     if (inputs.defined() && targets.defined()) {
-                        if (m_bcpu) {
-                            inputs = inputs.cpu();
-                            targets = targets.cpu();
-                        }
-                        else {
-                            inputs = inputs.cuda();
-                            targets = targets.cuda();
-                        }
+                        inputs = inputs.to(*m_device);
+                        targets = targets.to(*m_device);
                         //std::cout << inputs.sizes() << std::endl;
                         //std::cout << targets.sizes() << std::endl;
 
                         auto outputs = forward(inputs);
                         //std::cout << outputs << std::endl;
                         //std::cout << targets << std::endl;
+                        outputs = outputs.to (*m_device);
                         auto loss = criterion(outputs, targets);
                         optimizer.zero_grad();
                         loss.backward();
@@ -656,11 +635,11 @@ namespace cchips {
             }
         }
         catch (const std::exception& e) {
-            std::cout << "Exception occurred during GRU model training: " << e.what() << std::endl;
+            std::cout << "Exception occurred during model training: " << e.what() << std::endl;
         }
-        std::cout << "GRU Model training end... " << std::endl;
+        std::cout << "Model training end... " << std::endl;
         if (m_output.length()) {
-            std::cout << "save GRU Model..." << std::endl;
+            std::cout << "save Model..." << std::endl;
             //torch::serialize::OutputArchive output_archive;
             //save(output_archive);
             //output_archive.save_to(m_output);
@@ -672,9 +651,9 @@ namespace cchips {
         if (!m_valid) {
             return false;
         }
+        std::cout << "GRU Model testing start... " << std::endl;
         m_grumodel->eval();
         m_linearmodel->eval();
-        std::cout << "GRU Model testing start... " << std::endl;
         try {
             std::atomic_uint32_t corrects = 0;
             torch::NoGradGuard no_grad;
@@ -686,15 +665,10 @@ namespace cchips {
                 torch::Tensor inputs, lengths, targets;
                 std::tie(std::tie(inputs, lengths), targets) = m_datasets->LoadBatch(batch);
                 if (inputs.defined() && targets.defined()) {
-                    if (m_bcpu) {
-                        inputs = inputs.cpu();
-                        targets = targets.cpu();
-                    }
-                    else {
-                        inputs = inputs.cuda();
-                        targets = targets.cuda();
-                    }
+                    inputs = inputs.to(*m_device);
+                    targets = targets.to(*m_device);
                     auto outputs = forward(inputs);
+                    outputs = outputs.to(*m_device);
                     //auto probabilities = torch::softmax(outputs, -1);
                     torch::Tensor predictions = torch::argmax(outputs, 1);
                     //std::cout << outputs << std::endl;
@@ -716,7 +690,7 @@ namespace cchips {
             return true;
         }
         catch (const std::exception& e) {
-            std::cout << "Exception occurred during GRU model testing: " << e.what() << std::endl;
+            std::cout << "Exception occurred during model testing: " << e.what() << std::endl;
             return false;
         }
         return true;
@@ -726,6 +700,9 @@ namespace cchips {
         if (!m_valid) {
             return false;
         }
+        std::cout << "GRU Model predicting start... " << std::endl;
+        m_grumodel->to(*m_device);
+        m_linearmodel->to(*m_device);
         m_grumodel->eval();
         m_linearmodel->eval();
         m_predict_result = torch::Tensor();
@@ -760,12 +737,204 @@ namespace cchips {
             torch::Tensor inputs, lengths;
             std::tie(inputs, lengths) = m_datasets->LoadSample(output);
             if (inputs.defined()) {
-                if (m_bcpu) {
-                    inputs = inputs.cpu();
+                inputs = inputs.to(*m_device);
+                auto outputs = forward(inputs);
+                outputs = outputs.to(*m_device);
+                m_predict_result = torch::softmax(outputs, -1);
+                //auto t1 = predictions[0].item<int>();
+                //std::cout << "predict: " << t1 << " label: " << m_datasets->getLabel(t1) << std::endl;
+            }
+        }
+        catch (const std::exception& e) {
+            std::cout << "Exception occurred during model predicting: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+
+    torch::Tensor CLstmModelImpl::forward(torch::Tensor input)
+    {
+        if (!m_valid) {
+            return {};
+        }
+        //auto packed_input = torch::nn::utils::rnn::pack_padded_sequence(input, lengths, false, false);
+        torch::Tensor tensor_output, tensor_h0_n, tensor_hh_n;
+        //std::cout << input.sizes() << std::endl;
+        std::tie(tensor_output, std::tie(tensor_h0_n, tensor_hh_n)) = m_lstmmodel->forward(input);
+        //std::cout << packed_input.batch_sizes() << std::endl;
+        //gru_output = torch::nn::utils::rnn::pad_packed_sequence(gru_output, false, 0)[0];
+        //torch::Tensor indices = lengths.to(torch::kLong);
+        //indices = indices.cuda();
+        torch::Tensor last_output = tensor_output[-1];
+        tensor_output = torch::transpose(tensor_output, 0, 1);
+        //std::cout << last_output << std::endl;
+        //std::vector<torch::Tensor> tensor_vec;
+        //for (int index = 0; index < indices.size(0); index++) {
+        //    tensor_vec.push_back(gru_output[index][6]/*gru_output[index][indices[index]]*/);
+        //    std::cout << gru_output[index][6] << std::endl;
+        //}
+        //torch::Tensor last_output = torch::stack(gru_output);
+        //std::cout << last_output.sizes() << std::endl;
+        //torch::Tensor last_output = torch::mean(gru_output, 0);
+        //std::cout << last_output << std::endl;
+        torch::Tensor output = m_linearmodel->forward(last_output);
+        return output;
+    }
+
+    bool CLstmModelImpl::train() {
+        if (!m_valid) {
+            return false;
+        }
+        std::cout << "LSTM Model training start... " << std::endl;
+        m_lstmmodel->train();
+        m_linearmodel->train();
+        torch::nn::CrossEntropyLoss criterion;
+        torch::optim::SGD optimizer(parameters(), torch::optim::SGDOptions(0.01));
+        int step_size = 10;
+        float gamma = 0.1;
+        torch::optim::StepLR scheduler(optimizer, step_size, gamma);
+        try {
+            for (int epoch = 0; epoch < m_num_epochs; ++epoch) {
+                auto data_loader = torch::data::make_data_loader(
+                    *m_datasets,
+                    torch::data::DataLoaderOptions().batch_size(1/*m_datasets->getBatchsize()*/).workers(10));
+                std::uint32_t num_samples = 0;
+                std::uint32_t num_batches = 0;
+                std::float_t average_loss = 0.0;
+                std::float_t total_loss = 0.0;
+                for (const auto& batch : *data_loader)
+                {
+                    torch::Tensor inputs, lengths, targets;
+                    std::tie(std::tie(inputs, lengths), targets) = m_datasets->LoadBatch(batch);
+                    if (inputs.defined() && targets.defined()) {
+                        inputs = inputs.to(*m_device);
+                        targets = targets.to(*m_device);
+                        //std::cout << inputs.sizes() << std::endl;
+                        //std::cout << targets.sizes() << std::endl;
+
+                        auto outputs = forward(inputs);
+                        //std::cout << outputs << std::endl;
+                        //std::cout << targets << std::endl;
+                        auto loss = criterion(outputs, targets);
+                        optimizer.zero_grad();
+                        loss.backward();
+                        optimizer.step();
+                        total_loss += loss.item<float>();
+                        num_batches++;
+                        //num_samples += m_datasets->getBatchsize();
+                        //std::cout << "internel Epoch: " << epoch + 1 << ", Loss: " << loss.item<float>()/* << "  num_samples: " << num_samples*/ << std::endl;
+                    }
+                    else {
+                        break;
+                    }
                 }
-                else {
-                    inputs = inputs.cuda();
+                average_loss = total_loss / num_batches;
+                std::cout << "Epoch: " << epoch + 1 << ", average loss: " << average_loss << std::endl;
+            }
+        }
+        catch (const std::exception& e) {
+            std::cout << "Exception occurred during model training: " << e.what() << std::endl;
+        }
+        std::cout << "Model training end... " << std::endl;
+        if (m_output.length()) {
+            std::cout << "save Model..." << std::endl;
+            //torch::serialize::OutputArchive output_archive;
+            //save(output_archive);
+            //output_archive.save_to(m_output);
+        }
+        return true;
+    }
+
+    bool CLstmModelImpl::test() {
+        if (!m_valid) {
+            return false;
+        }
+        std::cout << "LSTM Model testing start... " << std::endl;
+        m_lstmmodel->eval();
+        m_linearmodel->eval();
+        try {
+            std::atomic_uint32_t corrects = 0;
+            torch::NoGradGuard no_grad;
+            auto data_loader = torch::data::make_data_loader(
+                *m_datasets,
+                torch::data::DataLoaderOptions().batch_size(1).workers(10));
+            for (const auto& batch : *data_loader)
+            {
+                torch::Tensor inputs, lengths, targets;
+                std::tie(std::tie(inputs, lengths), targets) = m_datasets->LoadBatch(batch);
+                if (inputs.defined() && targets.defined()) {
+                    inputs = inputs.to(*m_device);
+                    targets = targets.to(*m_device);
+                    auto outputs = forward(inputs);
+                    //auto probabilities = torch::softmax(outputs, -1);
+                    torch::Tensor predictions = torch::argmax(outputs, 1);
+                    //std::cout << outputs << std::endl;
+                    auto t1 = predictions[0].item<int>();
+                    auto t2 = targets[0].item<int>();
+                    //std::cout << probabilities << std::endl;
+                    //auto results = probabilities[0] * 100;
+                    //for (int i = 0; i < results.size(0); ++i) {
+                        //std::cout << std::fixed << std::setprecision(2) << results[i].item<float>() << "%" << " ";
+                    //}
+                    //std::cout << std::endl;
+                    if (t1 == t2) {
+                        //std::cout << t1 << " " << t2 << std::endl;
+                        corrects++;
+                    }
                 }
+            }
+            m_accuracy = ((float)corrects / (float)m_datasets->size().value()) * 100;
+            return true;
+        }
+        catch (const std::exception& e) {
+            std::cout << "Exception occurred during model testing: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+
+    bool CLstmModelImpl::predict(const std::string& input_path) {
+        if (!m_valid) {
+            return false;
+        }
+        std::cout << "LSTM Model predicting start... " << std::endl;
+        m_lstmmodel->to(*m_device);
+        m_linearmodel->to(*m_device);
+        m_lstmmodel->eval();
+        m_linearmodel->eval();
+        m_predict_result = torch::Tensor();
+        try {
+            std::unique_ptr<cchips::CJsonOptions> options = std::make_unique<cchips::CJsonOptions>("CFGRES", IDR_JSONPE_CFG);
+            if (!options || !options->Parse()) {
+                std::cout << "load config error." << std::endl;
+                return false;
+            }
+            auto& staticmanager = cchips::GetCStaticFileManager();
+            if (!staticmanager.Initialize(std::move(options))) {
+                std::cout << "Initialize failed!" << std::endl;
+                return false;
+            }
+            std::string output;
+            if (!staticmanager.Scan(input_path, output, false) || !output.length()) {
+                std::cout << "scan: " << input_path << " failed" << std::endl;
+                return false;
+            }
+            auto& corpusmanager = cchips::GetCTextCorpusManager().GetInstance();
+            corpusmanager.Initialize(output);
+            if (!corpusmanager.GeneratingModelDatasets("fasttext", output, "")) {
+                std::cout << "generating fasttext corpus failed!" << std::endl;
+                return false;
+            }
+            if (!output.length()) {
+                return false;
+            }
+
+            std::atomic_uint32_t corrects = 0;
+            torch::NoGradGuard no_grad;
+            torch::Tensor inputs, lengths;
+            std::tie(inputs, lengths) = m_datasets->LoadSample(output);
+            if (inputs.defined()) {
+                inputs = inputs.to(*m_device);
                 auto outputs = forward(inputs);
                 m_predict_result = torch::softmax(outputs, -1);
                 //auto t1 = predictions[0].item<int>();
@@ -773,7 +942,7 @@ namespace cchips {
             }
         }
         catch (const std::exception& e) {
-            std::cout << "Exception occurred during GRU model predicting: " << e.what() << std::endl;
+            std::cout << "Exception occurred during model predicting: " << e.what() << std::endl;
             return false;
         }
         return true;

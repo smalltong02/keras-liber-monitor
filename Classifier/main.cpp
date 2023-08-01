@@ -142,8 +142,26 @@ int main()
     if (ratio != 8 && ratio != 6) {
         ratio = 8;
     }
-
+    cchips::ml_model modeltype = cchips::mmodel_unknown;
     if (_stricmp(model.c_str(), "fasttext") == 0) {
+        modeltype = cchips::mmodel_fasttext;
+    }
+    else if (_stricmp(model.c_str(), "gru") == 0) {
+        modeltype = cchips::mmodel_gru;
+    }
+    else if (_stricmp(model.c_str(), "lstm") == 0) {
+        modeltype = cchips::mmodel_lstm;
+    }
+    else if (_stricmp(model.c_str(), "bert") == 0) {
+        modeltype = cchips::mmodel_bert;
+    }
+    else if (_stricmp(model.c_str(), "gpt") == 0) {
+        modeltype = cchips::mmodel_gpt;
+    }
+
+    switch (modeltype) {
+    case cchips::mmodel_fasttext:
+    {
         std::unique_ptr<cchips::CFastTextModel> fasttext_model = std::make_unique<cchips::CFastTextModel>(input_path, output_path, modelbin_path, ratio);
         if (!fasttext_model) {
             return false;
@@ -152,32 +170,71 @@ int main()
             fasttext_model->SetkParam(k);
             return fasttext_model->predict();
         }
-        return fasttext_model->train();
+        fasttext_model->train();
     }
-    else if (_stricmp(model.c_str(), "gru") == 0) {
+    break;
+    case cchips::mmodel_gru:
+    {
         if (bpredict) {
-            cchips::CGruModel gru_model("", output_path, modelbin_path, dictbin_path, ratio, false);
-            torch::load(gru_model, modelbin_path);
-            gru_model->SetkParam(k);
-            if (gru_model->predict(input_path)) {
-                gru_model->outputPredictResult();
+            cchips::CGruModel _model("", output_path, modelbin_path, dictbin_path, ratio, true);
+            torch::load(_model, modelbin_path);
+            _model->SetkParam(k);
+            if (_model->predict(input_path)) {
+                _model->outputPredictResult();
             }
         }
         else {
-            cchips::CGruModel gru_model(input_path, output_path, modelbin_path, dictbin_path, ratio, false);
-            if (!gru_model) {
+            cchips::CGruModel _model(input_path, output_path, modelbin_path, dictbin_path, ratio, false);
+            if (!_model) {
                 return -1;
             }
             if (btest) {
-                torch::load(gru_model, modelbin_path);
-                if (gru_model->test()) {
-                    gru_model->outputTestFesult();
+                torch::load(_model, modelbin_path);
+                if (_model->test()) {
+                    _model->outputTestFesult();
                 }
             }
-            if (gru_model->train()) {
-                torch::save(gru_model, output_path);
+            if (_model->train()) {
+                std::cout << "save Model..." << std::endl;
+                torch::save(_model, output_path);
             }
         }
+    }
+    break;
+    case cchips::mmodel_lstm:
+    {
+        if (bpredict) {
+            cchips::CLstmModel _model("", output_path, modelbin_path, dictbin_path, ratio, false);
+            torch::load(_model, modelbin_path);
+            _model->SetkParam(k);
+            if (_model->predict(input_path)) {
+                _model->outputPredictResult();
+            }
+        }
+        else {
+            cchips::CLstmModel _model(input_path, output_path, modelbin_path, dictbin_path, ratio, false);
+            if (!_model) {
+                return -1;
+            }
+            if (btest) {
+                torch::load(_model, modelbin_path);
+                if (_model->test()) {
+                    _model->outputTestFesult();
+                }
+            }
+            if (_model->train()) {
+                std::cout << "save Model..." << std::endl;
+                torch::save(_model, output_path);
+            }
+        }
+    }
+    break;
+    case cchips::mmodel_bert:
+        [[fallthrough]];
+    case cchips::mmodel_gpt:
+        [[fallthrough]];
+    default:
+        break;
     }
     return 0;
 }
