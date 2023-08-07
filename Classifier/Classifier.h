@@ -384,7 +384,7 @@ namespace cchips {
             }
             return;
         }
-        void outputPredictResult() const {
+        void outputPredictResult() {
             if (m_predict_result.defined()) {
                 auto results = m_predict_result[0] * 100;
                 std::vector<std::pair<float, std::int32_t>> precision;
@@ -395,7 +395,7 @@ namespace cchips {
                     [](const std::pair<float, std::int32_t>& a, const std::pair<float, std::int32_t>& b) {
                         return a.first > b.first;
                     });
-                if (m_k == 1) {
+                if (m_k == 0) {
                     std::cout << m_datasets->getLabel(precision[0].second) << std::endl;
                 }
                 else {
@@ -404,6 +404,7 @@ namespace cchips {
                     }
                 }
             }
+            m_k = 0;
             return;
         }
     private:

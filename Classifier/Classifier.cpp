@@ -535,16 +535,26 @@ namespace cchips {
             m_ftmodel->loadModel(m_modelbin);
             fasttext::real threshold = 0.0;
             std::vector<std::pair<fasttext::real, std::string>> predictions;
-            m_ftmodel->predictLine(in, predictions, m_k, threshold);
-            m_k = 1;
+            if (m_k == 0) {
+                m_ftmodel->predictLine(in, predictions, 1, threshold);
+            }
+            else {
+                m_ftmodel->predictLine(in, predictions, m_k, threshold);
+            }
             if (predictions.size()) {
-                for (auto pre : predictions) {
-                    std::cout << "predict class: " << pre.second << " similarity: " << pre.first << std::endl;
+                if (m_k == 0) {
+                    std::cout << "predict class: " << predictions[0].second << std::endl;
+                }
+                else {
+                    for (auto pre : predictions) {
+                        std::cout << "predict class: " << pre.second << " similarity: " << pre.first << std::endl;
+                    }
                 }
             }
             else {
                 std::cout << "predict failed!" << std::endl;
             }
+            m_k = 0;
             return true;
         }
         catch (const std::exception& e) {

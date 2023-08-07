@@ -121,13 +121,13 @@ int main()
             ratio = 8;
         }
     }
-    std::uint32_t k = 1;
+    std::uint32_t k = 0;
     if (kw.length()) {
         try {
             k = std::stoul(kw);
         }
         catch (const std::exception& e) {
-            k = 1;
+            k = 0;
         }
     }
     std::string input_path = to_byte_string(input_pathw);
@@ -230,7 +230,20 @@ int main()
     }
     break;
     case cchips::mmodel_bert:
-        [[fallthrough]];
+    {
+        torch::jit::script::Module model;
+        try {
+            model = torch::jit::load(".\\albert\\albert_torchscript.pt");
+            model.eval();
+            std::vector<torch::jit::IValue> inputs;
+            torch::Tensor output = model.forward(inputs).toTensor();
+        }
+        catch (const c10::Error& e) {
+            std::cout << "Exception occurred during Bert model predicting: " << e.what() << std::endl;
+            return -1;
+        }
+    }
+    break;
     case cchips::mmodel_gpt:
         [[fallthrough]];
     default:
