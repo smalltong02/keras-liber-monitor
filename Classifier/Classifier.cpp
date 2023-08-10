@@ -1,7 +1,15 @@
 #include "resource.h"
 #include "Classifier.h"
+#include <re2/re2.h>
 
 namespace cchips {
+
+    const std::uint32_t CGruModelImpl::_gru_model_magic = 0x5F475255;
+    const std::uint32_t CGruModelImpl::_gru_model_version = 1;
+    const std::uint32_t CLstmModelImpl::_lstm_model_magic = 0x4C53544D;
+    const std::uint32_t CLstmModelImpl::_lstm_model_version = 1;
+    const  std::uint32_t CAlbertModel::_albert_model_magic = 0x62657274;
+    const std::uint32_t CAlbertModel::_albert_model_version = 1;
 
     LinearBnReluImpl::LinearBnReluImpl(int in_features, int out_features) {
         ln = register_module("ln", torch::nn::Linear(torch::nn::LinearOptions(in_features, out_features)));
@@ -168,6 +176,15 @@ namespace cchips {
         if (!IsValid()) {
             return false;
         }
+        if (m_dict.size()) {
+            return true;
+        }
+        if (m_path.empty()) {
+            return true;
+        }
+        if (!m_dictpath.empty()) {
+            return true;
+        }
         std::cout << "making dict..." << std::endl;
         switch (type) {
         case dict_word2vec:
@@ -211,6 +228,9 @@ namespace cchips {
         if (!IsValid()) {
             return false;
         }
+        if (type != dict_sentencepiece && m_dict.size()) {
+            return true;
+        }
         std::cout << "loading dict..." << std::endl;
         switch (type) {
         case dict_word2vec:
@@ -229,8 +249,28 @@ namespace cchips {
             }
         }
         break;
+        case dict_sentencepiece:
+        {
+            if (LoadSentencepieceDict()) {
+                m_dicttype = type;
+                return true;
+            }
+        }
+        break;
         }
         return false;
+    }
+
+    bool CDataSets::LoadSentencepieceDict() {
+        if (!m_spmodel) {
+            return false;
+        }
+        std::vector<std::string> pieces;
+        auto status = m_spmodel->Encode("hello", &pieces);
+        if (!status.ok()) {
+            return false;
+        }
+        return true;
     }
 
     bool CDataSets::LoadWord2vecDict() {
@@ -284,7 +324,60 @@ namespace cchips {
     bool CDataSets::LoadFasttextDict() {
         return false;
     }
-
+    std::unique_ptr<torch::Dict<std::string, torch::Tensor>> CDataSets::get_sp(size_t index) const {
+        if (!IsValid()) {
+            return {};
+        }
+        if (!m_spmodel) {
+            return {};
+        }
+        if (index >= size()) {
+            return {};
+        }
+        std::uint32_t label = findLabelidx(m_dataset[index].first);
+        if (label == std::uint32_t(-1)) {
+            return {};
+        }
+        re2::RE2 pattern("#(.*?)#");
+        std::stringstream ss(m_dataset[index].second);
+        std::string word;
+        std::stringstream sequences;
+        while (ss >> word) {
+            if (!RE2::FullMatch(word, pattern)) {
+                if (!sequences.str().length()) {
+                    sequences << word;
+                }
+                else {
+                    sequences << " " << word;
+                }
+            }
+        }
+        std::vector <std::string> pieces;
+        auto status = m_spmodel->Encode(sequences.str(), &pieces);
+        if (!status.ok()) {
+            return {};
+        }
+        std::uint32_t max_ids = (pieces.size() > 512) ? 512 : pieces.size();
+        torch::Tensor input_ids = torch::empty({1, (std::int32_t)max_ids }, torch::kLong);
+        torch::Tensor attention_mask = torch::ones({1, (std::int32_t)max_ids }, torch::kFloat32);
+        
+        for (size_t i = 0; i < max_ids; ++i) {
+            input_ids[0][i] = m_spmodel->PieceToId(pieces[i]);
+        }
+        //std::vector <std::string> pieces_dup;
+        //for (size_t i = 0; i < max_ids; ++i) {
+        //    pieces_dup.push_back(pieces[i]);
+        //}
+        //std::string detokenized;
+        //m_spmodel->Decode(pieces_dup, &detokenized);
+        std::unique_ptr<torch::Dict<std::string, torch::Tensor>> dict_ptr = std::make_unique<torch::Dict<std::string, torch::Tensor>>();
+        if (!dict_ptr) {
+            return {};
+        }
+        dict_ptr->insert("input_ids", input_ids);
+        dict_ptr->insert("attention_mask", attention_mask);
+        return std::move(dict_ptr);
+    }
     torch::data::Example<> CDataSets::get(size_t index) {
         if (!IsValid()) {
             return {};
@@ -300,7 +393,7 @@ namespace cchips {
         int word_counts = 0;
         std::stringstream ss(m_dataset[index].second);
         std::string word;
-        while(ss >> word) {
+        while (ss >> word) {
             auto& diciter = m_dict.find(word);
             if (diciter != m_dict.end()) {
                 sequences.push_back(diciter->second);
@@ -321,8 +414,8 @@ namespace cchips {
         for (int i = 0; i < M; i++) {
             datator[i] = torch::from_blob(sequences[i].data(), { N }, options);
         }
-//        std::cout << datator.sizes() << std::endl;
-//        std::cout << labeltor.sizes() << std::endl;
+        //        std::cout << datator.sizes() << std::endl;
+        //        std::cout << labeltor.sizes() << std::endl;
         return { datator, labeltor };
 
         //if (index * m_batchsize >= m_dataset.size()) {
@@ -418,22 +511,138 @@ namespace cchips {
         m_dataset.clear();
         m_dataset.push_back(std::pair(getLabel(0), input));
         std::cout << "LoadDataset: " << 1 << std::endl;
-        auto sample = get(0);
-        if (!sample.data.defined()) {
-            return {};
+        if (m_dicttype == dict_sentencepiece) {
+            auto dict_ptr = get_sp(0);
+            if (!dict_ptr) {
+                return {};
+            }
+            auto iter = dict_ptr->find("input_ids");
+            if (iter == dict_ptr->end()) {
+                return {};
+            }
+            torch::Tensor inputids = iter->value();
+            iter = dict_ptr->find("attention_mask");
+            if (iter == dict_ptr->end()) {
+                return {};
+            }
+            torch::Tensor attentionmask = iter->value();
+            return { inputids, attentionmask };
         }
-        std::vector<torch::Tensor> data_batch;
-        std::vector<std::int32_t> lengths_vec;
-        int64_t dim_size = sample.data.size(0);
-        lengths_vec.push_back(dim_size);
-        data_batch.push_back(sample.data);
-        torch::Tensor lengths = torch::tensor(lengths_vec, torch::kLong);
-        torch::Tensor data = torch::stack(data_batch);
-        data = torch::transpose(data, 0, 1);
-        return { data, lengths };
+        else {
+            auto sample = get(0);
+            if (!sample.data.defined()) {
+                return {};
+            }
+            std::vector<torch::Tensor> data_batch;
+            std::vector<std::int32_t> lengths_vec;
+            int64_t dim_size = sample.data.size(0);
+            lengths_vec.push_back(dim_size);
+            data_batch.push_back(sample.data);
+            torch::Tensor lengths = torch::tensor(lengths_vec, torch::kLong);
+            torch::Tensor data = torch::stack(data_batch);
+            data = torch::transpose(data, 0, 1);
+            return { data, lengths };
+        }
+        return {};
+    }
+
+    bool CDataSets::save(std::ofstream& outfile) {
+        if (!outfile.is_open()) {
+            return false;
+        }
+        initLabelVec();
+        outfile.write((char*)&(m_dicttype), sizeof(std::int32_t));
+        outfile.write((char*)&(m_word_dim), sizeof(std::int32_t));
+        outfile.write((char*)&(m_sequences_size), sizeof(std::int32_t));
+        outfile.write((char*)&(m_batchsize), sizeof(std::int32_t));
+        std::uint32_t labelsize = m_label.size();
+        outfile.write((char*)&(labelsize), sizeof(std::int32_t));
+        std::uint32_t wordnums = m_dict.size();
+        outfile.write((char*)&(wordnums), sizeof(std::int32_t));
+        for (auto& label : m_label) {
+            outfile.write(label.data(), label.size());
+            outfile.put(0);
+        }
+        for (auto& it : m_dict) {
+            outfile.write(it.first.data(), it.first.size());
+            outfile.put(0);
+            outfile.write((char*)it.second.data(), (it.second.size() * sizeof(float)));
+        }
+        return true;
+    }
+
+    bool CDataSets::load(std::ifstream& infile) {
+        auto getstr_func = [&](std::ifstream& infile) ->std::string {
+            char c;
+            std::string str;
+            while ((c = infile.get()) != 0) {
+                str += c;
+            }
+            return str;
+        };
+        auto getarray_func = [&](std::ifstream& infile)->std::array<float, _max_word_dim> {
+            float flt = 0.0;
+            std::array<float, _max_word_dim> word_array;
+            infile.read((char*)word_array.data(), (word_array.size() * sizeof(float)));
+            return word_array;
+        };
+
+        if (!infile.is_open()) {
+            return false;
+        }
+        infile.read((char*)&(m_dicttype), sizeof(std::int32_t));
+        infile.read((char*)&(m_word_dim), sizeof(std::int32_t));
+        infile.read((char*)&(m_sequences_size), sizeof(std::int32_t));
+        infile.read((char*)&(m_batchsize), sizeof(std::int32_t));
+        std::uint32_t labelsize = 0;
+        infile.read((char*)&(labelsize), sizeof(std::int32_t));
+        std::uint32_t wordnums = 0;
+        infile.read((char*)&(wordnums), sizeof(std::int32_t));
+        for (int count = 0; count < labelsize; count++) {
+            std::string str = getstr_func(infile);
+            m_label.insert(str);
+        }
+        for (int count = 0; count < wordnums; count++) {
+            std::string str = getstr_func(infile);
+            auto word_array = getarray_func(infile);
+            m_dict[str] = word_array;
+        }
+        return true;
+    }
+
+    bool CDataSets::loadsentencemodel(std::ifstream& infile, std::int32_t filesize) {
+        if (!infile.is_open() || filesize == 0) {
+            return false;
+        }
+        std::uint32_t fileoffset = infile.tellg();
+        auto tmppath = fs::temp_directory_path().append("_dict.model");
+        std::ofstream outfile(tmppath, std::ios::out | std::ios::binary);
+        if (!outfile.is_open()) {
+            return false;
+        }
+        std::vector<BYTE> buffer;
+        buffer.resize(filesize);
+        if (buffer.size() != filesize) {
+            return false;
+        }
+        infile.read((char*)&buffer[0], filesize);
+        std::uint32_t readed = infile.tellg();
+        if (readed != (fileoffset + filesize)) {
+            return false;
+        }
+        outfile.write((char*)buffer.data(), buffer.size());
+        outfile.close();
+        m_spmodel = std::make_shared<sentencepiece::SentencePieceProcessor>();
+        auto status = m_spmodel->Load(tmppath.string());
+        if (!status.ok()) {
+            return false;
+        }
+        fs::remove(tmppath);
+        return true;
     }
 
     bool CFastTextModel::train() {
+        CFunduration func_duration("traning time: ");
         if (!IsValid()) {
             return false;
         }
@@ -452,16 +661,16 @@ namespace cchips {
             return false;
         }
         fasttext::Args args = fasttext::Args();
-        
+
         args.input = m_input;
-        switch(m_subtype) {
+        switch (m_subtype) {
         case submodel_cbow:
         {
             args.model = fasttext::model_name::cbow;
         }
         break;
         case submodel_skipgram:
-        break;
+            break;
         case submodel_supervised:
         default:
         {
@@ -472,7 +681,7 @@ namespace cchips {
             args.minn = 0;
             args.maxn = 0;
             args.lr = 0.5;
-            args.epoch = 100;
+            args.epoch = m_epochs;
             args.label = "__label_";
         }
         break;
@@ -489,10 +698,12 @@ namespace cchips {
     }
 
     bool CFastTextModel::test() {
+        CFunduration func_duration("testing time: ");
         return false;
     }
 
     bool CFastTextModel::predict() {
+        CFunduration func_duration("predicting time: ");
         if (!IsValid()) {
             return false;
         }
@@ -593,9 +804,14 @@ namespace cchips {
     }
 
     bool CGruModelImpl::train() {
+        CFunduration func_duration("traning time: ");
         if (!m_valid) {
             return false;
         }
+        if (!m_datasets->MakeDict()) {
+            return false;
+        }
+        m_datasets->LoadDict();
         std::cout << "GRU Model training start... " << std::endl;
         m_grumodel->train();
         m_linearmodel->train();
@@ -626,7 +842,7 @@ namespace cchips {
                         auto outputs = forward(inputs);
                         //std::cout << outputs << std::endl;
                         //std::cout << targets << std::endl;
-                        outputs = outputs.to (*m_device);
+                        outputs = outputs.to(*m_device);
                         auto loss = criterion(outputs, targets);
                         optimizer.zero_grad();
                         loss.backward();
@@ -649,18 +865,20 @@ namespace cchips {
         }
         std::cout << "Model training end... " << std::endl;
         if (m_output.length()) {
-            std::cout << "save Model..." << std::endl;
+            //std::cout << "save Model..." << std::endl;
             //torch::serialize::OutputArchive output_archive;
             //save(output_archive);
             //output_archive.save_to(m_output);
         }
-        return true; 
+        return true;
     }
 
     bool CGruModelImpl::test() {
+        CFunduration func_duration("testing time: ");
         if (!m_valid) {
             return false;
         }
+        m_datasets->LoadDict();
         std::cout << "GRU Model testing start... " << std::endl;
         m_grumodel->eval();
         m_linearmodel->eval();
@@ -697,19 +915,21 @@ namespace cchips {
                 }
             }
             m_accuracy = ((float)corrects / (float)m_datasets->size().value()) * 100;
-            return true;
         }
         catch (const std::exception& e) {
             std::cout << "Exception occurred during model testing: " << e.what() << std::endl;
             return false;
         }
+        outputTestFesult();
         return true;
     }
-    
+
     bool CGruModelImpl::predict(const std::string& input_path) {
+        CFunduration func_duration("predicting time: ");
         if (!m_valid) {
             return false;
         }
+        m_datasets->LoadDict();
         std::cout << "GRU Model predicting start... " << std::endl;
         m_grumodel->to(*m_device);
         m_linearmodel->to(*m_device);
@@ -759,6 +979,122 @@ namespace cchips {
             std::cout << "Exception occurred during model predicting: " << e.what() << std::endl;
             return false;
         }
+        outputPredictResult();
+        return true;
+    }
+
+    bool CGruModelImpl::packmodel(CGruModel& model) {
+        if (!m_valid) {
+            return false;
+        }
+        std::cout << "save gru model..." << std::endl;
+        torch::save(model, m_output);
+        if (m_output.empty()) {
+            return false;
+        }
+        if (!m_datasets || !m_datasets->IsValid()) {
+            return false;
+        }
+        if (!fs::is_regular_file(m_output)) {
+            return false;
+        }
+        std::uint32_t filesize = fs::file_size(m_output);
+        if (filesize == static_cast<std::uint32_t>(-1) || filesize == 0) {
+            return false;
+        }
+        std::ifstream infile;
+        infile.open(m_output, std::ios::in | std::ios::binary);
+        if (!infile.is_open()) {
+            return false;
+        }
+        std::vector<BYTE> buffer;
+        buffer.resize(filesize);
+        if (buffer.size() != filesize) {
+            return false;
+        }
+        infile.seekg(0, std::ios::beg);
+        infile.read((char*)&buffer[0], filesize);
+        auto readed = infile.tellg();
+        if (readed != filesize) {
+            return false;
+        }
+        infile.close();
+        std::ofstream outfile;
+        outfile.open(m_output, std::ios::out | std::ios::binary);
+        if (!outfile.is_open()) {
+            return false;
+        }
+        outfile.write((char*)&(_gru_model_magic), sizeof(std::int32_t));
+        outfile.write((char*)&(_gru_model_version), sizeof(std::int32_t));
+        outfile.write((char*)&(filesize), sizeof(std::int32_t));
+        outfile.write((char*)buffer.data(), buffer.size());
+        if (m_datasets->save(outfile)) {
+            std::cout << "save success..." << std::endl;
+            return true;
+        }
+        std::cout << "save failed..." << std::endl;
+        return false;
+    }
+
+    bool CGruModelImpl::unpackmodel(CGruModel& model) {
+        if (!m_valid) {
+            return false;
+        }
+        if (m_modelbin.empty()) {
+            return false;
+        }
+        if (!fs::is_regular_file(m_modelbin)) {
+            return false;
+        }
+        std::uint32_t filesize = fs::file_size(m_modelbin);
+        if (filesize == static_cast<std::uint32_t>(-1) || filesize == 0) {
+            return false;
+        }
+        if (filesize < 12) {
+            return false;
+        }
+        std::ifstream infile;
+        infile.open(m_modelbin, std::ios::in | std::ios::binary);
+        if (!infile.is_open()) {
+            return false;
+        }
+        std::int32_t gru_magic = 0;
+        std::int32_t gru_version = 0;
+        infile.read((char*)&(gru_magic), sizeof(std::int32_t));
+        infile.read((char*)&(gru_version), sizeof(std::int32_t));
+        if (gru_magic != _gru_model_magic || gru_version != _gru_model_version) {
+            infile.close();
+            return loadtorchmodel(model, m_modelbin);
+        }
+        std::int32_t model_size = 0;
+        infile.read((char*)&(model_size), sizeof(std::int32_t));
+        if (model_size == 0 || filesize < 12 + model_size) {
+            return false;
+        }
+        auto tmppath = fs::temp_directory_path().append("_model.pt");
+        std::ofstream outfile(tmppath, std::ios::out | std::ios::binary);
+        if (!outfile.is_open()) {
+            return false;
+        }
+        std::vector<BYTE> buffer;
+        buffer.resize(model_size);
+        if (buffer.size() != model_size) {
+            return false;
+        }
+        infile.read((char*)&buffer[0], model_size);
+        auto readed = infile.tellg();
+        if (readed != 12 + model_size) {
+            return false;
+        }
+        outfile.write((char*)buffer.data(), buffer.size());
+        outfile.close();
+        loadtorchmodel(model, tmppath.string());
+        fs::remove(tmppath);
+        return m_datasets->load(infile);
+    }
+
+    bool CGruModelImpl::loadtorchmodel(CGruModel& model, const std::string& modelbin) {
+        torch::load(model, modelbin);
         return true;
     }
 
@@ -792,9 +1128,14 @@ namespace cchips {
     }
 
     bool CLstmModelImpl::train() {
+        CFunduration func_duration("training time: ");
         if (!m_valid) {
             return false;
         }
+        if (!m_datasets->MakeDict()) {
+            return false;
+        }
+        m_datasets->LoadDict();
         std::cout << "LSTM Model training start... " << std::endl;
         m_lstmmodel->train();
         m_linearmodel->train();
@@ -847,7 +1188,7 @@ namespace cchips {
         }
         std::cout << "Model training end... " << std::endl;
         if (m_output.length()) {
-            std::cout << "save Model..." << std::endl;
+            //std::cout << "save Model..." << std::endl;
             //torch::serialize::OutputArchive output_archive;
             //save(output_archive);
             //output_archive.save_to(m_output);
@@ -856,9 +1197,11 @@ namespace cchips {
     }
 
     bool CLstmModelImpl::test() {
+        CFunduration func_duration("testing time: ");
         if (!m_valid) {
             return false;
         }
+        m_datasets->LoadDict();
         std::cout << "LSTM Model testing start... " << std::endl;
         m_lstmmodel->eval();
         m_linearmodel->eval();
@@ -894,19 +1237,21 @@ namespace cchips {
                 }
             }
             m_accuracy = ((float)corrects / (float)m_datasets->size().value()) * 100;
-            return true;
         }
         catch (const std::exception& e) {
             std::cout << "Exception occurred during model testing: " << e.what() << std::endl;
             return false;
         }
+        outputTestFesult();
         return true;
     }
 
     bool CLstmModelImpl::predict(const std::string& input_path) {
+        CFunduration func_duration("predicting time: ");
         if (!m_valid) {
             return false;
         }
+        m_datasets->LoadDict();
         std::cout << "LSTM Model predicting start... " << std::endl;
         m_lstmmodel->to(*m_device);
         m_linearmodel->to(*m_device);
@@ -955,6 +1300,351 @@ namespace cchips {
             std::cout << "Exception occurred during model predicting: " << e.what() << std::endl;
             return false;
         }
+        outputPredictResult();
         return true;
+    }
+
+    bool CLstmModelImpl::packmodel(CLstmModel& model) {
+        if (!m_valid) {
+            return false;
+        }
+        std::cout << "save lstm model..." << std::endl;
+        torch::save(model, m_output);
+        if (m_output.empty()) {
+            return false;
+        }
+        if (!m_datasets || !m_datasets->IsValid()) {
+            return false;
+        }
+        if (!fs::is_regular_file(m_output)) {
+            return false;
+        }
+        std::uint32_t filesize = fs::file_size(m_output);
+        if (filesize == static_cast<std::uint32_t>(-1) || filesize == 0) {
+            return false;
+        }
+        std::ifstream infile;
+        infile.open(m_output, std::ios::in | std::ios::binary);
+        if (!infile.is_open()) {
+            return false;
+        }
+        std::vector<BYTE> buffer;
+        buffer.resize(filesize);
+        if (buffer.size() != filesize) {
+            return false;
+        }
+        infile.seekg(0, std::ios::beg);
+        infile.read((char*)&buffer[0], filesize);
+        auto readed = infile.tellg();
+        if (readed != filesize) {
+            return false;
+        }
+        infile.close();
+        std::ofstream outfile;
+        outfile.open(m_output, std::ios::out | std::ios::binary);
+        if (!outfile.is_open()) {
+            return false;
+        }
+        outfile.write((char*)&(_lstm_model_magic), sizeof(std::int32_t));
+        outfile.write((char*)&(_lstm_model_version), sizeof(std::int32_t));
+        outfile.write((char*)&(filesize), sizeof(std::int32_t));
+        outfile.write((char*)buffer.data(), buffer.size());
+        if (m_datasets->save(outfile)) {
+            std::cout << "save success..." << std::endl;
+            return true;
+        }
+        std::cout << "save failed..." << std::endl;
+        return false;
+    }
+
+    bool CLstmModelImpl::unpackmodel(CLstmModel& model) {
+        if (!m_valid) {
+            return false;
+        }
+        if (m_modelbin.empty()) {
+            return false;
+        }
+        if (!fs::is_regular_file(m_modelbin)) {
+            return false;
+        }
+        std::uint32_t filesize = fs::file_size(m_modelbin);
+        if (filesize == static_cast<std::uint32_t>(-1) || filesize == 0) {
+            return false;
+        }
+        if (filesize < 12) {
+            return false;
+        }
+        std::ifstream infile;
+        infile.open(m_modelbin, std::ios::in | std::ios::binary);
+        if (!infile.is_open()) {
+            return false;
+        }
+        std::int32_t lstm_magic = 0;
+        std::int32_t lstm_version = 0;
+        infile.read((char*)&(lstm_magic), sizeof(std::int32_t));
+        infile.read((char*)&(lstm_version), sizeof(std::int32_t));
+        if (lstm_magic != _lstm_model_magic || lstm_version != _lstm_model_version) {
+            infile.close();
+            return loadtorchmodel(model, m_modelbin);
+        }
+        std::int32_t model_size = 0;
+        infile.read((char*)&(model_size), sizeof(std::int32_t));
+        if (model_size == 0 || filesize < 12 + model_size) {
+            return false;
+        }
+        auto tmppath = fs::temp_directory_path().append("_model.pt");
+        std::ofstream outfile(tmppath, std::ios::out | std::ios::binary);
+        if (!outfile.is_open()) {
+            return false;
+        }
+        std::vector<BYTE> buffer;
+        buffer.resize(model_size);
+        if (buffer.size() != model_size) {
+            return false;
+        }
+        infile.read((char*)&buffer[0], model_size);
+        auto readed = infile.tellg();
+        if (readed != 12 + model_size) {
+            return false;
+        }
+        outfile.write((char*)buffer.data(), buffer.size());
+        outfile.close();
+        loadtorchmodel(model, tmppath.string());
+        fs::remove(tmppath);
+        return m_datasets->load(infile);
+    }
+
+    bool CLstmModelImpl::loadtorchmodel(CLstmModel& model, const std::string& modelbin) {
+        torch::load(model, modelbin); 
+        return true;
+    }
+
+    bool CAlbertModel::train() {
+        return false;
+    }
+
+    bool CAlbertModel::test() {
+        return false;
+    }
+
+    bool CAlbertModel::predict(const std::string& inputpath) {
+        if (!m_valid) {
+            return false;
+        }
+        CFunduration func_duration("predicting time: ");
+        m_datasets->LoadDict(CDataSets::dict_sentencepiece);
+        std::cout << "Bert Model predicting start... " << std::endl;
+        try {
+            m_predict_result = torch::Tensor();
+            m_model.to(*m_device);
+            std::unique_ptr<cchips::CJsonOptions> options = std::make_unique<cchips::CJsonOptions>("CFGRES", IDR_JSONPE_CFG);
+            if (!options || !options->Parse()) {
+                std::cout << "load config error." << std::endl;
+                return false;
+            }
+            auto& staticmanager = cchips::GetCStaticFileManager();
+            if (!staticmanager.Initialize(std::move(options))) {
+                std::cout << "Initialize failed!" << std::endl;
+                return false;
+            }
+            std::string output;
+            if (!staticmanager.Scan(inputpath, output, false) || !output.length()) {
+                std::cout << "scan: " << inputpath << " failed" << std::endl;
+                return false;
+            }
+            auto& corpusmanager = cchips::GetCTextCorpusManager().GetInstance();
+            corpusmanager.Initialize(output);
+            if (!corpusmanager.GeneratingModelDatasets("fasttext", output, "")) {
+                std::cout << "generating fasttext corpus failed!" << std::endl;
+                return false;
+            }
+            if (!output.length()) {
+                return false;
+            }
+
+            std::atomic_uint32_t corrects = 0;
+            torch::NoGradGuard no_grad;
+            torch::Tensor inputids, attentionmask;
+            std::tie(inputids, attentionmask) = m_datasets->LoadSample(output);
+            if (inputids.defined() && attentionmask.defined()) {
+                inputids = inputids.to(*m_device);
+                attentionmask = attentionmask.to(*m_device);
+                auto outputs = forward(inputids, attentionmask);
+                m_predict_result = torch::softmax(outputs, -1);
+            }
+        }
+        catch (const std::exception& e) {
+            std::cout << "Exception occurred during model predicting: " << e.what() << std::endl;
+            return false;
+        }
+        outputPredictResult();
+        return true;
+    }
+
+    torch::Tensor CAlbertModel::forward(torch::Tensor inputids, torch::Tensor attentionmask) {
+        if (!m_valid) {
+            return {};
+        }
+        std::vector<torch::jit::IValue> inputs;
+        //std::cout << inputids.sizes() << std::endl;
+        //std::cout << attentionmask.sizes() << std::endl;
+        inputs.push_back(inputids);
+        inputs.push_back(attentionmask);
+        torch::Tensor output = m_model.forward(inputs).toTensor();
+        return output;
+    }
+
+    bool CAlbertModel::packmodel(const std::string& dictbin) {
+        if (!m_valid) {
+            return false;
+        }
+        std::cout << "pack bert model..." << std::endl;
+        if (m_output.empty()) {
+            return false;
+        }
+        if (!m_datasets || !m_datasets->IsValid()) {
+            return false;
+        }
+        if (!fs::is_regular_file(m_modelbin)) {
+            return false;
+        }
+        if (!fs::is_regular_file(dictbin)) {
+            return false;
+        }
+        std::uint32_t modelsize = fs::file_size(m_modelbin);
+        if (modelsize == static_cast<std::uint32_t>(-1) || modelsize == 0) {
+            return false;
+        }
+        std::ifstream modelfile;
+        modelfile.open(m_modelbin, std::ios::in | std::ios::binary);
+        if (!modelfile.is_open()) {
+            return false;
+        }
+        std::vector<BYTE> modelbuffer;
+        modelbuffer.resize(modelsize);
+        if (modelbuffer.size() != modelsize) {
+            return false;
+        }
+        modelfile.seekg(0, std::ios::beg);
+        modelfile.read((char*)&modelbuffer[0], modelsize);
+        auto readed = modelfile.tellg();
+        if (readed != modelsize) {
+            return false;
+        }
+        modelfile.close();
+        std::uint32_t dictsize = fs::file_size(dictbin);
+        if (dictsize == static_cast<std::uint32_t>(-1) || dictsize == 0) {
+            return false;
+        }
+        std::ifstream dictfile;
+        dictfile.open(dictbin, std::ios::in | std::ios::binary);
+        if (!dictfile.is_open()) {
+            return false;
+        }
+        std::vector<BYTE> dictbuffer;
+        dictbuffer.resize(dictsize);
+        if (dictbuffer.size() != dictsize) {
+            return false;
+        }
+        dictfile.seekg(0, std::ios::beg);
+        dictfile.read((char*)&dictbuffer[0], dictsize);
+        readed = dictfile.tellg();
+        if (readed != dictsize) {
+            return false;
+        }
+        dictfile.close();
+        std::ofstream outfile;
+        outfile.open(m_output, std::ios::out | std::ios::binary);
+        if (!outfile.is_open()) {
+            return false;
+        }
+        outfile.write((char*)&(_albert_model_magic), sizeof(std::int32_t));
+        outfile.write((char*)&(_albert_model_version), sizeof(std::int32_t));
+        outfile.write((char*)&(modelsize), sizeof(std::int32_t));
+        outfile.write((char*)&(dictsize), sizeof(std::int32_t));
+        outfile.write((char*)modelbuffer.data(), modelbuffer.size());
+        outfile.write((char*)dictbuffer.data(), dictbuffer.size());
+        std::cout << "save success..." << std::endl;
+        return true;
+    }
+
+    bool CAlbertModel::unpackmodel() {
+        if (!m_valid) {
+            return false;
+        }
+        if (m_modelbin.empty()) {
+            return false;
+        }
+        if (!fs::is_regular_file(m_modelbin)) {
+            return false;
+        }
+        std::uint32_t filesize = fs::file_size(m_modelbin);
+        if (filesize == static_cast<std::uint32_t>(-1) || filesize == 0) {
+            return false;
+        }
+        if (filesize < 16) {
+            return false;
+        }
+        std::ifstream infile;
+        infile.open(m_modelbin, std::ios::in | std::ios::binary);
+        if (!infile.is_open()) {
+            return false;
+        }
+        std::int32_t bert_magic = 0;
+        std::int32_t bert_version = 0;
+        infile.read((char*)&(bert_magic), sizeof(std::int32_t));
+        infile.read((char*)&(bert_version), sizeof(std::int32_t));
+        if (bert_magic != _albert_model_magic || bert_version != _albert_model_version) {
+            infile.close();
+            try {
+                m_model = torch::jit::load(m_modelbin);
+                m_model.eval();
+            }
+            catch (const c10::Error& e) {
+                std::cout << "torch jit load model crash: " << e.what() << std::endl;
+                m_valid = false;
+                return m_valid;
+            }
+            return true;
+        }
+        std::int32_t model_size = 0;
+        infile.read((char*)&(model_size), sizeof(std::int32_t));
+        if (model_size == 0 || filesize < 12 + model_size) {
+            return false;
+        }
+        std::int32_t dict_size = 0;
+        infile.read((char*)&(dict_size), sizeof(std::int32_t));
+        if (dict_size == 0 || filesize < 16 + model_size + dict_size) {
+            return false;
+        }
+        auto tmppath = fs::temp_directory_path().append("_model.pt");
+        std::ofstream outfile(tmppath, std::ios::out | std::ios::binary);
+        if (!outfile.is_open()) {
+            return false;
+        }
+        std::vector<BYTE> buffer;
+        buffer.resize(model_size);
+        if (buffer.size() != model_size) {
+            return false;
+        }
+        infile.read((char*)&buffer[0], model_size);
+        auto readed = infile.tellg();
+        if (readed != 16 + model_size) {
+            return false;
+        }
+        outfile.write((char*)buffer.data(), buffer.size());
+        outfile.close();
+        try {
+            m_model = torch::jit::load(tmppath.string());
+            m_model.eval();
+        }
+        catch (const c10::Error& e) {
+            std::cout << "torch jit load model crash: " << e.what() << std::endl;
+            m_valid = false;
+            fs::remove(tmppath);
+            return m_valid;
+        }
+        fs::remove(tmppath);
+        return m_datasets->loadsentencemodel(infile, dict_size);
     }
 } // namespace cchips

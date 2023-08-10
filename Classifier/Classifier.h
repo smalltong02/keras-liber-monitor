@@ -9,6 +9,7 @@
 #include <torch/torch.h>
 #include <torch/data.h>
 #include <torch/script.h>
+#include <sentencepiece_processor.h>
 #include "CorpusExtractorLib/Word2Vec.h"
 #include "StaticPEManager/StaticFileManager.h"
 #include "CorpusExtractorLib/TextCorpusManager.h"
@@ -28,6 +29,50 @@ namespace cchips {
         mmodel_gpt,
     };
 
+    class CGruModel;
+    class CLstmModel;
+
+    class CFunduration {
+    public:
+        CFunduration() : start_time_(std::chrono::high_resolution_clock::now()) {}
+        CFunduration(const std::string& prefix) : start_time_(std::chrono::high_resolution_clock::now()) {
+            prefix_ = prefix;
+        }
+
+        ~CFunduration() {
+            const auto end_time = std::chrono::high_resolution_clock::now();
+            const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time_);
+            std::cout << prefix_ << formattime(duration) << std::endl;
+        }
+
+    private:
+        std::string formattime(std::chrono::milliseconds time) {
+            std::string duration_str;
+            auto hours = std::chrono::duration_cast<std::chrono::hours>(time);
+            time -= hours;
+            auto minutes = std::chrono::duration_cast<std::chrono::minutes>(time);
+            time -= minutes;
+            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time);
+            time -= seconds;
+            auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(time);
+            if (hours.count()) {
+                duration_str = std::to_string(hours.count()) + " hours, ";
+            }
+            if (minutes.count()) {
+                duration_str += std::to_string(minutes.count()) + " minutes, ";
+            }
+            if (seconds.count()) {
+                duration_str += std::to_string(seconds.count()) + " seconds, ";
+            }
+            if (milliseconds.count()) {
+                duration_str += std::to_string(milliseconds.count()) + " ms";
+            }
+            return duration_str;
+        }
+        std::string prefix_ = "running time: ";
+        std::chrono::time_point<std::chrono::high_resolution_clock> start_time_;
+    };
+
     class CDataSets : public torch::data::Dataset<CDataSets> {
     public:
 #define _max_file_size 1024 * 1024 * 1024 // 1G
@@ -38,12 +83,14 @@ namespace cchips {
         using dict_type = enum {
             dict_word2vec,
             dict_fasttext,
+            dict_sentencepiece,
         };
 
         CDataSets(const std::string& dataset_path, const std::string& dictbin_path, std::uint32_t ratio);
         ~CDataSets() = default;
         torch::data::Example<> get(size_t index) override;
         torch::optional<size_t> size() const override;
+        std::unique_ptr<torch::Dict<std::string, torch::Tensor>> get_sp(size_t index) const;
         bool splitDatasets(const std::string& path);
         bool getTrainSets(std::vector<std::pair<std::string, std::string>>& train) const;
         bool getTestSets(std::vector<std::pair<std::string, std::string>>& test) const;
@@ -82,7 +129,9 @@ namespace cchips {
         bool LoadDict(dict_type type = dict_word2vec);
         std::tuple<std::tuple<torch::Tensor, torch::Tensor>, torch::Tensor> LoadBatch(const std::vector<torch::data::Example<>>& batch) const;
         std::tuple<torch::Tensor, torch::Tensor> LoadSample(const std::string& input);
-
+        bool save(std::ofstream& outfile);
+        bool load(std::ifstream& infile);
+        bool loadsentencemodel(std::ifstream& infile, std::int32_t filesize);
     private:
         void initLabelVec() {
             m_label.clear();
@@ -135,6 +184,7 @@ namespace cchips {
         bool MakeFasttextDict();
         bool LoadWord2vecDict();
         bool LoadFasttextDict();
+        bool LoadSentencepieceDict();
 
         bool m_valid = false;
         std::uint32_t m_word_dim = _max_word_dim;
@@ -148,6 +198,7 @@ namespace cchips {
         std::set<std::string> m_label;
         std::map<std::string, std::array<float, _max_word_dim>> m_dict;
         std::vector<std::pair<std::string, std::string>> m_dataset;
+        std::shared_ptr<sentencepiece::SentencePieceProcessor> m_spmodel = nullptr;
     };
 
     class LinearBnReluImpl : public torch::nn::Module {
@@ -236,14 +287,17 @@ namespace cchips {
     private:
 #define _invalid_accuracy float(-1)
 #define _default_training_epochs 100
+        static const  std::uint32_t _gru_model_magic;
+        static const std::uint32_t _gru_model_version;
     public:
-        CGruModelImpl(const std::string& path, const std::string& output, const std::string& modelbin, const std::string& dictbin_path, std::uint32_t ratio = 8, bool bcpu = true) {
+        CGruModelImpl(const std::string& path, const std::string& output, const std::string& modelbin, const std::string& dictbin_path, std::uint32_t epochs = 100, std::uint32_t ratio = 8, bool bcpu = true) {
             m_input = path;
             m_output = output;
             m_ratio = ratio;
             m_modelbin = modelbin;
             m_dictbin = dictbin_path;
             m_bcpu = bcpu;
+            m_num_epochs = epochs;
             if (m_bcpu) {
                 m_device = std::make_unique<torch::Device>(torch::kCPU);
             }
@@ -255,12 +309,6 @@ namespace cchips {
             }
             m_datasets = std::make_unique<CDataSets>(m_input, m_dictbin, ratio);
             if (!m_datasets || !m_datasets->IsValid()) {
-                return;
-            }
-            if (!m_dictbin.length() && !m_datasets->MakeDict()) {
-                return;
-            }
-            if (!m_datasets->LoadDict()) {
                 return;
             }
             std::uint32_t input_size = m_datasets->getWorddim();
@@ -278,103 +326,9 @@ namespace cchips {
         bool train();
         bool test();
         bool predict(const std::string& input_path);
-        void SetkParam(std::uint32_t k) {
-            m_k = k;
-        }
-        void outputTestFesult() const {
-            if (m_accuracy != _invalid_accuracy) {
-                std::cout << "accuracy: " << std::fixed << std::setprecision(2) << m_accuracy << "%" << std::endl;
-            }
-            return;
-        }
-        void outputPredictResult() const {
-            if (m_predict_result.defined()) {
-                auto results = m_predict_result[0] * 100;
-                std::vector<std::pair<float, std::int32_t>> precision;
-                for (int i = 0; i < results.size(0); ++i) {
-                    precision.push_back(std::pair<float, std::int32_t>(results[i].item<float>(), i));
-                }
-                std::sort(precision.begin(), precision.end(),
-                    [](const std::pair<float, std::int32_t>& a, const std::pair<float, std::int32_t>& b) {
-                        return a.first > b.first;
-                    });
-                if (m_k == 1) {
-                    std::cout << m_datasets->getLabel(precision[0].second) << std::endl;
-                }
-                else {
-                    for (int i = 0; i < m_k; i++) {
-                        std::cout << m_datasets->getLabel(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
-                    }
-                }
-            }
-            return;
-        }
-    private:
-        torch::Tensor forward(torch::Tensor input);
-        bool m_valid = false;
-        bool m_bcpu = true;
-        std::string m_input;
-        std::string m_output;
-        std::string m_modelbin;
-        std::string m_dictbin;
-        std::uint32_t m_ratio = 0;
-        std::uint32_t m_k = 1;
-        float m_accuracy = _invalid_accuracy;
-        torch::Tensor m_predict_result;
-        std::unique_ptr<torch::Device> m_device = nullptr;
-        std::uint32_t m_num_epochs = _default_training_epochs;
-        std::unique_ptr<CDataSets> m_datasets = nullptr;
-        torch::nn::GRU m_grumodel{ nullptr };
-        torch::nn::Linear m_linearmodel { nullptr };
-    };
-    TORCH_MODULE(CGruModel);
-
-    class CLstmModelImpl : public torch::nn::Module {
-    private:
-#define _invalid_accuracy float(-1)
-#define _default_training_epochs 100
-    public:
-        CLstmModelImpl(const std::string& path, const std::string& output, const std::string& modelbin, const std::string& dictbin_path, std::uint32_t ratio = 8, bool bcpu = true) {
-            m_input = path;
-            m_output = output;
-            m_ratio = ratio;
-            m_modelbin = modelbin;
-            m_dictbin = dictbin_path;
-            m_bcpu = bcpu;
-            if (m_bcpu) {
-                m_device = std::make_unique<torch::Device>(torch::kCPU);
-            }
-            else {
-                m_device = std::make_unique<torch::Device>(torch::kCUDA);
-            }
-            if (!m_device) {
-                return;
-            }
-            m_datasets = std::make_unique<CDataSets>(m_input, m_dictbin, ratio);
-            if (!m_datasets || !m_datasets->IsValid()) {
-                return;
-            }
-            if (!m_dictbin.length() && !m_datasets->MakeDict()) {
-                return;
-            }
-            if (!m_datasets->LoadDict()) {
-                return;
-            }
-            std::uint32_t input_size = m_datasets->getWorddim();
-            m_linearmodel = torch::nn::Linear(input_size, 5);//m_datasets->getLabelnum());
-            m_lstmmodel = torch::nn::LSTM(torch::nn::LSTMOptions(input_size, input_size).num_layers(1));
-            register_module("lstm", m_lstmmodel);
-            register_module("linear", m_linearmodel);
-            to(*m_device);
-            m_lstmmodel->to(*m_device);
-            m_linearmodel->to(*m_device);
-            m_valid = true;
-        }
-        ~CLstmModelImpl() = default;
-
-        bool train();
-        bool test();
-        bool predict(const std::string& input_path);
+        //bool packmodel(const std::string& modelpath);
+        bool packmodel(CGruModel& model);
+        bool unpackmodel(CGruModel& model);
         void SetkParam(std::uint32_t k) {
             m_k = k;
         }
@@ -409,6 +363,105 @@ namespace cchips {
         }
     private:
         torch::Tensor forward(torch::Tensor input);
+        bool loadtorchmodel(CGruModel& model, const std::string& modelbin);
+        bool m_valid = false;
+        bool m_bcpu = true;
+        std::string m_input;
+        std::string m_output;
+        std::string m_modelbin;
+        std::string m_dictbin;
+        std::uint32_t m_ratio = 0;
+        std::uint32_t m_k = 1;
+        float m_accuracy = _invalid_accuracy;
+        torch::Tensor m_predict_result;
+        std::unique_ptr<torch::Device> m_device = nullptr;
+        std::uint32_t m_num_epochs = _default_training_epochs;
+        std::unique_ptr<CDataSets> m_datasets = nullptr;
+        torch::nn::GRU m_grumodel{ nullptr };
+        torch::nn::Linear m_linearmodel { nullptr };
+    };
+    TORCH_MODULE(CGruModel);
+
+    class CLstmModelImpl : public torch::nn::Module {
+    private:
+#define _invalid_accuracy float(-1)
+#define _default_training_epochs 100
+        static const  std::uint32_t _lstm_model_magic;
+        static const std::uint32_t _lstm_model_version;
+    public:
+        CLstmModelImpl(const std::string& path, const std::string& output, const std::string& modelbin, const std::string& dictbin_path, std::uint32_t epochs = 100, std::uint32_t ratio = 8, bool bcpu = true) {
+            m_input = path;
+            m_output = output;
+            m_ratio = ratio;
+            m_modelbin = modelbin;
+            m_dictbin = dictbin_path;
+            m_bcpu = bcpu;
+            m_num_epochs = epochs;
+            if (m_bcpu) {
+                m_device = std::make_unique<torch::Device>(torch::kCPU);
+            }
+            else {
+                m_device = std::make_unique<torch::Device>(torch::kCUDA);
+            }
+            if (!m_device) {
+                return;
+            }
+            m_datasets = std::make_unique<CDataSets>(m_input, m_dictbin, ratio);
+            if (!m_datasets || !m_datasets->IsValid()) {
+                return;
+            }
+            std::uint32_t input_size = m_datasets->getWorddim();
+            m_linearmodel = torch::nn::Linear(input_size, 5);//m_datasets->getLabelnum());
+            m_lstmmodel = torch::nn::LSTM(torch::nn::LSTMOptions(input_size, input_size).num_layers(1));
+            register_module("lstm", m_lstmmodel);
+            register_module("linear", m_linearmodel);
+            to(*m_device);
+            m_lstmmodel->to(*m_device);
+            m_linearmodel->to(*m_device);
+            m_valid = true;
+        }
+        ~CLstmModelImpl() = default;
+
+        bool train();
+        bool test();
+        bool predict(const std::string& input_path);
+        bool packmodel(CLstmModel& model);
+        bool unpackmodel(CLstmModel& model);
+        void SetkParam(std::uint32_t k) {
+            m_k = k;
+        }
+        void outputTestFesult() const {
+            if (m_accuracy != _invalid_accuracy) {
+                std::cout << "accuracy: " << std::fixed << std::setprecision(2) << m_accuracy << "%" << std::endl;
+            }
+            return;
+        }
+        void outputPredictResult() {
+            if (m_predict_result.defined()) {
+                auto results = m_predict_result[0] * 100;
+                std::vector<std::pair<float, std::int32_t>> precision;
+                for (int i = 0; i < results.size(0); ++i) {
+                    precision.push_back(std::pair<float, std::int32_t>(results[i].item<float>(), i));
+                }
+                std::sort(precision.begin(), precision.end(),
+                    [](const std::pair<float, std::int32_t>& a, const std::pair<float, std::int32_t>& b) {
+                        return a.first > b.first;
+                    });
+                if (m_k == 0) {
+                    std::cout << m_datasets->getLabel(precision[0].second) << std::endl;
+                }
+                else {
+                    for (int i = 0; i < m_k; i++) {
+                        std::cout << m_datasets->getLabel(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
+                    }
+                }
+            }
+            m_k = 0;
+            return;
+        }
+    private:
+        torch::Tensor forward(torch::Tensor input);
+        bool loadtorchmodel(CLstmModel& model, const std::string& modelbin);
         bool m_valid = false;
         bool m_bcpu = true;
         std::string m_input;
@@ -435,10 +488,11 @@ namespace cchips {
             submodel_supervised,
         };
 
-        CFastTextModel(const std::string& path, const std::string& output, const std::string& modelbin, std::uint32_t ratio = 8, ft_submodel submodel = submodel_supervised) {
+        CFastTextModel(const std::string& path, const std::string& output, const std::string& modelbin, std::uint32_t epochs = 100, std::uint32_t ratio = 8, ft_submodel submodel = submodel_supervised) {
             m_input = path;
             m_output = output;
             m_ratio = ratio;
+            m_epochs = epochs;
             m_subtype = submodel;
             m_modelbin = modelbin;
             m_ftmodel = std::make_unique<fasttext::FastText>();
@@ -460,11 +514,84 @@ namespace cchips {
         }
     private:
         std::uint32_t m_k = 1;
+        std::uint32_t m_epochs = 100;
         std::string m_input;
         std::string m_output;
         std::string m_modelbin;
         std::uint32_t m_ratio = 0;
         ft_submodel m_subtype;
         std::unique_ptr<fasttext::FastText> m_ftmodel = nullptr;
+    };
+
+    class CAlbertModel {
+    private:
+        static const  std::uint32_t _albert_model_magic;
+        static const std::uint32_t _albert_model_version;
+    public:
+        CAlbertModel(const std::string& path, const std::string& output, const std::string& modelbin, bool bcpu = true) {
+            m_input = path;
+            m_output = output;
+            m_modelbin = modelbin;
+            m_bcpu = bcpu;
+            if (m_bcpu) {
+                m_device = std::make_unique<torch::Device>(torch::kCPU);
+            }
+            else {
+                m_device = std::make_unique<torch::Device>(torch::kCUDA);
+            }
+            if (!m_device) {
+                return;
+            }
+            m_datasets = std::make_unique<CDataSets>(m_input, "", 8);
+            if (!m_datasets || !m_datasets->IsValid()) {
+                return;
+            }
+            m_valid = true;
+        }
+        ~CAlbertModel() = default;
+
+        bool train();
+        bool test();
+        bool predict(const std::string& inputpath);
+        bool packmodel(const std::string& dictbin);
+        bool unpackmodel();
+        void SetkParam(std::uint32_t k) {
+            m_k = k;
+        }
+        void outputPredictResult() {
+            if (m_predict_result.defined()) {
+                auto results = m_predict_result[0] * 100;
+                std::vector<std::pair<float, std::int32_t>> precision;
+                for (int i = 0; i < results.size(0); ++i) {
+                    precision.push_back(std::pair<float, std::int32_t>(results[i].item<float>(), i));
+                }
+                std::sort(precision.begin(), precision.end(),
+                    [](const std::pair<float, std::int32_t>& a, const std::pair<float, std::int32_t>& b) {
+                        return a.first > b.first;
+                    });
+                if (m_k == 0) {
+                    std::cout << m_datasets->getLabel(precision[0].second) << std::endl;
+                }
+                else {
+                    for (int i = 0; i < m_k; i++) {
+                        std::cout << m_datasets->getLabel(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
+                    }
+                }
+            }
+            m_k = 0;
+            return;
+        }
+    private:
+        torch::Tensor forward(torch::Tensor inputids, torch::Tensor attentionmask);
+        bool m_valid = false;
+        bool m_bcpu = true;
+        std::uint32_t m_k = 0;
+        std::string m_input;
+        std::string m_output;
+        std::string m_modelbin;
+        std::unique_ptr<torch::Device> m_device = nullptr;
+        torch::jit::script::Module m_model;
+        std::unique_ptr<CDataSets> m_datasets = nullptr;
+        torch::Tensor m_predict_result;
     };
 } // namespace cchips

@@ -13,6 +13,26 @@ void info(const char* fmt, ...)
     va_end(args);
 }
 
+std::wstring defaultModelpath(const std::wstring& model)
+{
+    if (_wcsicmp(model.c_str(), L"fasttext") == 0) {
+        return L".\\fasttext_model.bin";
+    }
+    else if (_wcsicmp(model.c_str(), L"gru") == 0) {
+        return L".\\gru-model(merge).bin";
+    }
+    else if (_wcsicmp(model.c_str(), L"lstm") == 0) {
+        return L".\\lstm-model(merge).bin";
+    }
+    else if (_wcsicmp(model.c_str(), L"bert") == 0) {
+        return L".\\bert-model(merge).bin";
+    }
+    else if (_wcsicmp(model.c_str(), L"gpt") == 0) {
+        return L".\\gpt-model(merge).bin";
+    }
+    return L"";
+}
+
 int main()
 {
     LPWSTR* argv; int argc;
@@ -29,7 +49,7 @@ int main()
             "Usage: %S <options..>\n"
             "Options:\n"
             "  --input                                 dataset or predicting the path of sample.\n"
-            "  --model [fasttext | gru | transformers] selecting ML Models.\n"
+            "  --model [fasttext | gru | bert]         selecting ML Models.\n"
             "  --model_path                            the path of modelbin.\n"
             "  [--ratio] [8 | 6]                       training ratio.\n"
             "  [--predict]                             predicting the sample using the chosen model.\n"
@@ -42,12 +62,15 @@ int main()
 
     bool bpredict = false;
     bool btest = false;
+    bool bmerge = false;
+    std::uint32_t epochs = 100;
     std::wstring modelw;
     std::wstring modelbin_pathw;
     std::wstring dictbin_pathw;
     std::wstring input_pathw;
     std::wstring output_pathw;
     std::wstring ratiow;
+    std::wstring epochsw;
     std::wstring kw;
     for (int idx = 1; idx < argc; idx++) {
         if (wcscmp(argv[idx], L"--input") == 0) {
@@ -86,6 +109,14 @@ int main()
             kw = argv[++idx];
             continue;
         }
+        if (wcscmp(argv[idx], L"--merge") == 0) {
+            bmerge = true;
+            continue;
+        }
+        if (wcscmp(argv[idx], L"--epochs") == 0) {
+            epochsw = argv[++idx];
+            continue;
+        }
         info("Found unsupported argument: %S\n", argv[idx]);
         return -1;
     }
@@ -98,16 +129,18 @@ int main()
         info("error argument.\n");
         return -1;
     }
-    if (bpredict && !modelbin_pathw.length()) {
-        info("error argument.\n");
-        return -1;
+    if ((bpredict || btest) && !modelbin_pathw.length()) {
+        modelbin_pathw = defaultModelpath(modelw);
     }
     if (bpredict && btest) {
         info("error argument.\n");
         return -1;
     }
-
-    if (!bpredict && !btest && (!ratiow.length() || !output_pathw.length())) {
+    if (!bpredict && !btest && (!output_pathw.length())) {
+        info("error argument.\n");
+        return -1;
+    }
+    if (bmerge && (!modelw.length() || !modelbin_pathw.length() || !output_pathw.length())) {
         info("error argument.\n");
         return -1;
     }
@@ -119,6 +152,14 @@ int main()
         }
         catch (const std::exception& e) {
             ratio = 8;
+        }
+    }
+    if (epochsw.length()) {
+        try {
+            epochs = std::stoul(epochsw);
+        }
+        catch (const std::exception& e) {
+            epochs = 100;
         }
     }
     std::uint32_t k = 0;
@@ -159,95 +200,119 @@ int main()
         modeltype = cchips::mmodel_gpt;
     }
 
-    switch (modeltype) {
-    case cchips::mmodel_fasttext:
-    {
-        std::unique_ptr<cchips::CFastTextModel> fasttext_model = std::make_unique<cchips::CFastTextModel>(input_path, output_path, modelbin_path, ratio);
-        if (!fasttext_model) {
-            return false;
-        }
-        if (bpredict) {
-            fasttext_model->SetkParam(k);
-            return fasttext_model->predict();
-        }
-        fasttext_model->train();
-    }
-    break;
-    case cchips::mmodel_gru:
-    {
-        if (bpredict) {
-            cchips::CGruModel _model("", output_path, modelbin_path, dictbin_path, ratio, true);
-            torch::load(_model, modelbin_path);
-            _model->SetkParam(k);
-            if (_model->predict(input_path)) {
-                _model->outputPredictResult();
-            }
-        }
-        else {
-            cchips::CGruModel _model(input_path, output_path, modelbin_path, dictbin_path, ratio, false);
-            if (!_model) {
+    try {
+        switch (modeltype) {
+        case cchips::mmodel_fasttext:
+        {
+            std::unique_ptr<cchips::CFastTextModel> fasttext_model = std::make_unique<cchips::CFastTextModel>(input_path, output_path, modelbin_path, epochs, ratio);
+            if (!fasttext_model) {
                 return -1;
             }
-            if (btest) {
-                torch::load(_model, modelbin_path);
-                if (_model->test()) {
-                    _model->outputTestFesult();
+            if (bmerge) {
+                std::cout << "unsupported..." << std::endl;
+                return 0;
+            }
+            else if (bpredict) {
+                fasttext_model->SetkParam(k);
+                return fasttext_model->predict();
+            }
+            else {
+                if (btest) {
+                    std::cout << "unsupported..." << std::endl;
+                }
+                else {
+                    fasttext_model->train();
                 }
             }
-            if (_model->train()) {
-                std::cout << "save Model..." << std::endl;
-                torch::save(_model, output_path);
-            }
         }
-    }
-    break;
-    case cchips::mmodel_lstm:
-    {
-        if (bpredict) {
-            cchips::CLstmModel _model("", output_path, modelbin_path, dictbin_path, ratio, false);
-            torch::load(_model, modelbin_path);
-            _model->SetkParam(k);
-            if (_model->predict(input_path)) {
-                _model->outputPredictResult();
-            }
-        }
-        else {
-            cchips::CLstmModel _model(input_path, output_path, modelbin_path, dictbin_path, ratio, false);
-            if (!_model) {
-                return -1;
-            }
-            if (btest) {
-                torch::load(_model, modelbin_path);
-                if (_model->test()) {
-                    _model->outputTestFesult();
-                }
-            }
-            if (_model->train()) {
-                std::cout << "save Model..." << std::endl;
-                torch::save(_model, output_path);
-            }
-        }
-    }
-    break;
-    case cchips::mmodel_bert:
-    {
-        torch::jit::script::Module model;
-        try {
-            model = torch::jit::load(".\\albert\\albert_torchscript.pt");
-            model.eval();
-            std::vector<torch::jit::IValue> inputs;
-            torch::Tensor output = model.forward(inputs).toTensor();
-        }
-        catch (const c10::Error& e) {
-            std::cout << "Exception occurred during Bert model predicting: " << e.what() << std::endl;
-            return -1;
-        }
-    }
-    break;
-    case cchips::mmodel_gpt:
-        [[fallthrough]];
-    default:
         break;
+        case cchips::mmodel_gru:
+        {
+            if (bmerge) {
+                cchips::CGruModel _model("", output_path, modelbin_path, dictbin_path, epochs, ratio);
+                torch::load(_model, modelbin_path);
+                _model->packmodel(_model);
+            }
+            else if (bpredict) {
+                cchips::CGruModel _model("", output_path, modelbin_path, dictbin_path, epochs, ratio);
+                if (_model->unpackmodel(_model)) {
+                    _model->SetkParam(k);
+                    _model->predict(input_path);
+                }
+            }
+            else {
+                cchips::CGruModel _model(input_path, output_path, modelbin_path, dictbin_path, epochs, ratio, false);
+                if (!_model) {
+                    return -1;
+                }
+                if (btest) {
+                    if (_model->unpackmodel(_model)) {
+                        _model->test();
+                    }
+                }
+                else if (_model->train()) {
+                    _model->packmodel(_model);
+                }
+            }
+        }
+        break;
+        case cchips::mmodel_lstm:
+        {
+            if (bmerge) {
+                cchips::CLstmModel _model("", output_path, modelbin_path, dictbin_path, epochs, ratio);
+                torch::load(_model, modelbin_path);
+                _model->packmodel(_model);
+            }
+            else if (bpredict) {
+                cchips::CLstmModel _model("", output_path, modelbin_path, dictbin_path, epochs, ratio);
+                if (_model->unpackmodel(_model)) {
+                    _model->SetkParam(k);
+                    _model->predict(input_path);
+                }
+            }
+            else {
+                cchips::CLstmModel _model(input_path, output_path, modelbin_path, dictbin_path, epochs, ratio, false);
+                if (!_model) {
+                    return -1;
+                }
+                if (btest) {
+                    if (_model->unpackmodel(_model)) {
+                        _model->test();
+                    }
+                }
+                else if (_model->train()) {
+                    _model->packmodel(_model);
+                }
+            }
+        }
+        break;
+        case cchips::mmodel_bert:
+        {
+            if (bmerge) {
+                cchips::CAlbertModel _model("", output_path, modelbin_path);
+                _model.packmodel(dictbin_path);
+            }
+            else if (bpredict) {
+                cchips::CAlbertModel _model("", output_path, modelbin_path);
+                if (_model.unpackmodel()) {
+                    _model.SetkParam(k);
+                    _model.predict(input_path);
+                }
+            }
+            else {
+                std::cout << "unsupported..." << std::endl;
+            }
+        }
+        break;
+        case cchips::mmodel_gpt:
+            [[fallthrough]];
+        default:
+            break;
+        }
+    }
+    catch (const c10::Error& e) {
+        std::cout << "Exception occurred during model preprocessing: " << e.what() << std::endl;
+        return -1;
     }
     return 0;
 }
