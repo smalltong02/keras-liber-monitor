@@ -29,7 +29,7 @@ def main(args):
         print("Model path does not exist or is not a file, please provide the correct path.")
         sys.exit(0)
 
-    bertinst = InnerAlbertInstance("albert", args.input, args.output, args.model_path)
+    bertinst = InnerAlbertInstance("albert", args.input, args.output, args.model_path, args.dict_path)
     if args.predict:
         bertinst.predict()
     elif args.test:
@@ -41,6 +41,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process options.")
     parser.add_argument("--input", type=str, required=True, help="dataset or predicting the path of sample.")
     parser.add_argument("--model_path", type=str, help="the path of modelbin.")
+    parser.add_argument("--dict_path", type=str, help="the path of dictbin.")
     parser.add_argument("--predict", action="store_true", help="predicting the sample using the model.")
     parser.add_argument("--test", action="store_true", help="test the samples using the model.")
     parser.add_argument("--output", type=str, help="output to path.")

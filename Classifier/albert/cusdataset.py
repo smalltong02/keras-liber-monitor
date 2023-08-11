@@ -24,6 +24,7 @@ class CustomDataset(Dataset):
         attention_mask_list = []
         for input_text in split_texts:
             inputs = self.tokenizer.encode_plus(input_text, add_special_tokens=True, return_tensors="pt", max_length=512, padding=False, truncation=True)
+            #print(inputs)
             input_ids_list.append(inputs["input_ids"])
             attention_mask_list.append(inputs["attention_mask"])
             label_list.append(label)

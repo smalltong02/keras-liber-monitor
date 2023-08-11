@@ -245,7 +245,7 @@ namespace cchips {
             return false;
         }
         else {
-            std::cout << "process " << std::any_cast<std::string_view>(anyvalue) << "..." << std::endl;
+            //std::cout << "process " << std::any_cast<std::string_view>(anyvalue) << "..." << std::endl;
         }
         std::shared_ptr<CSemanticGeneration> sgptr = std::make_shared<CFastTextSG>();
         if (!sgptr) {

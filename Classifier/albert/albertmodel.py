@@ -26,7 +26,7 @@ class InnerAlbertModel(nn.Module):
         return output.logits
 
 class InnerAlbertInstance:
-    def __init__(self, name, input, output, modelbin):
+    def __init__(self, name, input, output, modelbin, dictbin):
         self.modelname = name
         self.label_map = {
             "__label_forticlient__": 0,
@@ -42,13 +42,17 @@ class InnerAlbertInstance:
         self.input = input
         self.output = output
         self.modelbin = modelbin
+        self.dictbin = dictbin
+        #torch.manual_seed(100)
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
+        if self.dictbin is None or self.dictbin == "":
+            self.tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
+        else:
+            self.tokenizer = AlbertTokenizer.from_pretrained(self.dictbin)
         if os.path.exists(self.modelbin):
             self.model = torch.load(self.modelbin, map_location=self.device)
             print("success load model from ", self.modelbin)
         else:
-            print(len(self.label_map))
             self.model = AlbertForSequenceClassification.from_pretrained('albert-base-v2', num_labels=len(self.label_map))
         self.model.to(self.device)
         print(self.device)
@@ -93,12 +97,11 @@ class InnerAlbertInstance:
                 num_batches = num_batches + 1
             average_loss = total_loss / num_batches
             print("Epoch: ", epoch + 1, ", average loss: ", average_loss)
-
+        intermodel.eval()
+        intermodel.model.eval()
         output_path = self.output + '\\albert_model.pt'
         script_model = torch.jit.trace(intermodel, (input_ids, attention_mask), strict=True)
         torch.jit.save(script_model, output_path)
-        #script_model = torch.jit.trace(self.model, (input_ids, attention_mask), strict=True)
-        #torch.jit.save(script_model, output_path)
         end_time = time.time()
         run_time = end_time - start_time
         print(f"running: ", run_time, "seconds")
@@ -118,7 +121,10 @@ class InnerAlbertInstance:
                 input_ids = input_ids.to(self.device)
                 attention_mask = attention_mask.to(self.device)
                 outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
-                logits = outputs.logits
+                if isinstance(outputs, dict):
+                    logits = outputs.logits
+                else:
+                    logits = outputs
                 predictions = torch.argmax(logits, dim=1)
                 t1 = predictions[0].item()
                 t2 = labels[0].item()
@@ -142,10 +148,18 @@ class InnerAlbertInstance:
                 input_ids = input_ids.to(self.device)
                 attention_mask = attention_mask.to(self.device)
                 outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
-                logits = outputs.logits
-                predictions = torch.argmax(logits, dim=1)
-                t1 = predictions[0].item()
-                #predict_result = torch.softmax(logits, dim=-1)
-                
+                if isinstance(outputs, dict):
+                    logits = outputs.logits
+                else:
+                    logits = outputs
+                predictions = torch.softmax(logits, dim=-1)
 
-        print(f"predict label: ", self.getlabel(t1))
+        predictions = predictions[0]
+        sorted_indices = torch.argsort(predictions, descending=True)
+        print(sorted_indices)
+        sorted_predictions = predictions[sorted_indices]
+        print(sorted_predictions)
+        total_sum = sorted_predictions.sum()
+        percentages = (sorted_predictions / total_sum) * 100
+        for i, (percentage, original_index) in enumerate(zip(percentages, sorted_indices)):
+            print(f"predict label：{self.getlabel(original_index)}, {percentage:.2f}%")

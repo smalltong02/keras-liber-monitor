@@ -196,7 +196,7 @@ namespace cchips {
             else if (m_type == input_memformat) {
                 bret = scan_callback(m_input_path, output);
             }
-            std::cout << "Generation datasets: " << m_scan_counts << std::endl;
+            //std::cout << "Generation datasets: " << m_scan_counts << std::endl;
             return bret;
         }
 

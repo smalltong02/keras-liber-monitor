@@ -360,10 +360,16 @@ namespace cchips {
         std::uint32_t max_ids = (pieces.size() > 512) ? 512 : pieces.size();
         torch::Tensor input_ids = torch::empty({1, (std::int32_t)max_ids }, torch::kLong);
         torch::Tensor attention_mask = torch::ones({1, (std::int32_t)max_ids }, torch::kFloat32);
-        
-        for (size_t i = 0; i < max_ids; ++i) {
-            input_ids[0][i] = m_spmodel->PieceToId(pieces[i]);
+        int cls_id = m_spmodel->PieceToId("[CLS]");
+        int sep_id = m_spmodel->PieceToId("[SEP]");
+        input_ids[0][0] = cls_id;
+        for (size_t i = 0; i < max_ids - 2; ++i) {
+            int id = m_spmodel->PieceToId(pieces[i]);
+            input_ids[0][i + 1] = id;
+            //std::cout << id << " ";
         }
+        //std::cout << std::endl;
+        input_ids[0][max_ids-1] = sep_id;
         //std::vector <std::string> pieces_dup;
         //for (size_t i = 0; i < max_ids; ++i) {
         //    pieces_dup.push_back(pieces[i]);
@@ -509,8 +515,15 @@ namespace cchips {
         }
         initLabelVec();
         m_dataset.clear();
-        m_dataset.push_back(std::pair(getLabel(0), input));
-        std::cout << "LoadDataset: " << 1 << std::endl;
+        size_t pos = input.find_first_of(' ');
+        if (pos != std::string::npos && pos != 0) {
+            m_dataset.push_back(std::pair(input.substr(0, pos), input.substr(pos + 1)));
+        }
+        else {
+            m_dataset.push_back(std::pair(getLabel(0), input));
+        }
+        
+        //std::cout << "LoadDataset: " << 1 << std::endl;
         if (m_dicttype == dict_sentencepiece) {
             auto dict_ptr = get_sp(0);
             if (!dict_ptr) {
@@ -717,6 +730,7 @@ namespace cchips {
             return false;
         }
         try {
+            std::cout << "Fasttext Model predicting start... " << std::endl;
             std::unique_ptr<cchips::CJsonOptions> options = std::make_unique<cchips::CJsonOptions>("CFGRES", IDR_JSONPE_CFG);
             if (!options || !options->Parse()) {
                 std::cout << "load config error." << std::endl;
@@ -1431,6 +1445,7 @@ namespace cchips {
         if (!m_valid) {
             return false;
         }
+        //torch::manual_seed(10);
         CFunduration func_duration("predicting time: ");
         m_datasets->LoadDict(CDataSets::dict_sentencepiece);
         std::cout << "Bert Model predicting start... " << std::endl;
@@ -1461,6 +1476,12 @@ namespace cchips {
             if (!output.length()) {
                 return false;
             }
+            //std::string output;
+            //std::ifstream infile("H:\\machine_learning\\fasttext_test\\predict.txt", std::ios::in | std::ios::binary);
+            //if (!infile.is_open()) {
+            //    return false;
+            //}
+            //std::getline(infile, output);
 
             std::atomic_uint32_t corrects = 0;
             torch::NoGradGuard no_grad;
@@ -1470,6 +1491,7 @@ namespace cchips {
                 inputids = inputids.to(*m_device);
                 attentionmask = attentionmask.to(*m_device);
                 auto outputs = forward(inputids, attentionmask);
+                //std::cout << outputs << std::endl;
                 m_predict_result = torch::softmax(outputs, -1);
             }
         }

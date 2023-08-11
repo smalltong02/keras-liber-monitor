@@ -48,13 +48,13 @@ int main()
             "model training and predict toolkit v 1.0c\n\n"
             "Usage: %S <options..>\n"
             "Options:\n"
-            "  --input                                 dataset or predicting the path of sample.\n"
-            "  --model [fasttext | gru | bert]         selecting ML Models.\n"
-            "  --model_path                            the path of modelbin.\n"
-            "  [--ratio] [8 | 6]                       training ratio.\n"
-            "  [--predict]                             predicting the sample using the chosen model.\n"
-            "  [--test]                                test the samples using the chosen model.\n"
-            "  [--output]                              output to logfile.\n",
+            "  --input                                              dataset or predicting the path of sample.\n"
+            "  --model [fasttext | gru | lstm | bert | gpt]         selecting ML Models.\n"
+            "  --model_path                                         the path of modelbin.\n"
+            "  [--ratio] [8 | 6]                                    training ratio.\n"
+            "  [--predict]                                          predicting the sample using the chosen model.\n"
+            "  [--test]                                             test the samples using the chosen model.\n"
+            "  [--output]                                           output to logfile.\n",
             argv[0]
         );
         return -1;
@@ -209,7 +209,7 @@ int main()
                 return -1;
             }
             if (bmerge) {
-                std::cout << "unsupported..." << std::endl;
+                std::cout << "unsupported now..." << std::endl;
                 return 0;
             }
             else if (bpredict) {
@@ -218,7 +218,7 @@ int main()
             }
             else {
                 if (btest) {
-                    std::cout << "unsupported..." << std::endl;
+                    std::cout << "unsupported now..." << std::endl;
                 }
                 else {
                     fasttext_model->train();
@@ -300,11 +300,12 @@ int main()
                 }
             }
             else {
-                std::cout << "unsupported..." << std::endl;
+                std::cout << "unsupported now..." << std::endl;
             }
         }
         break;
         case cchips::mmodel_gpt:
+            std::cout << "unsupported now..." << std::endl;
             [[fallthrough]];
         default:
             break;

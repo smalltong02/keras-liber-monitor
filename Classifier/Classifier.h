@@ -350,11 +350,11 @@ namespace cchips {
                         return a.first > b.first;
                     });
                 if (m_k == 0) {
-                    std::cout << m_datasets->getLabel(precision[0].second) << std::endl;
+                    std::cout << "predict class: " << m_datasets->getLabel(precision[0].second) << std::endl;
                 }
                 else {
                     for (int i = 0; i < m_k; i++) {
-                        std::cout << m_datasets->getLabel(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
+                        std::cout << "predict class: " << m_datasets->getLabel(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
                     }
                 }
             }
@@ -448,11 +448,11 @@ namespace cchips {
                         return a.first > b.first;
                     });
                 if (m_k == 0) {
-                    std::cout << m_datasets->getLabel(precision[0].second) << std::endl;
+                    std::cout << "predict class: " << m_datasets->getLabel(precision[0].second) << std::endl;
                 }
                 else {
                     for (int i = 0; i < m_k; i++) {
-                        std::cout << m_datasets->getLabel(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
+                        std::cout << "predict class: " << m_datasets->getLabel(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
                     }
                 }
             }
@@ -559,6 +559,19 @@ namespace cchips {
             m_k = k;
         }
         void outputPredictResult() {
+            auto getLabelfunc = [](std::int32_t intlabel) ->std::string {
+                static std::vector<std::string> labels = {
+                    "__label_forticlient__",
+                    "__label_cert_manage_tool__",
+                    "__label_putty__",
+                    "__label_unknown__",
+                    "__label_teams__",
+                };
+                if (intlabel < labels.size()) {
+                    return labels[intlabel];
+                }
+                return "__label_unknown__";
+            };
             if (m_predict_result.defined()) {
                 auto results = m_predict_result[0] * 100;
                 std::vector<std::pair<float, std::int32_t>> precision;
@@ -570,11 +583,11 @@ namespace cchips {
                         return a.first > b.first;
                     });
                 if (m_k == 0) {
-                    std::cout << m_datasets->getLabel(precision[0].second) << std::endl;
+                    std::cout << "predict class: " << getLabelfunc(precision[0].second) << std::endl;
                 }
                 else {
                     for (int i = 0; i < m_k; i++) {
-                        std::cout << m_datasets->getLabel(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
+                        std::cout << "predict class: " << getLabelfunc(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
                     }
                 }
             }
