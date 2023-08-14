@@ -10,6 +10,7 @@ namespace cchips {
     const std::uint32_t CLstmModelImpl::_lstm_model_version = 1;
     const  std::uint32_t CAlbertModel::_albert_model_magic = 0x62657274;
     const std::uint32_t CAlbertModel::_albert_model_version = 1;
+    auto global_init_code = curl_global_init(CURL_GLOBAL_DEFAULT);
 
     LinearBnReluImpl::LinearBnReluImpl(int in_features, int out_features) {
         ln = register_module("ln", torch::nn::Linear(torch::nn::LinearOptions(in_features, out_features)));
@@ -655,7 +656,6 @@ namespace cchips {
     }
 
     bool CFastTextModel::train() {
-        CFunduration func_duration("traning time: ");
         if (!IsValid()) {
             return false;
         }
@@ -700,6 +700,7 @@ namespace cchips {
         break;
         }
         try {
+            CFuncduration func_duration("traning time: ");
             m_ftmodel->train(args);
             m_ftmodel->saveModel(m_output);
         }
@@ -711,12 +712,11 @@ namespace cchips {
     }
 
     bool CFastTextModel::test() {
-        CFunduration func_duration("testing time: ");
+        //CFuncduration func_duration("testing time: ");
         return false;
     }
 
     bool CFastTextModel::predict() {
-        CFunduration func_duration("predicting time: ");
         if (!IsValid()) {
             return false;
         }
@@ -729,7 +729,9 @@ namespace cchips {
         if (!fs::is_regular_file(m_modelbin)) {
             return false;
         }
+        std::vector<std::pair<fasttext::real, std::string>> predictions;
         try {
+            CFuncduration func_duration("predicting time: ");
             std::cout << "Fasttext Model predicting start... " << std::endl;
             std::unique_ptr<cchips::CJsonOptions> options = std::make_unique<cchips::CJsonOptions>("CFGRES", IDR_JSONPE_CFG);
             if (!options || !options->Parse()) {
@@ -759,14 +761,27 @@ namespace cchips {
             in << output;
             m_ftmodel->loadModel(m_modelbin);
             fasttext::real threshold = 0.0;
-            std::vector<std::pair<fasttext::real, std::string>> predictions;
             if (m_k == 0) {
                 m_ftmodel->predictLine(in, predictions, 1, threshold);
             }
             else {
                 m_ftmodel->predictLine(in, predictions, m_k, threshold);
             }
-            if (predictions.size()) {
+        }
+        catch (const std::exception& e) {
+            std::cout << "Exception occurred during Fasttext model predicting: " << e.what() << std::endl;
+            return false;
+        }
+
+        if (predictions.size()) {
+            switch (m_poutputtype) {
+            case output_type::ot_nlp:
+            {
+                CNlpOutput nlpoutput(predictions[0].second, predictions[0].first);
+            }
+            break;
+            case output_type::ot_label:
+            {
                 if (m_k == 0) {
                     std::cout << "predict class: " << predictions[0].second << std::endl;
                 }
@@ -776,16 +791,14 @@ namespace cchips {
                     }
                 }
             }
-            else {
-                std::cout << "predict failed!" << std::endl;
+            break;
             }
-            m_k = 0;
-            return true;
         }
-        catch (const std::exception& e) {
-            std::cout << "Exception occurred during Fasttext model predicting: " << e.what() << std::endl;
-            return false;
+        else {
+            std::cout << "predict failed!" << std::endl;
         }
+        m_k = 0;
+        return true;
     }
 
     torch::Tensor CGruModelImpl::forward(torch::Tensor input)
@@ -818,23 +831,23 @@ namespace cchips {
     }
 
     bool CGruModelImpl::train() {
-        CFunduration func_duration("traning time: ");
         if (!m_valid) {
             return false;
         }
         if (!m_datasets->MakeDict()) {
             return false;
         }
-        m_datasets->LoadDict();
-        std::cout << "GRU Model training start... " << std::endl;
-        m_grumodel->train();
-        m_linearmodel->train();
-        torch::nn::CrossEntropyLoss criterion;
-        torch::optim::SGD optimizer(parameters(), torch::optim::SGDOptions(0.01));
-        int step_size = 10;
-        float gamma = 0.1;
-        torch::optim::StepLR scheduler(optimizer, step_size, gamma);
         try {
+            CFuncduration func_duration("traning time: ");
+            std::cout << "GRU Model training start... " << std::endl;
+            m_datasets->LoadDict();
+            m_grumodel->train();
+            m_linearmodel->train();
+            torch::nn::CrossEntropyLoss criterion;
+            torch::optim::SGD optimizer(parameters(), torch::optim::SGDOptions(0.01));
+            int step_size = 10;
+            float gamma = 0.1;
+            torch::optim::StepLR scheduler(optimizer, step_size, gamma);
             for (int epoch = 0; epoch < m_num_epochs; ++epoch) {
                 auto data_loader = torch::data::make_data_loader(
                     *m_datasets,
@@ -888,15 +901,15 @@ namespace cchips {
     }
 
     bool CGruModelImpl::test() {
-        CFunduration func_duration("testing time: ");
         if (!m_valid) {
             return false;
         }
-        m_datasets->LoadDict();
-        std::cout << "GRU Model testing start... " << std::endl;
-        m_grumodel->eval();
-        m_linearmodel->eval();
         try {
+            CFuncduration func_duration("testing time: ");
+            std::cout << "GRU Model testing start... " << std::endl;
+            m_datasets->LoadDict();
+            m_grumodel->eval();
+            m_linearmodel->eval();
             std::atomic_uint32_t corrects = 0;
             torch::NoGradGuard no_grad;
             auto data_loader = torch::data::make_data_loader(
@@ -939,18 +952,18 @@ namespace cchips {
     }
 
     bool CGruModelImpl::predict(const std::string& input_path) {
-        CFunduration func_duration("predicting time: ");
         if (!m_valid) {
             return false;
         }
-        m_datasets->LoadDict();
-        std::cout << "GRU Model predicting start... " << std::endl;
-        m_grumodel->to(*m_device);
-        m_linearmodel->to(*m_device);
-        m_grumodel->eval();
-        m_linearmodel->eval();
-        m_predict_result = torch::Tensor();
         try {
+            CFuncduration func_duration("predicting time: ");
+            std::cout << "GRU Model predicting start... " << std::endl;
+            m_datasets->LoadDict();
+            m_grumodel->to(*m_device);
+            m_linearmodel->to(*m_device);
+            m_grumodel->eval();
+            m_linearmodel->eval();
+            m_predict_result = torch::Tensor();
             std::unique_ptr<cchips::CJsonOptions> options = std::make_unique<cchips::CJsonOptions>("CFGRES", IDR_JSONPE_CFG);
             if (!options || !options->Parse()) {
                 std::cout << "load config error." << std::endl;
@@ -1142,23 +1155,23 @@ namespace cchips {
     }
 
     bool CLstmModelImpl::train() {
-        CFunduration func_duration("training time: ");
         if (!m_valid) {
             return false;
         }
         if (!m_datasets->MakeDict()) {
             return false;
         }
-        m_datasets->LoadDict();
-        std::cout << "LSTM Model training start... " << std::endl;
-        m_lstmmodel->train();
-        m_linearmodel->train();
-        torch::nn::CrossEntropyLoss criterion;
-        torch::optim::SGD optimizer(parameters(), torch::optim::SGDOptions(0.01));
-        int step_size = 10;
-        float gamma = 0.1;
-        torch::optim::StepLR scheduler(optimizer, step_size, gamma);
         try {
+            CFuncduration func_duration("training time: ");
+            std::cout << "LSTM Model training start... " << std::endl;
+            m_datasets->LoadDict();
+            m_lstmmodel->train();
+            m_linearmodel->train();
+            torch::nn::CrossEntropyLoss criterion;
+            torch::optim::SGD optimizer(parameters(), torch::optim::SGDOptions(0.01));
+            int step_size = 10;
+            float gamma = 0.1;
+            torch::optim::StepLR scheduler(optimizer, step_size, gamma);
             for (int epoch = 0; epoch < m_num_epochs; ++epoch) {
                 auto data_loader = torch::data::make_data_loader(
                     *m_datasets,
@@ -1211,15 +1224,15 @@ namespace cchips {
     }
 
     bool CLstmModelImpl::test() {
-        CFunduration func_duration("testing time: ");
         if (!m_valid) {
             return false;
         }
-        m_datasets->LoadDict();
-        std::cout << "LSTM Model testing start... " << std::endl;
-        m_lstmmodel->eval();
-        m_linearmodel->eval();
         try {
+            CFuncduration func_duration("testing time: ");
+            std::cout << "LSTM Model testing start... " << std::endl;
+            m_datasets->LoadDict();
+            m_lstmmodel->eval();
+            m_linearmodel->eval();
             std::atomic_uint32_t corrects = 0;
             torch::NoGradGuard no_grad;
             auto data_loader = torch::data::make_data_loader(
@@ -1261,18 +1274,18 @@ namespace cchips {
     }
 
     bool CLstmModelImpl::predict(const std::string& input_path) {
-        CFunduration func_duration("predicting time: ");
         if (!m_valid) {
             return false;
         }
-        m_datasets->LoadDict();
-        std::cout << "LSTM Model predicting start... " << std::endl;
-        m_lstmmodel->to(*m_device);
-        m_linearmodel->to(*m_device);
-        m_lstmmodel->eval();
-        m_linearmodel->eval();
-        m_predict_result = torch::Tensor();
         try {
+            CFuncduration func_duration("predicting time: ");
+            std::cout << "LSTM Model predicting start... " << std::endl;
+            m_datasets->LoadDict();
+            m_lstmmodel->to(*m_device);
+            m_linearmodel->to(*m_device);
+            m_lstmmodel->eval();
+            m_linearmodel->eval();
+            m_predict_result = torch::Tensor();
             std::unique_ptr<cchips::CJsonOptions> options = std::make_unique<cchips::CJsonOptions>("CFGRES", IDR_JSONPE_CFG);
             if (!options || !options->Parse()) {
                 std::cout << "load config error." << std::endl;
@@ -1433,6 +1446,126 @@ namespace cchips {
         return true;
     }
 
+    static size_t res_callback(void* contents, size_t size, size_t nmemb, void* userp) {
+        size_t total_size = size * nmemb;
+        std::string* response = static_cast<std::string*>(userp);
+        response->append(static_cast<char*>(contents), total_size);
+        return total_size;
+    }
+
+    CAlbertModelNet::CAlbertModelNet(const std::string& server_url) {
+        m_server_url = server_url;
+        if (global_init_code != CURLE_OK) {
+            return;
+        }
+        CURL* curl = curl_easy_init();
+        if (!curl) {
+            return;
+        }
+        if (m_server_url.empty()) {
+            return;
+        }
+        curl_easy_setopt(curl, CURLOPT_URL, m_server_url.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+        std::string response;
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, res_callback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+        CURLcode res = curl_easy_perform(curl);
+        if (res != CURLE_OK) {
+            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+            return;
+        }
+        m_curl = curl;
+        m_valid = true;
+        return;
+    }
+
+    bool CAlbertModelNet::predict(const std::string& inputpath) {
+        if (!m_valid) {
+            return false;
+        }
+        try {
+            std::cout << "Bert(Net) Model predicting start... " << std::endl;
+            //m_predict_result = torch::Tensor();
+            std::unique_ptr<cchips::CJsonOptions> options = std::make_unique<cchips::CJsonOptions>("CFGRES", IDR_JSONPE_CFG);
+            if (!options || !options->Parse()) {
+                std::cout << "load config error." << std::endl;
+                return false;
+            }
+            auto& staticmanager = cchips::GetCStaticFileManager();
+            if (!staticmanager.Initialize(std::move(options))) {
+                std::cout << "Initialize failed!" << std::endl;
+                return false;
+            }
+            std::string output;
+            if (!staticmanager.Scan(inputpath, output, false) || !output.length()) {
+                std::cout << "scan: " << inputpath << " failed" << std::endl;
+                return false;
+            }
+            auto& corpusmanager = cchips::GetCTextCorpusManager().GetInstance();
+            corpusmanager.Initialize(output);
+            if (!corpusmanager.GeneratingModelDatasets("fasttext", output, "")) {
+                std::cout << "generating fasttext corpus failed!" << std::endl;
+                return false;
+            }
+            if (!output.length()) {
+                return false;
+            }
+            output = "__label_unknown__ " + output;
+            std::unique_ptr<cchips::CRapidJsonWrapper> wrapper;
+            wrapper = std::make_unique<cchips::CRapidJsonWrapper>("{}");
+            if (!wrapper) {
+                return false;
+            }
+            wrapper->AddTopMember("features", cchips::RapidValue(output.c_str(), wrapper->GetAllocator()));
+            auto optstring = wrapper->Serialize();
+            if (!optstring) {
+                return false;
+            }
+
+            curl_easy_setopt(m_curl, CURLOPT_POST, 1L);
+            curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, optstring.value().c_str());
+            std::string response;
+            curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, res_callback);
+            curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &response);
+            CURLcode res = curl_easy_perform(m_curl);
+            if (res != CURLE_OK) {
+                std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+                return false;
+            }
+            //std::cout << response << std::endl;
+
+            CRapidJsonWrapper document(response);
+            if (!document.IsValid()) {
+                return false;
+            }
+            float runtime = 0.0;
+            std::string label;
+            float score = 0.0;
+            if (auto anyvalue(document.GetMember(std::vector<std::string>{"run_time"}));
+                anyvalue.has_value() && anyvalue.type() == typeid(double))
+                runtime = std::any_cast<double>(anyvalue);
+            if (auto anyvalue(document.GetMember(std::vector<std::string>{"label"}));
+                anyvalue.has_value() && anyvalue.type() == typeid(std::string_view))
+                label = std::any_cast<std::string_view>(anyvalue);
+            if (auto anyvalue(document.GetMember(std::vector<std::string>{"percentage"}));
+                anyvalue.has_value() && anyvalue.type() == typeid(double))
+                score = std::any_cast<double>(anyvalue);
+            if (runtime != 0.0) {
+                std::cout << "predicting time: " << runtime << " seconds." << std::endl;
+            }
+            if (label.length() && score != 0.0) {
+                CNlpOutput(label, score);
+            }
+        }
+        catch (const std::exception& e) {
+            std::cout << "Exception occurred during model predicting: " << e.what() << std::endl;
+            return false;
+        }
+        //outputPredictResult();
+        return true;
+    }
+
     bool CAlbertModel::train() {
         return false;
     }
@@ -1446,10 +1579,10 @@ namespace cchips {
             return false;
         }
         //torch::manual_seed(10);
-        CFunduration func_duration("predicting time: ");
-        m_datasets->LoadDict(CDataSets::dict_sentencepiece);
-        std::cout << "Bert Model predicting start... " << std::endl;
         try {
+            CFuncduration func_duration("predicting time: ");
+            std::cout << "Bert(Local) Model predicting start... " << std::endl;
+            m_datasets->LoadDict(CDataSets::dict_sentencepiece);
             m_predict_result = torch::Tensor();
             m_model.to(*m_device);
             std::unique_ptr<cchips::CJsonOptions> options = std::make_unique<cchips::CJsonOptions>("CFGRES", IDR_JSONPE_CFG);

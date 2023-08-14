@@ -56,9 +56,9 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;_DEBUG;_CONSOLE;_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;MONGO_HAVE_STDINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_DEBUG;_CONSOLE;_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;MONGO_HAVE_STDINT;CURL_STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>Default</ConformanceMode>
-      <AdditionalIncludeDirectories>%ProgramFiles%\libtorch\libtorch2.0.1-debug\include;%ProgramFiles%\libtorch\libtorch2.0.1-debug\include\torch\csrc\api\include;%ProgramFiles%\libtorch\opencv4.7.0\build\include;.\ThirdParty\include\fasttext;..\minhook\include;..\;..\g-re2;..\pipemessage;..\ThirdParty\pelib\include;..\ThirdParty\Certificate;..\ThirdParty\utf8cpp;.\ThirdParty\include\sentencepiece;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%ProgramFiles%\libtorch\libtorch2.0.1-debug\include;%ProgramFiles%\libtorch\libtorch2.0.1-debug\include\torch\csrc\api\include;%ProgramFiles%\libtorch\opencv4.7.0\build\include;..\minhook\include;..\;..\g-re2;..\pipemessage;..\ThirdParty\pelib\include;..\ThirdParty\Certificate;..\ThirdParty\utf8cpp;.\ThirdParty\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -68,7 +68,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>%ProgramFiles%\libtorch\libtorch2.0.1-debug\lib;..\x64\Debug;..\capstone\lib;%ProgramFiles%\libtorch\opencv4.7.0\build\x64\vc16\lib;.\ThirdParty\lib\x64;..\x64\Debug;..\capstone\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>torch_cpu.lib;fbjni.lib;caffe2_nvrtc.lib;c10_cuda.lib;c10.lib;dnnl.lib;kineto.lib;fbgemm.lib;asmjit.lib;XNNPACK.lib;cpuinfo.lib;clog.lib;pthreadpool.lib;libprotocd.lib;libprotobufd.lib;libprotobuf-lited.lib;pytorch_jni.lib;torch.lib;torch_cuda.lib;opencv_world470d.lib;fasttextd.lib;HipsHookLib.lib;capstone_x64_d.lib;CorpusExtractorLib.lib;Crypt32.lib;sentencepieced.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>torch_cpu.lib;fbjni.lib;caffe2_nvrtc.lib;c10_cuda.lib;c10.lib;dnnl.lib;kineto.lib;fbgemm.lib;asmjit.lib;XNNPACK.lib;cpuinfo.lib;clog.lib;pthreadpool.lib;libprotocd.lib;libprotobufd.lib;libprotobuf-lited.lib;pytorch_jni.lib;torch.lib;torch_cuda.lib;opencv_world470d.lib;fasttextd.lib;HipsHookLib.lib;capstone_x64_d.lib;CorpusExtractorLib.lib;Crypt32.lib;sentencepieced.lib;libcurld.lib;wldap32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>
@@ -78,9 +78,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;NDEBUG;_CONSOLE;_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;MONGO_HAVE_STDINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;NDEBUG;_CONSOLE;_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;MONGO_HAVE_STDINT;CURL_STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>Default</ConformanceMode>
-      <AdditionalIncludeDirectories>%ProgramFiles%\libtorch\libtorch2.0.1-release\include;%ProgramFiles%\libtorch\libtorch2.0.1-release\include\torch\csrc\api\include;%ProgramFiles%\libtorch\opencv4.7.0\build\include;.\ThirdParty\include\fasttext;..\minhook\include;..\;..\g-re2;..\pipemessage;..\ThirdParty\pelib\include;..\ThirdParty\Certificate;..\ThirdParty\utf8cpp;.\ThirdParty\include\sentencepiece;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%ProgramFiles%\libtorch\libtorch2.0.1-release\include;%ProgramFiles%\libtorch\libtorch2.0.1-release\include\torch\csrc\api\include;%ProgramFiles%\libtorch\opencv4.7.0\build\include;..\minhook\include;..\;..\g-re2;..\pipemessage;..\ThirdParty\pelib\include;..\ThirdParty\Certificate;..\ThirdParty\utf8cpp;.\ThirdParty\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -92,7 +92,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>%ProgramFiles%\libtorch\libtorch2.0.1-release\lib;%ProgramFiles%\libtorch\opencv4.7.0\build\x64\vc16\lib;.\ThirdParty\lib\x64;..\x64\Release;..\capstone\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>torch_cpu.lib;fbjni.lib;caffe2_nvrtc.lib;c10_cuda.lib;c10.lib;dnnl.lib;kineto.lib;fbgemm.lib;asmjit.lib;XNNPACK.lib;cpuinfo.lib;clog.lib;pthreadpool.lib;libprotoc.lib;libprotobuf.lib;libprotobuf-lite.lib;nvfuser_codegen.lib;pytorch_jni.lib;torch.lib;torch_cuda.lib;opencv_world470.lib;fasttext.lib;HipsHookLib.lib;capstone_x64.lib;CorpusExtractorLib.lib;Crypt32.lib;sentencepiece.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>torch_cpu.lib;fbjni.lib;caffe2_nvrtc.lib;c10_cuda.lib;c10.lib;dnnl.lib;kineto.lib;fbgemm.lib;asmjit.lib;XNNPACK.lib;cpuinfo.lib;clog.lib;pthreadpool.lib;libprotoc.lib;libprotobuf.lib;libprotobuf-lite.lib;nvfuser_codegen.lib;pytorch_jni.lib;torch.lib;torch_cuda.lib;opencv_world470.lib;fasttext.lib;HipsHookLib.lib;capstone_x64.lib;CorpusExtractorLib.lib;Crypt32.lib;sentencepiece.lib;libcurl.lib;wldap32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>

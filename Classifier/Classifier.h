@@ -9,12 +9,14 @@
 #include <torch/torch.h>
 #include <torch/data.h>
 #include <torch/script.h>
-#include <sentencepiece_processor.h>
+#include <sentencepiece/sentencepiece_processor.h>
+#include <fasttext/fasttext.h>
+#include <fasttext/autotune.h>
+#include <curl/curl.h>
+#include <RapidJsonWrapper.h>
 #include "CorpusExtractorLib/Word2Vec.h"
 #include "StaticPEManager/StaticFileManager.h"
 #include "CorpusExtractorLib/TextCorpusManager.h"
-#include "autotune.h"
-#include "fasttext.h"
 
 namespace cchips {
 
@@ -25,21 +27,28 @@ namespace cchips {
         mmodel_fasttext,
         mmodel_gru,
         mmodel_lstm,
-        mmodel_bert,
+        mmodel_bert_l,
+        mmodel_bert_n,
         mmodel_gpt,
+    };
+
+    using output_type = enum {
+        ot_unknown,
+        ot_nlp,
+        ot_label,
     };
 
     class CGruModel;
     class CLstmModel;
 
-    class CFunduration {
+    class CFuncduration {
     public:
-        CFunduration() : start_time_(std::chrono::high_resolution_clock::now()) {}
-        CFunduration(const std::string& prefix) : start_time_(std::chrono::high_resolution_clock::now()) {
+        CFuncduration() : start_time_(std::chrono::high_resolution_clock::now()) {}
+        CFuncduration(const std::string& prefix) : start_time_(std::chrono::high_resolution_clock::now()) {
             prefix_ = prefix;
         }
 
-        ~CFunduration() {
+        ~CFuncduration() {
             const auto end_time = std::chrono::high_resolution_clock::now();
             const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time_);
             std::cout << prefix_ << formattime(duration) << std::endl;
@@ -71,6 +80,66 @@ namespace cchips {
         }
         std::string prefix_ = "running time: ";
         std::chrono::time_point<std::chrono::high_resolution_clock> start_time_;
+    };
+
+    class CNlpOutput {
+    public:
+        CNlpOutput(const std::string& label, float score) {
+            bool bunknown = false;
+            HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+            if (hConsole == INVALID_HANDLE_VALUE) {
+                return;
+            }
+            SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN);
+            static std::map<std::string, std::string> labels = {
+                {"__label_forticlient__", "Forticlient, It was developed by Fortinet, Inc."},
+                {"__label_cert_manage_tool__", "Certificate Management Tools."},
+                {"__label_putty__", "PuTTY, PuTTY is an SSH and telnet client, It was developed by Simon Tatham."},
+                {"__label_unknown__", "This is an unknown program."},
+                {"__label_teams__", "Microsoft Teams, Microsoft Teams is a communication and collaboration software that integrates chat, video conferencing, file storage, Office 365, and more. It was developed by Microsoft Corp."},
+            };
+            static std::vector<std::pair<float, std::string>> prefix = {
+                {0.95, "This program is part of"},
+                {0.85, "This program might be a part of"},
+                {0.70, "This program is similar to"},
+            };
+            std::cout << std::endl;
+            std::string pre_str;
+            std::string desc_str;
+
+            auto iter = labels.find(label);
+            if (iter == labels.end()) {
+                bunknown = true;
+                desc_str = labels["__label_unknown__"];
+            }
+            else {
+                if (iter->first.compare("__label_unknown__") == 0) {
+                    bunknown = true;
+                }
+                desc_str = iter->second;
+            }
+            if (bunknown) {
+                std::cout << desc_str << std::endl;
+            }
+            else {
+                if (score < prefix[prefix.size() - 1].first) {
+                    desc_str = labels["__label_unknown__"];
+                    std::cout << desc_str << std::endl;
+                }
+                else {
+                    for (auto& pre : prefix) {
+                        if (score >= pre.first) {
+                            pre_str = pre.second;
+                            break;
+                        }
+                    }
+                    std::cout << pre_str << " " << desc_str << std::endl;
+                }
+            }
+            std::cout << std::endl;
+            SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+        }
+    private:
     };
 
     class CDataSets : public torch::data::Dataset<CDataSets> {
@@ -349,13 +418,24 @@ namespace cchips {
                     [](const std::pair<float, std::int32_t>& a, const std::pair<float, std::int32_t>& b) {
                         return a.first > b.first;
                     });
-                if (m_k == 0) {
-                    std::cout << "predict class: " << m_datasets->getLabel(precision[0].second) << std::endl;
+                switch (m_poutputtype) {
+                case output_type::ot_nlp:
+                {
+                    CNlpOutput nlpoutput(m_datasets->getLabel(precision[0].second), precision[0].first/100);
                 }
-                else {
-                    for (int i = 0; i < m_k; i++) {
-                        std::cout << "predict class: " << m_datasets->getLabel(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
+                break;
+                case output_type::ot_label:
+                {
+                    if (m_k == 0) {
+                        std::cout << "predict class: " << m_datasets->getLabel(precision[0].second) << std::endl;
                     }
+                    else {
+                        for (int i = 0; i < m_k; i++) {
+                            std::cout << "predict class: " << m_datasets->getLabel(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
+                        }
+                    }
+                }
+                break;
                 }
             }
             m_k = 0;
@@ -372,6 +452,7 @@ namespace cchips {
         std::string m_dictbin;
         std::uint32_t m_ratio = 0;
         std::uint32_t m_k = 1;
+        output_type m_poutputtype = ot_nlp;
         float m_accuracy = _invalid_accuracy;
         torch::Tensor m_predict_result;
         std::unique_ptr<torch::Device> m_device = nullptr;
@@ -447,13 +528,25 @@ namespace cchips {
                     [](const std::pair<float, std::int32_t>& a, const std::pair<float, std::int32_t>& b) {
                         return a.first > b.first;
                     });
-                if (m_k == 0) {
-                    std::cout << "predict class: " << m_datasets->getLabel(precision[0].second) << std::endl;
+
+                switch (m_poutputtype) {
+                case output_type::ot_nlp:
+                {
+                    CNlpOutput nlpoutput(m_datasets->getLabel(precision[0].second), precision[0].first/100);
                 }
-                else {
-                    for (int i = 0; i < m_k; i++) {
-                        std::cout << "predict class: " << m_datasets->getLabel(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
+                break;
+                case output_type::ot_label:
+                {
+                    if (m_k == 0) {
+                        std::cout << "predict class: " << m_datasets->getLabel(precision[0].second) << std::endl;
                     }
+                    else {
+                        for (int i = 0; i < m_k; i++) {
+                            std::cout << "predict class: " << m_datasets->getLabel(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
+                        }
+                    }
+                }
+                break;
                 }
             }
             m_k = 0;
@@ -470,6 +563,7 @@ namespace cchips {
         std::string m_dictbin;
         std::uint32_t m_ratio = 0;
         std::uint32_t m_k = 1;
+        output_type m_poutputtype = ot_nlp;
         float m_accuracy = _invalid_accuracy;
         torch::Tensor m_predict_result;
         std::unique_ptr<torch::Device> m_device = nullptr;
@@ -513,6 +607,7 @@ namespace cchips {
             m_k = k;
         }
     private:
+        output_type m_poutputtype = ot_nlp;
         std::uint32_t m_k = 1;
         std::uint32_t m_epochs = 100;
         std::string m_input;
@@ -521,6 +616,22 @@ namespace cchips {
         std::uint32_t m_ratio = 0;
         ft_submodel m_subtype;
         std::unique_ptr<fasttext::FastText> m_ftmodel = nullptr;
+    };
+
+    class CAlbertModelNet {
+    public:
+        CAlbertModelNet(const std::string& server_url);
+        ~CAlbertModelNet() {
+            if (m_curl) {
+                curl_easy_cleanup(m_curl);
+            }
+            m_curl = nullptr;
+        }
+        bool predict(const std::string& inputpath);
+    private:
+        bool m_valid = false;
+        CURL* m_curl;
+        std::string m_server_url;
     };
 
     class CAlbertModel {
@@ -582,13 +693,25 @@ namespace cchips {
                     [](const std::pair<float, std::int32_t>& a, const std::pair<float, std::int32_t>& b) {
                         return a.first > b.first;
                     });
-                if (m_k == 0) {
-                    std::cout << "predict class: " << getLabelfunc(precision[0].second) << std::endl;
+
+                switch (m_poutputtype) {
+                case output_type::ot_nlp:
+                {
+                    CNlpOutput nlpoutput(getLabelfunc(precision[0].second), precision[0].first/100);
                 }
-                else {
-                    for (int i = 0; i < m_k; i++) {
-                        std::cout << "predict class: " << getLabelfunc(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
+                break;
+                case output_type::ot_label:
+                {
+                    if (m_k == 0) {
+                        std::cout << "predict class: " << getLabelfunc(precision[0].second) << std::endl;
                     }
+                    else {
+                        for (int i = 0; i < m_k; i++) {
+                            std::cout << "predict class: " << getLabelfunc(precision[i].second) << "\t" << std::fixed << std::setprecision(2) << precision[i].first << "%" << std::endl;
+                        }
+                    }
+                }
+                break;
                 }
             }
             m_k = 0;
@@ -602,6 +725,7 @@ namespace cchips {
         std::string m_input;
         std::string m_output;
         std::string m_modelbin;
+        output_type m_poutputtype = ot_nlp;
         std::unique_ptr<torch::Device> m_device = nullptr;
         torch::jit::script::Module m_model;
         std::unique_ptr<CDataSets> m_datasets = nullptr;

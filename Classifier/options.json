@@ -99,8 +99,8 @@
   },
 
   "peinsnflow_info": {
-    "apiflowfeature": true,
-    "blockflowfeature": true,
-    "insnflowfeature": true
+    "apiflowfeature": false,
+    "blockflowfeature": false,
+    "insnflowfeature": false
   }
 }

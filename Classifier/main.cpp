@@ -24,8 +24,11 @@ std::wstring defaultModelpath(const std::wstring& model)
     else if (_wcsicmp(model.c_str(), L"lstm") == 0) {
         return L".\\lstm-model(merge).bin";
     }
-    else if (_wcsicmp(model.c_str(), L"bert") == 0) {
+    else if (_wcsicmp(model.c_str(), L"bert(local)") == 0) {
         return L".\\bert-model(merge).bin";
+    }
+    else if (_wcsicmp(model.c_str(), L"bert(net)") == 0) {
+        return L"http://192.168.4.42:8888/predict/bert";
     }
     else if (_wcsicmp(model.c_str(), L"gpt") == 0) {
         return L".\\gpt-model(merge).bin";
@@ -48,13 +51,13 @@ int main()
             "model training and predict toolkit v 1.0c\n\n"
             "Usage: %S <options..>\n"
             "Options:\n"
-            "  --input                                              dataset or predicting the path of sample.\n"
-            "  --model [fasttext | gru | lstm | bert | gpt]         selecting ML Models.\n"
-            "  --model_path                                         the path of modelbin.\n"
-            "  [--ratio] [8 | 6]                                    training ratio.\n"
-            "  [--predict]                                          predicting the sample using the chosen model.\n"
-            "  [--test]                                             test the samples using the chosen model.\n"
-            "  [--output]                                           output to logfile.\n",
+            "  --input                                                                  dataset or predicting the path of sample.\n"
+            "  --model [fasttext | gru | lstm | bert(local) | bert(net) | gpt]          selecting ML Models.\n"
+            "  --model_path                                                             the path of modelbin.\n"
+            "  [--ratio] [8 | 6]                                                        training ratio.\n"
+            "  [--predict]                                                              predicting the sample using the chosen model.\n"
+            "  [--test]                                                                 test the samples using the chosen model.\n"
+            "  [--output]                                                               output to path.\n",
             argv[0]
         );
         return -1;
@@ -193,8 +196,11 @@ int main()
     else if (_stricmp(model.c_str(), "lstm") == 0) {
         modeltype = cchips::mmodel_lstm;
     }
-    else if (_stricmp(model.c_str(), "bert") == 0) {
-        modeltype = cchips::mmodel_bert;
+    else if (_stricmp(model.c_str(), "bert(local)") == 0) {
+        modeltype = cchips::mmodel_bert_l;
+    }
+    else if (_stricmp(model.c_str(), "bert(net)") == 0) {
+        modeltype = cchips::mmodel_bert_n;
     }
     else if (_stricmp(model.c_str(), "gpt") == 0) {
         modeltype = cchips::mmodel_gpt;
@@ -286,7 +292,7 @@ int main()
             }
         }
         break;
-        case cchips::mmodel_bert:
+        case cchips::mmodel_bert_l:
         {
             if (bmerge) {
                 cchips::CAlbertModel _model("", output_path, modelbin_path);
@@ -304,6 +310,14 @@ int main()
             }
         }
         break;
+        case cchips::mmodel_bert_n:
+        {
+            if (bpredict) {
+                cchips::CAlbertModelNet _model(modelbin_path);
+                _model.predict(input_path);
+            }
+        }
+        break;
         case cchips::mmodel_gpt:
             std::cout << "unsupported now..." << std::endl;
             [[fallthrough]];
@@ -315,6 +329,7 @@ int main()
         std::cout << "Exception occurred during model preprocessing: " << e.what() << std::endl;
         return -1;
     }
+    curl_global_cleanup();
     return 0;
 }
 
