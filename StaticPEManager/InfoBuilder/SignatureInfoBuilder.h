@@ -16,9 +16,75 @@ namespace cchips {
                 return false;
             return true;
         }
+        bool Scan(const std::string& file_buf, CFileInfo& file_info) {
+            try {
+                VerifyInfo digisig_info = m_cert_manager.VerifyBuffer(file_buf.data(), file_buf.size());
+                for (auto& error : digisig_info.openssl_errors_) {
+                    std::cout << error.second << std::endl;
+                }
+                std::unique_ptr<cchips::CRapidJsonWrapper> json_result;
+                json_result = std::make_unique<cchips::CRapidJsonWrapper>("{}");
+                if (!json_result)
+                    return false;
+                json_result->AddTopMember("bsigned", cchips::RapidValue(digisig_info.has_signature_));
+                json_result->AddTopMember("bverified", cchips::RapidValue(digisig_info.is_verified_));
+                json_result->AddTopMember("bcountersign", cchips::RapidValue(digisig_info.has_counter_signatures_));
+                json_result->AddTopMember("bmutilcerts", cchips::RapidValue(digisig_info.has_nested_signatures_));
+                cchips::RapidDocument::AllocatorType& allocator = json_result->GetAllocator();
+                if (digisig_info.signers_.size() >= 1) {
+                    auto& signer = digisig_info.signers_[0];
+                    if (signer.signer_name.length()) {
+                        std::unique_ptr<cchips::RapidValue> primary_cert = std::make_unique<cchips::RapidValue>();
+                        if (!primary_cert) return false;
+                        primary_cert->SetObject();
+                        AddVerifyLog(primary_cert, signer, allocator);
+                        json_result->AddTopMember("primarycert", std::move(primary_cert));
+                    }
+                }
+                if (digisig_info.counter_signatures_.size()) {
+                    for (auto& counter : digisig_info.counter_signatures_) {
+                        std::unique_ptr<cchips::RapidValue> countersign_cert = std::make_unique<cchips::RapidValue>();
+                        if (!countersign_cert) return false;
+                        countersign_cert->SetObject();
+                        countersign_cert->AddMember("bverified", counter.is_verified_, allocator);
+                        if (counter.signers_.size() >= 1) {
+                            auto& signer = counter.signers_[0];
+                            if (signer.signer_name.length()) {
+                                AddVerifyLog(countersign_cert, signer, allocator);
+                            }
+                        }
+                        json_result->AddTopMember("countersign_path", std::move(countersign_cert));
+                        break;
+                    }
+                }
+                if (digisig_info.nested_signatures_.size()) {
+                    for (auto& nested : digisig_info.nested_signatures_) {
+                        std::stringstream nested_ss;
+                        nested_ss << "second_cert_path";
+                        std::unique_ptr<cchips::RapidValue> nested_cert = std::make_unique<cchips::RapidValue>();
+                        if (!nested_cert) return false;
+                        nested_cert->SetObject();
+                        if (nested.signers_.size() >= 1) {
+                            auto& signer = nested.signers_[0];
+                            if (signer.signer_name.length()) {
+                                AddVerifyLog(nested_cert, signer, allocator);
+                            }
+                        }
+                        json_result->AddTopMember("nested_cert_path", std::move(nested_cert));
+                        break;
+                    }
+                }
+                file_info.SetJsonVerifyInfo(std::move(json_result));
+                return true;
+            }
+            catch (const std::exception& e)
+            {
+            }
+            return false;
+        }
         bool Scan(fs::path& file_path, CFileInfo& file_info) { 
             try {
-                VerifyInfo digisig_info = m_cert_manager.Verify(to_byte_string(file_path.wstring()).c_str());
+                VerifyInfo digisig_info = m_cert_manager.VerifyFile(file_path.string().c_str());
                 for (auto& error : digisig_info.openssl_errors_) {
                     std::cout << error.second << std::endl;
                 }

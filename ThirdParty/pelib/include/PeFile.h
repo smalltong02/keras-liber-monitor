@@ -29,6 +29,7 @@
 #include "CoffSymbolTable.h"
 #include "DelayImportDirectory.h"
 #include "SecurityDirectory.h"
+#include <sstream>
 
 namespace PeLib
 {
@@ -173,6 +174,7 @@ namespace PeLib
 
 		private:
 	      std::ifstream m_ifStream;
+		  std::istringstream m_isStream;
 	      std::istream& m_iStream;
 
           _loading_type m_loading_type;
@@ -378,22 +380,25 @@ namespace PeLib
 	**/
 	template<int bits>
 	PeFileT<bits>::PeFileT(std::istream& stream, _loading_type type) :
-			m_iStream(stream),
+			m_iStream(m_isStream),
 			m_loadedBytes(&m_bytes),
             m_loading_type(type)
 	{
-		if (!m_iStream.good())
+		if (!stream.good())
 			return;
-		m_iStream.seekg(0, std::ios::end);
-		int file_length = (int)m_iStream.tellg();
+		stream.seekg(0, std::ios::end);
+		int file_length = (int)stream.tellg();
 		if (!file_length)
 			return;
-		m_iStream.seekg(0, std::ios::beg);
+		stream.seekg(0, std::ios::beg);
 		m_bytes.resize(file_length);
-		m_iStream.read((char*)&m_bytes[0], file_length);
-		int readed = (int)m_iStream.tellg();
+		stream.read((char*)&m_bytes[0], file_length);
+		int readed = (int)stream.tellg();
 		if (readed != file_length) {
 			m_bytes.clear();
+		}
+		else {
+			m_isStream.str(std::string(m_bytes.begin(), m_bytes.end()));
 		}
 		return;
  	}
@@ -401,7 +406,7 @@ namespace PeLib
 	template<int bits>
 	PeFileT<bits>::PeFileT() :
             m_loading_type(loading_file),
-			m_iStream(m_ifStream)
+			m_iStream(m_isStream)
 	{
 	}
 

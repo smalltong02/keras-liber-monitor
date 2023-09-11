@@ -35,14 +35,37 @@ namespace cchips {
             auto& exporttable = pe_format->getExportTable();
             auto& res = pe_format->getResSection();
             const auto secCounter = pe_format->getDeclaredNumberOfSections();
+            std::vector<std::shared_ptr<cchips::PeCoffSection>> toppriority;
+            std::vector<std::shared_ptr<cchips::PeCoffSection>> secpriority;
+            std::vector<std::shared_ptr<cchips::PeCoffSection>> lastpriority;
             for (std::size_t i = 0; i < secCounter; ++i)
             {
                 const auto fsec = pe_format->getPeSection(i);
                 if (!UnporcessSection(fsec, res))
                 {
+                    if (fsec->isDataOnly() && fsec->isReadOnly()) {
+                        toppriority.push_back(fsec);
+                        continue;
+                    }
+                    if (fsec->isCode() && fsec->isReadOnly()) {
+                        secpriority.push_back(fsec);
+                        continue;
+                    }
+                    lastpriority.push_back(fsec);
+                }
+            }
+            std::vector<std::shared_ptr<cchips::PeCoffSection>> mergedvector;
+            mergedvector.reserve(toppriority.size() + secpriority.size() + lastpriority.size());
+            mergedvector.insert(mergedvector.end(), toppriority.begin(), toppriority.end());
+            mergedvector.insert(mergedvector.end(), secpriority.begin(), secpriority.end());
+            mergedvector.insert(mergedvector.end(), lastpriority.begin(), lastpriority.end());
+
+            for (auto& fsec : mergedvector) {
+                if (!UnporcessSection(fsec, res))
+                {
                     cchips::RapidValue vsection;
                     vsection.SetObject();
-                    vsection.AddMember("sec_no", cchips::RapidValue(i), allocator);
+                    vsection.AddMember("sec_no", cchips::RapidValue((std::uint32_t)fsec->getIndex()), allocator);
                     vsection.AddMember("sec_name", cchips::RapidValue(fsec->getName().c_str(), allocator), allocator);
                     vsection.AddMember("characteristics", cchips::RapidValue(fsec->getPeCoffFlags()), allocator);
                     unsigned long long sizeinmemory = 0;
@@ -52,7 +75,7 @@ namespace cchips {
                     char* address = (char*)fsec->getAddress();
                     auto addr_size = fsec->getSizeInFile();
                     if (address && addr_size) {
-                        
+
                         cchips::RapidValue inside_strings;
                         inside_strings.SetArray();
 

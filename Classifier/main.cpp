@@ -13,6 +13,23 @@ void info(const char* fmt, ...)
     va_end(args);
 }
 
+void help() {
+    info(
+        "model training and predict toolkit v 1.0c\n\n"
+        "Usage: Classifier.exe <options..>\n"
+        "Options:\n"
+        "  --input                                                                  dataset or predicting the path of sample.\n"
+        "  --model [fasttext | gru | lstm | bert(net)]                              selecting ML Models.\n"
+        "  --model_path                                                             the path of modelbin.\n"
+        "  [--ratio] [8 | 6]                                                        training ratio.\n"
+        "  [--predict]                                                              predicting the sample using the chosen model.\n"
+        "  [--test]                                                                 test the samples using the chosen model.\n"
+        "  [--output]                                                               output to path.\n",
+        "  [--h]                                                                    help.\n"
+    );
+    return;
+}
+
 std::wstring defaultModelpath(const std::wstring& model)
 {
     if (_wcsicmp(model.c_str(), L"fasttext") == 0) {
@@ -24,11 +41,11 @@ std::wstring defaultModelpath(const std::wstring& model)
     else if (_wcsicmp(model.c_str(), L"lstm") == 0) {
         return L".\\lstm-model(merge).bin";
     }
-    else if (_wcsicmp(model.c_str(), L"bert(local)") == 0) {
-        return L".\\bert-model(merge).bin";
-    }
+    //else if (_wcsicmp(model.c_str(), L"bert(local)") == 0) {
+    //    return L".\\bert-model(merge).bin";
+    //}
     else if (_wcsicmp(model.c_str(), L"bert(net)") == 0) {
-        return L"http://192.168.4.42:8888/predict/bert";
+        return L"http://192.168.4.47:8822/predict/bert";
     }
     else if (_wcsicmp(model.c_str(), L"gpt") == 0) {
         return L".\\gpt-model(merge).bin";
@@ -47,19 +64,7 @@ int main()
     }
 
     if (argc <= 1) {
-        info(
-            "model training and predict toolkit v 1.0c\n\n"
-            "Usage: %S <options..>\n"
-            "Options:\n"
-            "  --input                                                                  dataset or predicting the path of sample.\n"
-            "  --model [fasttext | gru | lstm | bert(local) | bert(net) | gpt]          selecting ML Models.\n"
-            "  --model_path                                                             the path of modelbin.\n"
-            "  [--ratio] [8 | 6]                                                        training ratio.\n"
-            "  [--predict]                                                              predicting the sample using the chosen model.\n"
-            "  [--test]                                                                 test the samples using the chosen model.\n"
-            "  [--output]                                                               output to path.\n",
-            argv[0]
-        );
+        help();
         return -1;
     }
 
@@ -76,6 +81,10 @@ int main()
     std::wstring epochsw;
     std::wstring kw;
     for (int idx = 1; idx < argc; idx++) {
+        if (wcscmp(argv[idx], L"--h") == 0) {
+            help();
+            return -1;
+        }
         if (wcscmp(argv[idx], L"--input") == 0) {
             input_pathw = argv[++idx];
             continue;
@@ -120,7 +129,8 @@ int main()
             epochsw = argv[++idx];
             continue;
         }
-        info("Found unsupported argument: %S\n", argv[idx]);
+        info("Found unsupported argument: %S\n\n", argv[idx]);
+        help();
         return -1;
     }
 
@@ -251,7 +261,9 @@ int main()
                 if (!_model) {
                     return -1;
                 }
+#ifndef pytorch_only_predict
                 if (btest) {
+
                     if (_model->unpackmodel(_model)) {
                         _model->test();
                     }
@@ -259,6 +271,7 @@ int main()
                 else if (_model->train()) {
                     _model->packmodel(_model);
                 }
+#endif
             }
         }
         break;
@@ -281,6 +294,7 @@ int main()
                 if (!_model) {
                     return -1;
                 }
+#ifndef pytorch_only_predict
                 if (btest) {
                     if (_model->unpackmodel(_model)) {
                         _model->test();
@@ -289,6 +303,7 @@ int main()
                 else if (_model->train()) {
                     _model->packmodel(_model);
                 }
+#endif
             }
         }
         break;

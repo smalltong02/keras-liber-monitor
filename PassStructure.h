@@ -17,6 +17,8 @@
 
 namespace cchips {
 
+    namespace fs = std::filesystem;
+
     class Module;
     class GlobalIFunc;
     class Function;
@@ -730,8 +732,22 @@ namespace cchips {
             void InitializePeStructure(std::unique_ptr<PeLib::PeFile> pe_file);
             void InitializeRanges();
         public:
-            ModuleContext(const std::string& path) {
-                auto file = GetPeFile(path);
+            ModuleContext(const fs::path& path) {
+                auto file = GetPeFile(path.string());
+                if (!file) {
+                    module_format = FileDetector::format_unknown;
+                    base_address = nullptr;
+                }
+                else {
+                    base_address = file->getLoadedBytesData();
+                    end_address = base_address + file->getLoadedFileLength();
+                    InitializePeStructure(std::move(file));
+                    InitializeRanges();
+                }
+            }
+            ModuleContext(const std::string& buffer) {
+                std::istringstream iss(buffer);
+                std::unique_ptr<PeLib::PeFile> file(FileDetector::ReadFileMemory(iss));
                 if (!file) {
                     module_format = FileDetector::format_unknown;
                     base_address = nullptr;
@@ -837,23 +853,30 @@ namespace cchips {
             m_function_list.clear();
             m_globalifunc_list.clear();
             m_basicblock_list.clear();
+            m_globalconstrange.clear();
             ClrInsnCounts();
         }
         void SetPrecacheAddress(std::uint8_t* address) { m_precache_address = address; }
-        void SetPrecachePath(const std::string& path) { m_precache_path = path; }
+        void SetPrecachePath(const std::string& buffer) { m_precache_buffer = buffer; }
+        void SetPrecachePath(const fs::path& path) { m_precache_path = path; }
         bool Initialize();
-        void SetModuleName(std::string& name) { m_name = name; }
+        void SetModuleName(const std::string& name) { m_name = name; }
         const std::string& GetModuleName() const { return m_name; }
         const std::string GetArchitecture() const { 
             if (Valid()) {
-                switch (m_module_context->GetBits())
-                {
-                case 32:
-                    return "x86";
-                case 64:
-                    return "x64";
-                default:
-                    break;
+                if (m_module_context->GetPeFormat()->isDotNet()) {
+                    return ".net";
+                }
+                else {
+                    switch (m_module_context->GetBits())
+                    {
+                    case 32:
+                        return "x86";
+                    case 64:
+                        return "x64";
+                    default:
+                        break;
+                    }
                 }
             }
             return "unknown";
@@ -861,6 +884,8 @@ namespace cchips {
         const std::unique_ptr<ModuleContext>& GetContext() const { return m_module_context; }
         void dump(const std::string& output_file, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const;
         void dump(const std::unique_ptr<cchips::CRapidJsonWrapper>& document, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const;
+        void dotnetdump(RapidValue& json_object, rapidjson::MemoryPoolAllocator<>& allocator, Cfg_view_flags flags = Cfg_view_flags::cfg_simple) const;
+        bool DotnetParser(const std::string& buffer, std::vector<std::string>& ilcode_array) const;
         bool Valid() const {
             if (m_module_context && m_module_context->Valid())
                 return true;
@@ -869,6 +894,7 @@ namespace cchips {
         bool InitializeAbi();
         bool InitializeCommonRegister();
         bool InitializeGlobalIFunction();
+        bool InitializeGlobalRange();
         bool GetLinkageFuncName(std::string& func_name, std::uint8_t* func_address) const;
         bool AddFunction(std::string& func_name, std::uint8_t* func_address);
         std::shared_ptr<Function> GetFunction(std::uint8_t* func_address) const {
@@ -947,6 +973,7 @@ namespace cchips {
         bool LinkInsntoGlobal(CapInsn& insn, std::uint8_t* addr) const;
         bool AddGlobalIFunc(std::unique_ptr<GlobalIFunc::func_struc> func_st);
         const GLOBALIFUNC_SYMBOLTABLE& GetGlobalIFuncs() const { return m_globalifunc_list; }
+        const RangeContainer<std::uint64_t>& GetGlobalConstRange() const { return m_globalconstrange; }
         ReportObject& GetReportObject() { return m_report_object; }
         std::uint64_t GetInsnCounts() const { return m_insn_counts.load(); }
         void IncInsnCounts() { m_insn_counts.fetch_add(1); }
@@ -960,13 +987,15 @@ namespace cchips {
     private:
         std::string m_name;
         std::uint8_t* m_precache_address = 0;
-        std::string m_precache_path;
+        std::string m_precache_buffer;
+        fs::path m_precache_path;
         std::shared_ptr<Abi> m_abi = nullptr;
         std::unique_ptr<ModuleContext> m_module_context = nullptr;
         GLOBAL_SYMBOLTABLE m_globalvariable_list;
         FUNCTION_SYMBOLTABLE m_function_list;
         BASICBLOCK_SYMBOLTABLE m_basicblock_list;
         GLOBALIFUNC_SYMBOLTABLE m_globalifunc_list;
+        RangeContainer<std::uint64_t> m_globalconstrange;
         std::unique_ptr<ControlFlowGraph> m_cfgraph;
         ReportObject m_report_object;
         static std::atomic_uint64_t m_insn_counts;

@@ -1,6 +1,7 @@
 #include "ExceptionThrow.h"
 #include "utils.h"
 #include "PeInfo.h"
+#include "pyc_module.h"
 #include <filesystem>
 
 namespace cchips {
@@ -33,6 +34,8 @@ namespace cchips {
         {format_coff, "coff"},
         {format_macho, "macho"},
         {format_intel_hex, "intel_hex"},
+        {format_pyc, "pyc"},
+        {format_javac, "javac"},
         {format_raw, "raw"}
     };
 
@@ -155,10 +158,17 @@ namespace cchips {
                 {
                 case file_format::format_pe:
                     return IsPEHead(base_address, size) ? file_format::format_pe : file_format::format_dos;
+                case file_format::format_macho:
+                    if (IsJavacFormat(magic)) {
+                        return file_format::format_javac;
+                    }
                 default:
                     return item.second;
                 }
             }
+        }
+        if (IsPycFormat(magic)) {
+            return file_format::format_pyc;
         }
         return file_format::format_unknown;
     }
@@ -242,6 +252,49 @@ namespace cchips {
         else
         {
             return new PeLib::PeFile32(path);
+        }
+    }
+
+    PeLib::PeFile* FileDetector::ReadFileMemory(std::istream& istream)
+    {
+        PeLib::PeFile32 pefile(istream, PeLib::PeFileT<32>::loading_file);
+
+        // Attempt to read the DOS file header.
+        if (pefile.readMzHeader() != PeLib::ERROR_NONE)
+        {
+            return nullptr;
+        }
+
+        // Verify the DOS header
+        if (!pefile.mzHeader().isValid())
+        {
+            return nullptr;
+        }
+
+        // Read PE header. Note that at this point, we read the header as if
+        // it was 32-bit PE file.
+        if (pefile.readPeHeader() != PeLib::ERROR_NONE)
+        {
+            return nullptr;
+        }
+        if (!pefile.peHeader().isValid())
+        {
+            return nullptr;
+        }
+
+        WORD machine = pefile.peHeader().getMachine();
+        WORD magic = pefile.peHeader().getMagic();
+
+        // jk2012-02-20: make the PEFILE32 be the default return value
+        if ((machine == PeLib::PELIB_IMAGE_FILE_MACHINE_AMD64
+            || machine == PeLib::PELIB_IMAGE_FILE_MACHINE_IA64)
+            && magic == PeLib::PELIB_IMAGE_NT_OPTIONAL_HDR64_MAGIC)
+        {
+            return new PeLib::PeFile64(istream, PeLib::PeFileT<64>::loading_file);
+        }
+        else
+        {
+            return new PeLib::PeFile32(istream, PeLib::PeFileT<32>::loading_file);
         }
     }
 
@@ -480,6 +533,59 @@ namespace cchips {
         auto readed = infile.tellg();
         if (!readed) {
             context_buffer.resize(0);
+            return false;
+        }
+        return true;
+    }
+
+    bool FileDetector::IsPycFormat(const std::string& magic) {
+        if (magic.size() < sizeof(UINT32)) {
+            return false;
+        }
+        UINT32 magic_number = *((UINT32*)magic.data());
+        if (magic_number == MAGIC_1_0 ||
+            magic_number == MAGIC_1_1 ||
+            magic_number == MAGIC_1_3 ||
+            magic_number == MAGIC_1_4 ||
+            magic_number == MAGIC_1_5 ||
+            magic_number == MAGIC_1_6 ||
+            magic_number == MAGIC_2_0 ||
+            magic_number == MAGIC_2_1 ||
+            magic_number == MAGIC_2_2 ||
+            magic_number == MAGIC_2_3 ||
+            magic_number == MAGIC_2_4 ||
+            magic_number == MAGIC_2_5 ||
+            magic_number == MAGIC_2_6 ||
+            magic_number == MAGIC_2_7 ||
+            magic_number == MAGIC_3_0 ||
+            magic_number == MAGIC_3_1 ||
+            magic_number == MAGIC_3_2 ||
+            magic_number == MAGIC_3_3 ||
+            magic_number == MAGIC_3_4 ||
+            magic_number == MAGIC_3_5 ||
+            magic_number == MAGIC_3_5_3 ||
+            magic_number == MAGIC_3_6 ||
+            magic_number == MAGIC_3_7 ||
+            magic_number == MAGIC_3_8 ||
+            magic_number == MAGIC_3_9 ||
+            magic_number == MAGIC_3_10 ||
+            magic_number == MAGIC_3_11)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    bool FileDetector::IsJavacFormat(const std::string& magic) {
+        if (magic.size() < sizeof(UINT64)) {
+            return false;
+        }
+        UINT32 magic_number = *((UINT32*)magic.data());
+        UINT32 java_version = *((UINT32*)(magic.data() + sizeof(UINT32)));
+        if (magic_number != 0xCAFEBABE) {
+            return false;
+        }
+        if (java_version < 0x20) {
             return false;
         }
         return true;

@@ -1,4 +1,6 @@
 #include <chrono>
+#include <algorithm>
+#include "resource.h"
 #include "ExceptionThrow.h"
 #include "utils.h"
 #include "PassStructure.h"
@@ -110,11 +112,36 @@ namespace cchips {
         return true;
     }
 
+    bool Module::InitializeGlobalRange() {
+        if (!Valid()) return false;
+        const auto sec_counter = m_module_context->GetPeFormat()->getDeclaredNumberOfSections();
+        if (sec_counter == 0) {
+            return true;
+        }
+        for (std::size_t i = 0; i < sec_counter; ++i)
+        {
+            const auto fsec = m_module_context->GetPeFormat()->getPeSection(i);
+            if (!fsec) {
+                continue;
+            }
+            if (fsec->isDataOnly() && fsec->isReadOnly()) {
+                Range<std::uint64_t> fsec_range(fsec->getAddress(), fsec->getEndAddress());
+                m_globalconstrange.insert(fsec_range);
+            }
+        }
+        return true;
+    }
+
     bool Module::Initialize() {
         if (!m_precache_address) {
             if (m_precache_path.empty()) {
-                m_precache_address = reinterpret_cast<std::uint8_t*>(GetModuleHandle(nullptr));
-                m_module_context = std::make_unique<ModuleContext>(m_precache_address);
+                if (m_precache_buffer.empty()) {
+                    m_precache_address = reinterpret_cast<std::uint8_t*>(GetModuleHandle(nullptr));
+                    m_module_context = std::make_unique<ModuleContext>(m_precache_address);
+                }
+                else {
+                    m_module_context = std::make_unique<ModuleContext>(m_precache_buffer);
+                }
             }
             else {
                 m_module_context = std::make_unique<ModuleContext>(m_precache_path);
@@ -128,6 +155,7 @@ namespace cchips {
             InitializeAbi();
             InitializeCommonRegister();
             InitializeGlobalIFunction();
+            InitializeGlobalRange();
             m_cfgraph = std::make_unique<ControlFlowGraph>(shared_from_this(), ControlFlowGraph::cfg_apiflow);
             return true;
         }
@@ -135,6 +163,7 @@ namespace cchips {
         m_globalvariable_list.clear();
         m_function_list.clear();
         m_globalifunc_list.clear();
+        m_globalconstrange.clear();
         return false;
     }
 
@@ -501,18 +530,205 @@ namespace cchips {
         module_value->AddMember("address", RapidValue(ss.str().c_str(), allocator), allocator);
         module_value->AddMember("functions", size(), allocator);
 
-        for (auto& func : m_function_list) {
-            if (func.first && func.second) {
-                func.second->dump(*module_value, allocator, flags);
+        const auto& pe_format = GetContext()->GetPeFormat();
+        if (pe_format->isDotNet()) {
+            dotnetdump(*module_value, allocator);
+        }
+        else {
+            for (auto& func : m_function_list) {
+                if (func.first && func.second) {
+                    func.second->dump(*module_value, allocator, flags);
+                }
+            }
+            m_report_object.dump(*module_value, allocator);
+            if (m_cfgraph) {
+                m_cfgraph->dump(*module_value, allocator);
             }
         }
-        m_report_object.dump(*module_value, allocator);
-        //if (m_cfgraph) {
-        //    m_cfgraph->dump(*module_value, allocator);
-        //}
-
         document->CopyRapidValue(std::move(module_value));
         return;
+    }
+
+    void Module::dotnetdump(RapidValue& json_object, rapidjson::MemoryPoolAllocator<>& allocator, Cfg_view_flags flags) const {
+        HMODULE ModuleHandle = GetModuleHandle(NULL);
+        if (ModuleHandle == NULL) {
+            return;
+        }
+
+        std::vector<BYTE> ildasm_bin;
+        bool result = ExtractResource(ModuleHandle,
+            "NETBIN",
+            MAKEINTRESOURCE(IDR_ILDASM_BIN),
+            ildasm_bin);
+        if (result && ildasm_bin.size() > 0) {
+            fs::path ilpath;
+            fs::path appath;
+            fs::path outpath;
+            fs::path respath;
+            do {
+                try {
+                    ilpath = fs::temp_directory_path().append("__il.bin");
+                    std::ofstream ilfile(ilpath, std::ios::out | std::ios::binary);
+                    if (!ilfile.is_open()) {
+                        break;
+                    }
+                    ilfile.write((char*)ildasm_bin.data(), ildasm_bin.size());
+                    ilfile.close();
+                    appath = fs::temp_directory_path().append("__app.data");
+                    std::ofstream appfile(appath, std::ios::out | std::ios::binary);
+                    if (!appfile.is_open()) {
+                        break;
+                    }
+                    appfile.write((char*)m_module_context->GetPeFormat()->getLoadedBytesData(), m_module_context->GetPeFormat()->getLoadedFileLength());
+                    appfile.close();
+                    outpath = fs::temp_directory_path().append("__app.il");
+                    respath = fs::temp_directory_path().append("__app.res");
+                    std::string cmdline = std::string("start /B ") + ilpath.string() + " " + appath.string() + " /out=" + outpath.string();
+                    std::system(cmdline.c_str());
+                    ::Sleep(2000);
+                    std::ifstream infile(outpath, std::ios::in | std::ios::binary | std::ios::ate);
+                    if (!infile.is_open()) {
+                        break;
+                    }
+                    auto filesize = infile.tellg();
+                    if (filesize == static_cast<uintmax_t>(-1) || filesize == 0) {
+                        break;
+                    }
+                    infile.seekg(0, std::ios::beg);
+                    std::string buffer;
+                    buffer.resize(filesize);
+                    if (buffer.size() != filesize) {
+                        break;
+                    }
+                    infile.read((char*)&buffer[0], filesize);
+                    auto readed = infile.tellg();
+                    if (!readed) {
+                        break;
+                    }
+                    std::vector<std::string> ilcode_array;
+                    if (DotnetParser(buffer, ilcode_array)) {
+                        if (!ilcode_array.empty()) {
+                            RapidValue rapidarray;
+                            rapidarray.SetArray();
+                            std::uint32_t  array_size = 0;
+                            for (auto& arr : ilcode_array) {
+                                array_size++;
+                                rapidarray.PushBack(cchips::RapidValue(arr.c_str(), allocator), allocator);
+                            }
+                            json_object.AddMember("ilcode_count", array_size, allocator);
+                            json_object.AddMember("ilcode", rapidarray, allocator);
+                        }
+                    }
+                }
+                catch (const std::exception& e) {
+                    std::cout << "Exception occurred in dotnetdump(): " << e.what() << std::endl;
+                }
+            } while (false);
+            if (!ilpath.empty()) {
+                fs::remove(ilpath);
+            }
+            if (!appath.empty()) {
+                fs::remove(appath);
+            }
+            if (!outpath.empty()) {
+                fs::remove(outpath);
+            }
+            if (!respath.empty()) {
+                fs::remove(respath);
+            }
+        }
+        else {
+            
+        }
+        return;
+    }
+
+    bool Module::DotnetParser(const std::string& buffer, std::vector<std::string>& ilcode_array) const
+    {
+        std::string line;
+        std::stringstream iss(buffer);
+        if (buffer.empty()) {
+            return false;
+        }
+        auto getdotnet_feature = [](const std::string& str) -> std::string{
+            if (str.empty()) {
+                return {};
+            }
+            std::string token;
+            size_t found = str.find(".module");
+            if (found != std::string::npos) {
+                found = str.find_last_of(' ');
+                if (found != std::string::npos) {
+                    token = str.substr(found + 1);
+                    return token;
+                }
+            }
+            found = str.find(".class ");
+            if (found != std::string::npos) {
+                token = str.substr(found + sizeof(".class"));
+                return token;
+            }
+            found = str.find(".method ");
+            if (found != std::string::npos) {
+                token = str.substr(found + sizeof(".method"));
+                return token;
+            }
+            found = str.find("ldstr");
+            if (found != std::string::npos) {
+                found = str.rfind("\"");
+                if (found != std::string::npos) {
+                    found = str.rfind("\"", found - 1);
+                    if (found != std::string::npos) {
+                        token = str.substr(found);
+                        return token;
+                    }
+                }
+                return {};
+            }
+            found = str.find("call ");
+            if (found != std::string::npos) {
+                token = str.substr(found + sizeof("call"));
+                return token;
+            }
+            found = str.find("callvirt ");
+            if (found != std::string::npos) {
+                token = str.substr(found + sizeof("callvirt"));
+                return token;
+            }
+            return {};
+        };
+        std::string token;
+        while (std::getline(iss, line)) {
+            if (line.empty()) {
+                continue;
+            }
+            line.erase(line.begin(), std::find_if_not(line.begin(), line.end(), [](char c) {
+                return std::isspace(c);
+                }));
+            line.erase(std::find_if_not(line.rbegin(), line.rend(), [](char c) {
+                return std::isspace(c);
+                }).base(), line.end());
+            if (line.empty()) continue;
+            size_t found = line.find("// ");
+            if (!found) continue;
+            if (found != std::string::npos) {
+                line = line.substr(0, found);
+            }
+            token = getdotnet_feature(line);
+            token.erase(token.begin(), std::find_if_not(token.begin(), token.end(), [](char c) {
+                return std::isspace(c);
+                }));
+            token.erase(std::find_if_not(token.rbegin(), token.rend(), [](char c) {
+                return std::isspace(c);
+                }).base(), token.end());
+            if (token.empty()) {
+                continue;
+            }
+            ilcode_array.push_back(token);
+        }
+        if (ilcode_array.empty())
+            return false;
+        return true;
     }
 
     bool Function::Initialize()

@@ -17,6 +17,30 @@ namespace cchips {
                 return false;
             return true;
         }
+        bool Scan(const std::string& file_buf, CFileInfo& file_info) {
+            try {
+                std::unique_ptr<cchips::CRapidJsonWrapper> json_result;
+                json_result = std::make_unique<cchips::CRapidJsonWrapper>("{}");
+                if (!json_result)
+                    return false;
+                if (file_buf.size()) {
+                    std::shared_ptr<Module> fmodule = std::make_shared<Module>();
+                    fmodule->SetPrecachePath(file_buf);
+                    fmodule->SetModuleName("module1");
+                    GetPassRegistry().sequence(GetPassRegistry().sequence_passes_define);
+                    GetPassRegistry().run(fmodule);
+                    if (fmodule->Valid()) {
+                        fmodule->dump(json_result);
+                    }
+                }
+                file_info.SetInsnFlowInfo(std::move(json_result));
+                return true;
+            }
+            catch (const std::exception& e)
+            {
+            }
+            return false;
+        }
         bool Scan(fs::path& file_path, CFileInfo& file_info) { 
             try {
                 std::unique_ptr<cchips::CRapidJsonWrapper> json_result;
@@ -25,7 +49,7 @@ namespace cchips {
                     return false;
                 if (fs::is_regular_file(file_path)) {
                     std::shared_ptr<Module> fmodule = std::make_shared<Module>();
-                    fmodule->SetPrecachePath(file_path.string());
+                    fmodule->SetPrecachePath(file_path);
                     fmodule->SetModuleName(file_path.filename().string());
                     GetPassRegistry().sequence(GetPassRegistry().sequence_passes_define);
                     GetPassRegistry().run(fmodule);

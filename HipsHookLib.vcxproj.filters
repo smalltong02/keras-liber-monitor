@@ -94,6 +94,18 @@
     <Filter Include="Passes\cfgraph">
       <UniqueIdentifier>{13575f86-21f6-4b50-8d41-cd6fd3101616}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ThirdPary\pycdc">
+      <UniqueIdentifier>{de628cb2-e16a-4668-ba09-78b9992c5ed0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdPary\pycdc\bytes">
+      <UniqueIdentifier>{bcff9539-d047-4a1c-9f18-ef2f8e839ef7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="StaticPEManager\ElfBuilder">
+      <UniqueIdentifier>{91964dbc-5dfa-4964-9dcf-79a1b254678a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="StaticPEManager\MachoBuilder">
+      <UniqueIdentifier>{4d710a8d-0b72-43a4-9413-8bfaacbc11d7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HipsHookLib.cpp">
@@ -449,6 +461,120 @@
     </ClCompile>
     <ClCompile Include="StaticPEManager\StaticFileManager.cpp">
       <Filter>StaticPEManager</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\ASTNode.cpp">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\ASTree.cpp">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytecode.cpp">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\data.cpp">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\pyc_code.cpp">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\pyc_module.cpp">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\pyc_numeric.cpp">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\pyc_object.cpp">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\pyc_sequence.cpp">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\pyc_string.cpp">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_10.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_11.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_13.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_14.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_15.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_16.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_20.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_21.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_22.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_23.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_24.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_25.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_26.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_27.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_30.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_31.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_32.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_33.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_34.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_35.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_36.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_37.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_38.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_39.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_310.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_311.cpp">
+      <Filter>ThirdPary\pycdc\bytes</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\JavacBuilder.cpp">
+      <Filter>StaticPEManager\InfoBuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticPEManager\InfoBuilder\PycBuilder.cpp">
+      <Filter>StaticPEManager\InfoBuilder</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -943,6 +1069,45 @@
     </ClInclude>
     <ClInclude Include="Passes\cfgraph\cfgraph.h">
       <Filter>Passes\cfgraph</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pycdc\ASTNode.h">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pycdc\ASTree.h">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pycdc\bytecode.h">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pycdc\data.h">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pycdc\FastStack.h">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pycdc\pyc_code.h">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pycdc\pyc_module.h">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pycdc\pyc_numeric.h">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pycdc\pyc_object.h">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pycdc\pyc_sequence.h">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\pycdc\pyc_string.h">
+      <Filter>ThirdPary\pycdc</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\JavacBuilder.h">
+      <Filter>StaticPEManager\InfoBuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticPEManager\InfoBuilder\PycBuilder.h">
+      <Filter>StaticPEManager\InfoBuilder</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

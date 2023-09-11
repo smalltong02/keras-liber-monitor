@@ -19,6 +19,13 @@ namespace cchips {
             m_scan_period = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - sta);
             return bret;
         }
+        virtual bool Scan(const std::string& file_buf, CFileInfo& file_info) = 0;
+        virtual bool ScanPeriod(const std::string& file_buf, CFileInfo& file_info) {
+            const auto sta = std::chrono::steady_clock::now();
+            bool bret = Scan(file_buf, file_info);
+            m_scan_period = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - sta);
+            return bret;
+        }
         virtual std::chrono::microseconds GetScanPeriod() const { return m_scan_period; }
         void UpdateInfoType(CJsonOptions::_info_type type) { m_info_type = type; }
         CJsonOptions::_info_type GetInfoType() const { return m_info_type; }

@@ -2,6 +2,7 @@
 // Microsoft Visual C++ generated include file.
 // Used by Collector.rc
 #define IDR_JSONPE_CFG					102
+#define IDR_ILDASM_BIN					112
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED

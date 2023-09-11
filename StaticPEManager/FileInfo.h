@@ -19,7 +19,53 @@ namespace cchips {
     class CFileInfo
     {
     public:
-        CFileInfo() = delete; 
+        CFileInfo() = delete;
+        CFileInfo(const std::string& file_buffer) {
+            if (m_iden_info.Initialize(file_buffer, CIdentifierInfo::identifier_sha256)) {
+                std::string ftype, fmime;
+                if (GetFileType(file_buffer, ftype, fmime)) {
+                    m_filetype_desc = ftype;
+                }
+                m_fileformat_desc = FileDetector::GetFileFormat((const std::uint8_t*)file_buffer.data(), file_buffer.size());
+                std::istringstream iss(file_buffer);
+                std::unique_ptr<PeLib::PeFile> pe_file(FileDetector::ReadFileMemory(iss));
+                if (pe_file) {
+                    tls_check_struct* tls = check_get_tls();
+                    if (tls) {
+                        tls->active = 1;
+                        if (setjmp(tls->jb) == 0) {
+                            pe_file->readMzHeader();
+                            pe_file->readPeHeader();
+                            tls->active = 0;
+                        }
+                        else {
+                            //execption occur
+                            tls->active = 0;
+                            pe_file = nullptr;
+                            return;
+                        }
+                    }
+                    std::unique_ptr<PeFormat> pe_format = std::make_unique<PeFormat>(std::move(pe_file));
+                    if (pe_format) {
+                        m_subsystem_desc = pe_format->getSubsystemDesc();
+                        m_petype_desc = "unknown";
+                        if (pe_format->isExecutable()) {
+                            m_petype_desc = "exe";
+                        }
+                        else if (pe_format->isDll()) {
+                            m_petype_desc = "dll";
+                        }
+                        else if (pe_format->isSys()) {
+                            m_petype_desc = "sys";
+                        }
+                    }
+                }
+                if (!m_filetype_desc.length() || !m_petype_desc.length())
+                    return;
+                m_valid = true;
+            }
+        }
+
         CFileInfo(const fs::path& path) {
             if (m_iden_info.Initialize(path, CIdentifierInfo::identifier_sha256)) {
                 m_filetype_desc = GetFileType(path);
@@ -56,7 +102,7 @@ namespace cchips {
                         }
                     }
                 }
-                if (!m_filetype_desc.length() || !m_petype_desc.length())
+                if (!m_fileformat_desc.length())
                     return;
                 m_valid = true;
             }

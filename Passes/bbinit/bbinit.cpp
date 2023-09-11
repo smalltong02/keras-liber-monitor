@@ -1,6 +1,7 @@
 #include "bbinit.h"
 #include "PassSupport.h"
 #include "utils.h"
+#include "utf8.h"
 
 namespace cchips {
 
@@ -31,6 +32,9 @@ namespace cchips {
             if (!insn) return false;
             if (cchips::GetCapstoneImplment().InCallGroup(*insn)) {
                 processCallInstruction(*insn);
+            }
+            else if (cchips::GetCapstoneImplment().InLeaGroup(*insn)) {
+                processLoadEffectiveAddress(*insn);
             }
         }
         std::shared_ptr<CapInsn> end_insn = Block->getEndInsn();
@@ -223,10 +227,10 @@ namespace cchips {
         if (!function) return;
         std::shared_ptr<Module> cur_module = function->GetParent();
         if (!cur_module) return;
-        if (function->getFunctionNo() == 1955) {
-            int aaa = 0;
-            aaa = 1;
-        }
+        //if (function->getFunctionNo() == 1955) {
+        //    int aaa = 0;
+        //    aaa = 1;
+        //}
         std::uint8_t* call_addr = nullptr;
         Range<std::uint8_t*> image_range;
         image_range.setStartEnd(const_cast<std::uint8_t*>(cur_module->GetContext()->GetBaseAddress()), const_cast<std::uint8_t*>(cur_module->GetContext()->GetEndAddress()));
@@ -279,6 +283,101 @@ namespace cchips {
                             // report, feature.
                             // check stack? heap? or other module.
                         }
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    void BBInit::processLoadEffectiveAddress(CapInsn& insn)
+    {
+        auto is_ascii = [](uint8_t _byte) ->bool { return ((_byte >= 32 && _byte < 127) || (_byte >= 9 && _byte <= 13)); };
+        auto is_unicode = [](uint16_t _word) ->bool { return ((_word >= 0x0020 && _word <= 0x007E)); };
+        auto get_string = [&](std::uint8_t* addr, const auto& range) ->std::string {
+            const size_t _shortest_chars = 5;
+            const size_t _max_chars = 260;
+            uint8_t _byte = 0;
+            uint16_t _word = 0;
+            size_t ascii_count = 0;
+            size_t uni_count = 0;
+            std::uint8_t* tmpaddr = addr;
+            try {
+                while (true) {
+                    if (!range.contains((std::uint64_t)tmpaddr)) {
+                        break;
+                    }
+                    if (ascii_count == 0) {
+                        _word = *((uint16_t*)tmpaddr);
+                        if (is_unicode(_word))
+                        {
+                            uni_count++;
+                            if (uni_count >= _max_chars) {
+                                break;
+                            }
+                            tmpaddr += sizeof(uint16_t);
+                            continue;
+                        }
+                        else if (uni_count > 0) {
+                            break;
+                        }
+                    }
+                    if (uni_count == 0) {
+                        _byte = uint8_t(*tmpaddr);
+                        if (is_ascii(_byte))
+                        {
+                            ascii_count++;
+                            if (ascii_count >= _max_chars) {
+                                break;
+                            }
+                            tmpaddr += sizeof(uint8_t);
+                        }
+                        else if (ascii_count > 0) {
+                            break;
+                        }
+                    }
+                    if (ascii_count == 0 && uni_count == 0) {
+                        break;
+                    }
+                }
+
+                if (ascii_count >= _shortest_chars)
+                {
+                    std::string str((const char*)addr, ascii_count);
+                    if (contain_invalid_utf8char(str)) {
+                        str = stringto_hexstring(str);
+                    }
+                    return str;
+                }
+                if (uni_count >= _shortest_chars)
+                {
+                    std::wstring wstr((const wchar_t*)addr, uni_count);
+                    std::string str = to_byte_string(wstr);
+                    if (contain_invalid_utf8char(str)) {
+                        str = stringto_hexstring(str);
+                    }
+                    return str;
+                }
+                return {};
+            }
+            catch (const std::exception& e) {
+            }
+            return {};
+        };
+        std::shared_ptr<BasicBlock> block = insn.GetParent();
+        if (!block) return;
+        std::shared_ptr<Function> function = block->GetParent();
+        if (!function) return;
+        std::shared_ptr<Module> cur_module = function->GetParent();
+        if (!cur_module) return;
+        std::uint8_t* effect_addr = nullptr;
+        const auto& const_range = cur_module->GetGlobalConstRange();
+        if (x86_op_type op_type; GetCapstoneImplment().GetEffectiveAddress(insn, effect_addr, op_type)) {
+            if (effect_addr) {
+                if (const_range.contains((std::uint64_t)effect_addr)) {
+                    std::string str = get_string(effect_addr, const_range);
+                    if (!str.empty()) {
+                        insn.updateMnemonic(str, CapInsn::insn_constvar);
                     }
                 }
             }

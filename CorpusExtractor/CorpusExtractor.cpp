@@ -3,7 +3,7 @@
 #include <windows.h>
 #include <iostream>
 #include "CorpusExtractorLib\TextCorpusManager.h"
-#include "StaticPEManager\StaticFileManager.h"
+#include "..\LogObject.h"
 
 void info(const char* fmt, ...)
 {
@@ -40,7 +40,6 @@ int main()
 
     bool bextract = false;
     bool bembedding = false;
-    std::wstring modelw;
     std::wstring input_pathw;
     std::wstring output_pathw;
     std::wstring modelcorpusw;

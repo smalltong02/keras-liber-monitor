@@ -116,6 +116,10 @@ namespace cchips {
                 configvalue.has_value() && configvalue.type() == typeid(std::string_view)) {
                 m_options_info.config.petype = std::any_cast<std::string_view>(configvalue);
             }
+            if (auto configvalue(document.GetMember(std::vector<std::string>{OP_CONFIG, CF_EXTRATYPE}));
+                configvalue.has_value() && configvalue.type() == typeid(std::string_view)) {
+                m_options_info.config.extratype = std::any_cast<std::string_view>(configvalue);
+            }
             if (auto configvalue(document.GetMember(std::vector<std::string>{OP_CONFIG, CF_SUBSYSTEM}));
                 configvalue.has_value() && configvalue.type() == typeid(std::string_view)) {
                 m_options_info.config.subsystem = std::any_cast<std::string_view>(configvalue);

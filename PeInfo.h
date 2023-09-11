@@ -54,6 +54,8 @@ namespace cchips {
             format_coff,
             format_macho,
             format_intel_hex,
+            format_pyc,
+            format_javac,
             format_raw
         };
         enum pe_file_type
@@ -79,13 +81,15 @@ namespace cchips {
         static std::unique_ptr<CapInsn> GetAsmInstruction(std::uint8_t* insn_addr);
         static PeLib::PeFile* ReadImageMemory(std::istream& istream);
         static PeLib::PeFile* ReadImageFile(const std::string& path);
+        static PeLib::PeFile* ReadFileMemory(std::istream& istream);
     private:
         static bool LoadFile(const std::string& path, std::vector<std::uint8_t>& context_buffer);
         static bool HasSubstringOnPosition(const std::string &str,
             const std::string &withWhat, std::string::size_type position);
         static bool IsPEHead(const std::uint8_t* base_address, size_t size = _default_header_size_def);
         static bool IsPEHead(const std::string& path);
-
+        static bool IsPycFormat(const std::string& magic);
+        static bool IsJavacFormat(const std::string& magic);
         const static WORD _pe_header_signature_def = 0x4550;
         const static DWORD _pe_header_little_endian_signature_def = 0x50450000;
         const static std::map<std::pair<std::size_t, std::string>, file_format> _magic_format_map;

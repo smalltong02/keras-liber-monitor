@@ -37,7 +37,7 @@ namespace cchips {
         bool Listen(CSocketObject::func_callback& callback) override { return true; }
         bool Connect(CSocketObject::func_getdata& getdata) override {
             if (!m_tempfp)
-                m_tempfp = mkstemp(filename_template);
+                m_tempfp = mkstemp((char*)filename_template);
             if (!m_tempfp)
                 return false;
             m_getdata = getdata;

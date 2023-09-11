@@ -132,6 +132,7 @@ namespace cchips {
             insn_intfunc = 4,
             insn_linkfunc = 5,
             insn_linkvar = 6,
+            insn_constvar = 7,
         };
         CapInsn(csh cs_handle) : CBaseStruc(base_instruction), m_address(nullptr), m_id(0), m_size(0) {
             if (cs_handle == 0) return;
@@ -228,16 +229,39 @@ namespace cchips {
         void SetParent(std::shared_ptr<BasicBlock> parent) { m_parent = parent; }
         void setPointerObject(std::shared_ptr<CBaseStruc> obj) { m_pobject = obj; }
         std::shared_ptr<CBaseStruc> getPointerObject() const { return m_pobject.lock(); }
+        std::string GetRegName(x86_reg reg) const { 
+            auto it = _const_reg_name.find(reg);
+            if (it == _const_reg_name.end()) {
+                return "invalid";
+            }
+            return it->second;
+        }
         void updateMnemonic(const std::string& op_str, insn_type type = insn_intblock) {
-            m_type = type;
-            m_mnemonic_str = std::string(m_insn->mnemonic) + std::string(" ") + op_str; 
+            if (m_type != type) {
+                m_type = type;
+                m_mnemonic_str = m_mnemonic_str + std::string(" ;") + op_str;
+            }
+            //m_type = type;
+            //cs_x86* x86 = &m_insn->detail->x86;
+            //if (x86 && x86->op_count > 1) {
+            //    if (x86->operands[0].type == X86_OP_REG) {
+            //        std::string name = GetRegName(x86->operands[0].reg);
+            //        if (!name.empty()) {
+            //            m_mnemonic_str = std::string(m_insn->mnemonic) + " " + name + std::string(", ") + op_str;
+            //            return;
+            //        }
+            //    }
+            //}
+            //m_mnemonic_str = std::string(m_insn->mnemonic) + std::string(" ") + op_str;
         }
         std::string GetTargetMnemonic() const {
+#define FUNC_NORMAL_SUB "sub_"
+#define BLOCK_NORMAL_LOC "loc_"
             if (!m_mnemonic_str.length())
                 return{};
             std::istringstream iss(m_mnemonic_str);
             std::string token;
-            std::getline(iss, token, ' ');
+            std::getline(iss, token, ';');
             if (token.length()) {
                 std::getline(iss, token);
                 return token;
@@ -258,6 +282,7 @@ namespace cchips {
         insn_type m_type = insn_unknown;
         cs_insn* m_insn = nullptr;
         size_t m_count = 0;
+        static const std::map<x86_reg, std::string> _const_reg_name;
         std::string m_mnemonic_str;
         std::vector<BYTE> m_mnemonic_bytes;
         std::weak_ptr<BasicBlock> m_parent;
@@ -379,6 +404,9 @@ namespace cchips {
         bool InVmGroup(CapInsn& insn) const {
             return InsnInGroup(insn, X86_GRP_VM);
         }
+        bool InLeaGroup(CapInsn& insn) const {
+            return _leaInsnIds.count(insn.GetInsnId());
+        }
         bool InsnInGroup(CapInsn& insn, unsigned int group_id) const {
             if (IsValid()) {
                 return cs_insn_group(m_capstone_handle, insn.self(), group_id);
@@ -496,7 +524,8 @@ namespace cchips {
         }
         bool GetJmpAddress(std::shared_ptr<Module> cur_module, CapInsn& insn, std::uint8_t*& next_addr, std::uint8_t*& jmp_addr, x86_op_type& op_type) const;
         bool GetLoopAddress(CapInsn& insn, std::uint8_t*& next_addr, std::uint8_t*& loop_addr, x86_op_type& op_type) const;
-        bool CapstoneImpl::GetCallAddress(CapInsn& insn, std::uint8_t*& jmp_addr, x86_op_type& op_type) const;
+        bool GetCallAddress(CapInsn& insn, std::uint8_t*& jmp_addr, x86_op_type& op_type) const;
+        bool GetEffectiveAddress(CapInsn& insn, std::uint8_t*& effect_addr, x86_op_type& op_type) const;
     private:
         CapstoneImpl() { 
 #ifdef _X86_
@@ -521,6 +550,7 @@ namespace cchips {
         cs_err m_cap_error = CS_ERR_HANDLE;
         const std::set<unsigned int> _branchInsnIds = { X86_INS_JMP, X86_INS_LJMP, };
         const std::set<unsigned int> _loopInsnIds = { X86_INS_LOOP, X86_INS_LOOPE, X86_INS_LOOPNE, };
+        const std::set<unsigned int> _leaInsnIds = { X86_INS_LEA };
         const std::set<unsigned int> _condBranchNEInsnIds = {
             X86_INS_JNE,
             X86_INS_JNO,

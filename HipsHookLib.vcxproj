@@ -179,10 +179,10 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;NOMINMAX;WIN_LONG_PATH;EXTERNAL_CODECS;_7ZIP_LARGE_PAGES;SUPPORT_DEVICE_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;.\;.\ThirdParty\Certificate;.\ThirdParty\tinyxml2\include\tinyxml2;.\ThirdParty\utf8cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;.\;.\ThirdParty\Certificate;.\ThirdParty\tinyxml2\include\tinyxml2;.\ThirdParty\utf8cpp;.\ThirdParty\7Zip;.\ThirdParty\pycdc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -198,8 +198,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>libMinHook.x64.lib;capstone_x64_d.lib;jansson_x64_d.lib;wbemuuid.lib;Version.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\lib\Debug;.\capstone\lib;.\ThirdParty\Certificate\jansson\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libMinHook.x64.lib;capstone_x64_d.lib;jansson_x64_d.lib;7zlibd.lib;wbemuuid.lib;Version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\lib\Debug;.\capstone\lib;.\ThirdParty\Certificate\jansson\lib;.\ThirdParty\7Zip\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debugger|x64'">
@@ -272,10 +272,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;WIN32_HOOK_LIB;MONGO_HAVE_STDINT;USING_PIPE_MESSAGE;NOMINMAX;WIN_LONG_PATH;EXTERNAL_CODECS;_7ZIP_LARGE_PAGES;SUPPORT_DEVICE_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>Default</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;.\;.\ThirdParty\Certificate;.\ThirdParty\tinyxml2\include\tinyxml2;.\ThirdParty\utf8cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\minhook\include;.\capstone\include;.\g-re2;.\pipemessage;.\ThirdParty\pelib\include;.\;.\ThirdParty\Certificate;.\ThirdParty\tinyxml2\include\tinyxml2;.\ThirdParty\utf8cpp;.\ThirdParty\7Zip;.\ThirdParty\pycdc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -292,8 +292,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>libMinHook.x64.lib;capstone_x64.lib;jansson_x64.lib;Version.lib;wbemuuid.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\lib\Release;.\capstone\lib;.\ThirdParty\Certificate\jansson\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libMinHook.x64.lib;capstone_x64.lib;jansson_x64.lib;7zlib.lib;Version.lib;wbemuuid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\lib\Release;.\capstone\lib;.\ThirdParty\Certificate\jansson\lib;.\ThirdParty\7Zip\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -414,6 +414,7 @@
     </ClCompile>
     <ClCompile Include="StaticPEManager\FileInfo.cpp" />
     <ClCompile Include="StaticPEManager\InfoBuilder\InstallInfoBuilder.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\JavacBuilder.cpp" />
     <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\CrossRefFeature.cpp" />
     <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\DatadirectoryFeature.cpp" />
     <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\DebugdatadirectoryFeature.cpp" />
@@ -434,6 +435,7 @@
     <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\StringsFeature.cpp" />
     <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\stringutils.cpp" />
     <ClCompile Include="StaticPEManager\InfoBuilder\PeInside\UnpackerFeature.cpp" />
+    <ClCompile Include="StaticPEManager\InfoBuilder\PycBuilder.cpp" />
     <ClCompile Include="StaticPEManager\InfoBuilder\VersionInfoBuilder.cpp" />
     <ClCompile Include="StaticPEManager\JsonOptions.cpp" />
     <ClCompile Include="StaticPEManager\StaticFileManager.cpp" />
@@ -466,6 +468,42 @@
     <ClCompile Include="ThirdParty\pelib\src\SecurityDirectory.cpp" />
     <ClCompile Include="ThirdParty\pelib\src\SharedFunc.cpp" />
     <ClCompile Include="ThirdParty\pelib\src\TlsInfo.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\ASTNode.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\ASTree.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytecode.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_10.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_11.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_13.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_14.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_15.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_16.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_20.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_21.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_22.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_23.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_24.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_25.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_26.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_27.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_30.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_31.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_310.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_311.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_32.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_33.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_34.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_35.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_36.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_37.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_38.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\bytes\python_39.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\data.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\pyc_code.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\pyc_module.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\pyc_numeric.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\pyc_object.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\pyc_sequence.cpp" />
+    <ClCompile Include="ThirdParty\pycdc\pyc_string.cpp" />
     <ClCompile Include="ThirdParty\tinyxml2\tinyxml2.cpp" />
     <ClCompile Include="UniversalObject.cpp" />
     <ClCompile Include="utils.cpp" />
@@ -567,6 +605,7 @@
     <ClInclude Include="StaticPEManager\InfoBuilder\BaseInfoBuilder.h" />
     <ClInclude Include="StaticPEManager\InfoBuilder\InfoBuilder.h" />
     <ClInclude Include="StaticPEManager\InfoBuilder\InstallInfoBuilder.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\JavacBuilder.h" />
     <ClInclude Include="StaticPEManager\InfoBuilder\PeinsideInfoBuilder.h" />
     <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\CrossRefFeature.h" />
     <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\DatadirectoryFeature.h" />
@@ -589,6 +628,7 @@
     <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\stringutils.h" />
     <ClInclude Include="StaticPEManager\InfoBuilder\PeInside\UnpackerFeature.h" />
     <ClInclude Include="StaticPEManager\InfoBuilder\PeinsnflowInfoBuilder.h" />
+    <ClInclude Include="StaticPEManager\InfoBuilder\PycBuilder.h" />
     <ClInclude Include="StaticPEManager\InfoBuilder\SignatureInfoBuilder.h" />
     <ClInclude Include="StaticPEManager\InfoBuilder\VersionInfoBuilder.h" />
     <ClInclude Include="StaticPEManager\JsonOptions.h" />
@@ -632,6 +672,17 @@
     <ClInclude Include="ThirdParty\pelib\include\TlsDirectory.h" />
     <ClInclude Include="ThirdParty\pelib\include\TlsInfo.h" />
     <ClInclude Include="ThirdParty\pelib\include\VBHeader.h" />
+    <ClInclude Include="ThirdParty\pycdc\ASTNode.h" />
+    <ClInclude Include="ThirdParty\pycdc\ASTree.h" />
+    <ClInclude Include="ThirdParty\pycdc\bytecode.h" />
+    <ClInclude Include="ThirdParty\pycdc\data.h" />
+    <ClInclude Include="ThirdParty\pycdc\FastStack.h" />
+    <ClInclude Include="ThirdParty\pycdc\pyc_code.h" />
+    <ClInclude Include="ThirdParty\pycdc\pyc_module.h" />
+    <ClInclude Include="ThirdParty\pycdc\pyc_numeric.h" />
+    <ClInclude Include="ThirdParty\pycdc\pyc_object.h" />
+    <ClInclude Include="ThirdParty\pycdc\pyc_sequence.h" />
+    <ClInclude Include="ThirdParty\pycdc\pyc_string.h" />
     <ClInclude Include="ThirdParty\tinyxml2\include\tinyxml2\tinyxml2.h" />
     <ClInclude Include="UniversalObject.h" />
     <ClInclude Include="utils.h" />

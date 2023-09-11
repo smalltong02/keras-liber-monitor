@@ -18,6 +18,8 @@
 #include "StaticPEManager/StaticFileManager.h"
 #include "CorpusExtractorLib/TextCorpusManager.h"
 
+//#define pytorch_only_predict 1
+
 namespace cchips {
 
     namespace fs = std::filesystem;
@@ -367,6 +369,7 @@ namespace cchips {
             m_dictbin = dictbin_path;
             m_bcpu = bcpu;
             m_num_epochs = epochs;
+#ifndef pytorch_only_predict
             if (m_bcpu) {
                 m_device = std::make_unique<torch::Device>(torch::kCPU);
             }
@@ -376,6 +379,7 @@ namespace cchips {
             if (!m_device) {
                 return;
             }
+#endif
             m_datasets = std::make_unique<CDataSets>(m_input, m_dictbin, ratio);
             if (!m_datasets || !m_datasets->IsValid()) {
                 return;
@@ -385,15 +389,19 @@ namespace cchips {
             m_grumodel = torch::nn::GRU(torch::nn::GRUOptions(input_size, input_size).num_layers(1));
             register_module("gru", m_grumodel);
             register_module("linear", m_linearmodel);
+#ifndef pytorch_only_predict
             to(*m_device);
             m_grumodel->to(*m_device);
             m_linearmodel->to(*m_device);
+#endif
             m_valid = true;
         }
         ~CGruModelImpl() = default;
 
+#ifndef pytorch_only_predict
         bool train();
         bool test();
+#endif
         bool predict(const std::string& input_path);
         //bool packmodel(const std::string& modelpath);
         bool packmodel(CGruModel& model);
@@ -418,6 +426,13 @@ namespace cchips {
                     [](const std::pair<float, std::int32_t>& a, const std::pair<float, std::int32_t>& b) {
                         return a.first > b.first;
                     });
+
+                if (m_k == 0) {
+                    m_poutputtype = output_type::ot_nlp;
+                }
+                else {
+                    m_poutputtype = output_type::ot_label;
+                }
                 switch (m_poutputtype) {
                 case output_type::ot_nlp:
                 {
@@ -478,6 +493,7 @@ namespace cchips {
             m_dictbin = dictbin_path;
             m_bcpu = bcpu;
             m_num_epochs = epochs;
+#ifndef pytorch_only_predict
             if (m_bcpu) {
                 m_device = std::make_unique<torch::Device>(torch::kCPU);
             }
@@ -487,6 +503,7 @@ namespace cchips {
             if (!m_device) {
                 return;
             }
+#endif
             m_datasets = std::make_unique<CDataSets>(m_input, m_dictbin, ratio);
             if (!m_datasets || !m_datasets->IsValid()) {
                 return;
@@ -496,15 +513,19 @@ namespace cchips {
             m_lstmmodel = torch::nn::LSTM(torch::nn::LSTMOptions(input_size, input_size).num_layers(1));
             register_module("lstm", m_lstmmodel);
             register_module("linear", m_linearmodel);
+#ifndef pytorch_only_predict
             to(*m_device);
             m_lstmmodel->to(*m_device);
             m_linearmodel->to(*m_device);
+#endif
             m_valid = true;
         }
         ~CLstmModelImpl() = default;
 
+#ifndef pytorch_only_predict
         bool train();
         bool test();
+#endif
         bool predict(const std::string& input_path);
         bool packmodel(CLstmModel& model);
         bool unpackmodel(CLstmModel& model);
@@ -528,6 +549,12 @@ namespace cchips {
                     [](const std::pair<float, std::int32_t>& a, const std::pair<float, std::int32_t>& b) {
                         return a.first > b.first;
                     });
+                if (m_k == 0) {
+                    m_poutputtype = output_type::ot_nlp;
+                }
+                else {
+                    m_poutputtype = output_type::ot_label;
+                }
 
                 switch (m_poutputtype) {
                 case output_type::ot_nlp:
@@ -644,6 +671,7 @@ namespace cchips {
             m_output = output;
             m_modelbin = modelbin;
             m_bcpu = bcpu;
+#ifndef pytorch_only_predict
             if (m_bcpu) {
                 m_device = std::make_unique<torch::Device>(torch::kCPU);
             }
@@ -653,6 +681,7 @@ namespace cchips {
             if (!m_device) {
                 return;
             }
+#endif
             m_datasets = std::make_unique<CDataSets>(m_input, "", 8);
             if (!m_datasets || !m_datasets->IsValid()) {
                 return;
@@ -661,8 +690,10 @@ namespace cchips {
         }
         ~CAlbertModel() = default;
 
+#ifndef pytorch_only_predict
         bool train();
         bool test();
+#endif
         bool predict(const std::string& inputpath);
         bool packmodel(const std::string& dictbin);
         bool unpackmodel();
@@ -693,6 +724,13 @@ namespace cchips {
                     [](const std::pair<float, std::int32_t>& a, const std::pair<float, std::int32_t>& b) {
                         return a.first > b.first;
                     });
+
+                if (m_k == 0) {
+                    m_poutputtype = output_type::ot_nlp;
+                }
+                else {
+                    m_poutputtype = output_type::ot_label;
+                }
 
                 switch (m_poutputtype) {
                 case output_type::ot_nlp:

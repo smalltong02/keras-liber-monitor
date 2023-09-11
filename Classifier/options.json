@@ -9,6 +9,7 @@
     "filetype": "^(?i)PE$",
     "subsystem": "^(?i)WIN_GUI$|^(?i)WIN_CUI$|^(?i)NATIVE$",
     "petype": "^(?i)EXE$",
+    "extratype": "^(?i)javac$|^(?i)ilcode$|^(?i)macho$|^(?i)elf$",
     "outputtype": "memory",
     "runningmode": 0,
     "bbaseinfo": true,
@@ -16,7 +17,7 @@
     "binstallinfo": true,
     "bsigninfo": true,
     "bpeinsideinfo": true,
-    "bpeinsnflowinfo": false
+    "bpeinsnflowinfo": true
   },
 
   "base_info": {
@@ -99,8 +100,8 @@
   },
 
   "peinsnflow_info": {
-    "apiflowfeature": false,
-    "blockflowfeature": false,
-    "insnflowfeature": false
+    "apiflowfeature": true,
+    "blockflowfeature": true,
+    "insnflowfeature": true
   }
 }

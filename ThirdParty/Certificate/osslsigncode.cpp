@@ -438,6 +438,24 @@ static off_t get_file_size(const char *infile)
     return st.st_size;
 }
 
+static bool map_data(const char* inbuf, size_t len, PeFileInfo& pe_info)
+{
+    pe_info.data_ = NULL;
+    pe_info.filesize_ = len;
+    if (pe_info.filesize_ == 0)
+        return false;
+#ifdef _WIN32
+    pe_info.data_ = (char*)inbuf;
+    if (pe_info.data_ == NULL)
+        return false;
+#else
+    pe_info.data_ = (char*)inbuf;
+    if (pe_info.data_ == MAP_FAILED)
+        return false;
+#endif
+    return true;
+}
+
 static bool map_file(const char *infile, PeFileInfo& pe_info)
 {
     pe_info.data_ = NULL;
@@ -2005,7 +2023,60 @@ bool CertManager::SetCrlStore(const char* crl_store)
     return true;
 }
 
-VerifyInfo CertManager::Verify(
+VerifyInfo CertManager::VerifyBuffer(
+    const char* inbuf,
+    size_t bufsize,
+    bool crl_check /*= false*/,
+    bool store_certificate /*= false*/,
+    char* leaf_digest_name /*= NULL*/,
+    char* leaf_hash /*= NULL*/)
+{
+    ResetRuntimeVariables();
+
+    crl_check_enabled_ = crl_check;
+    store_certificate_ = store_certificate;
+    leaf_digest_name_ = leaf_digest_name;
+    leaf_hash_ = leaf_hash;
+
+    VerifyInfo vinfo;
+
+    int verify_ret = -1;
+
+    PeFileInfo pe_finfo = {};
+    bool pe_res;
+
+    bool success = map_data(inbuf, bufsize, pe_finfo);
+    if (!success)
+    {
+        if (pe_finfo.filesize_ == 0)
+        {
+            RecordError(vinfo, dserror::io_empty_file);
+        }
+        if (pe_finfo.data_ == NULL)
+        {
+            RecordError(vinfo, dserror::io_cannot_map);
+        }
+        goto cleanup;
+    }
+
+    pe_finfo.fileend_ = pe_finfo.filesize_;
+    pe_res = AnalyzePeStructure(&pe_finfo, vinfo);
+    if (!pe_res)
+    {
+        goto cleanup;
+    }
+
+    verify_ret = VerifyPeFile(&vinfo, pe_finfo);
+    if (vinfo.signers_.size()) {
+        vinfo.is_verified_ = vinfo.signers_[0].bfindrootcert;
+    }
+
+cleanup:
+    ERR_clear_error();
+    return vinfo;
+}
+
+VerifyInfo CertManager::VerifyFile(
     const char *infile,
     bool crl_check /*= false*/,
     bool store_certificate /*= false*/,

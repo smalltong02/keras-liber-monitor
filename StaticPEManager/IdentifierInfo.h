@@ -21,10 +21,13 @@ public:
     CIdentifierInfo(const fs::path& path, _identifier_type type) { 
         Initialize(path, type);
     }
+    CIdentifierInfo(const std::string& buffer, _identifier_type type) {
+        Initialize(buffer, type);
+    }
     ~CIdentifierInfo() = default;
 
-    bool Initialize(const fs::path& path, _identifier_type type) {
-        std::string identifier = CalculateIdentifier(path, type);
+    bool Initialize(const std::string& buffer, _identifier_type type) {
+        std::string identifier = CalculateIdentifier(buffer, type);
         if (!identifier.length())
             return false;
         m_identifier = identifier;
@@ -32,10 +35,30 @@ public:
         return true;
     }
 
+    bool Initialize(const fs::path& path, _identifier_type type) {
+        std::ifstream infile;
+        infile.open(path, std::ios::in | std::ios::binary | std::ios::ate);
+        if (!infile.is_open()) return false;
+        int file_length = (int)infile.tellg();
+        if (!file_length) return false;
+        std::string buffer;
+        buffer.resize(file_length);
+        if (buffer.size() != file_length) {
+            return false;
+        }
+        infile.seekg(0, std::ios::beg);
+        infile.read(&buffer[0], file_length);
+        auto readed = (int)infile.tellg();
+        if (readed != file_length) {
+            return false;
+        }
+        return Initialize(buffer, type);
+    }
+
     const std::string& GetIdentifier() const { return m_identifier; }
 
 private:
-    std::string CalculateIdentifier(const fs::path& file_path, _identifier_type type)
+    std::string CalculateIdentifier(const std::string& buffer, _identifier_type type)
     {
         std::vector<BYTE> iden_ctx;
         auto method_init = [](std::vector<BYTE>& iden_ctx, _identifier_type type) ->bool {
@@ -99,32 +122,11 @@ private:
             }
             return {};
         };
-
-        std::ifstream infile;
-        infile.open(file_path, std::ios::in | std::ios::binary | std::ios::ate);
-        if (!infile.is_open()) return {};
-        int file_length = (int)infile.tellg();
-        if (!file_length) return {};
-#define MAX_READ_BUFFER 4096
-        int readed = 0, length = 0;
-        char buffer[MAX_READ_BUFFER];
-        if (!method_init(iden_ctx, type)) return {};
-        infile.seekg(0, std::ios::beg);
-
-        while (infile.good()) {
-            infile.read(buffer, MAX_READ_BUFFER);
-            readed = (int)infile.tellg();
-            if (!readed)
-                return {};
-            if (readed == -1 && infile.eof()) {
-                readed = file_length;
-                if (readed < length || (readed - length) >= MAX_READ_BUFFER)
-                    return {};
-            }
-            method_update(iden_ctx, type, (unsigned char*)buffer, static_cast<unsigned int>(readed - length));
-            length = readed;
+        if (buffer.empty()) {
+            return {};
         }
-        infile.close();
+        if (!method_init(iden_ctx, type)) return {};
+        method_update(iden_ctx, type, (unsigned char*)&buffer[0], static_cast<unsigned int>(buffer.size()));
         return method_final(iden_ctx, type);
     }
 

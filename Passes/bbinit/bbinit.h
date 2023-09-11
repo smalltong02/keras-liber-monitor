@@ -23,5 +23,6 @@ namespace cchips {
         bool processJmpInstruction(CapInsn& insn);
         bool processLoopInstruction(CapInsn& insn);
         void processCallInstruction(CapInsn& insn);
+        void processLoadEffectiveAddress(CapInsn& insn);
     };
 } // namespace cchips

@@ -19,6 +19,25 @@ namespace cchips {
             m_valid = true;
             return m_valid;
         }
+        bool Scan(const std::string& file_buf, CFileInfo& file_info) {
+            try {
+                if (!IsValid()) {
+                    return false;
+                }
+                if (!m_pe_inside.Scan(file_buf)) {
+                    return false;
+                }
+                auto result = m_pe_inside.MoveResult();
+                if (result) {
+                    file_info.SetPeInsideInfo(std::move(result));
+                }
+                return true;
+            }
+            catch (const std::exception& e)
+            {
+            }
+            return false;
+        }
         bool Scan(fs::path& file_path, CFileInfo& file_info) { 
             try {
                 if (!IsValid()) {

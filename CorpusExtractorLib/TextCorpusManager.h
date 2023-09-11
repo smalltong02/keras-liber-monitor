@@ -29,6 +29,7 @@ namespace cchips {
         virtual std::unique_ptr<CSemanticGeneration> makeSubSg() const = 0;
         virtual std::string fulldump() const = 0;
         virtual std::string justdump() const = 0;
+        virtual std::uint32_t getelemcount() const = 0;
     private:
     };
 
@@ -43,7 +44,8 @@ namespace cchips {
 #define _mongodb_corpusext_insnflow "PeinsnflowCorpusext"
 #define _mongodb_textcorpus_dict "HipsTextCorpusDict"
 #define _max_file_size 512 * 1024 * 1024 // 512M
-#define _max_strfeature_count 1500
+#define _maximum_feature_counts 5000
+#define _minimum_feature_counts 1500
 
         CTextCorpusManager() = default;
         ~CTextCorpusManager() = default;
@@ -103,6 +105,7 @@ namespace cchips {
             model_unknown = 0,
             model_fasttext,
             model_gru,
+            model_lstm,
             model_transformers,
         };
 
@@ -216,6 +219,9 @@ namespace cchips {
             std::unique_ptr<CSemanticGeneration> makeSubSg() const;
             std::string fulldump() const;
             std::string justdump() const;
+            std::uint32_t getelemcount() const {
+                return 0;
+            }
         private:
             bool AddCorpus(const std::string& word, mongocxx::collection& dict, bool blower = true) const;
             void SpecialCorpusExtract(mongocxx::collection& dict) const;
@@ -237,6 +243,9 @@ namespace cchips {
             std::unique_ptr<CSemanticGeneration> makeSubSg() const;
             std::string fulldump() const;
             std::string justdump() const;
+            std::uint32_t getelemcount() const {
+                return 0;
+            }
         private:
             std::string getPrefix() const {
                 std::string prefix;
@@ -252,6 +261,26 @@ namespace cchips {
             std::stringstream m_dataset;
         };
 
+        class CTransformersSG : public CSemanticGeneration {
+        public:
+            CTransformersSG() = default;
+            ~CTransformersSG() = default;
+            bool addElement(const std::string& key, const std::string& value);
+            bool addElement(const std::string& key, bool value);
+            bool addElement(const std::string& key, std::uint32_t value);
+            bool addElement(const std::string& key, std::unique_ptr<CSemanticGeneration> value);
+            bool addElement(const std::string& key, const std::vector<std::pair<std::string, std::any>>& value_vec);
+            std::unique_ptr<CSemanticGeneration> makeSubSg() const;
+            std::string fulldump() const;
+            std::string justdump() const;
+            std::uint32_t getelemcount() const {
+                return m_elementcount;
+            }
+        private:
+            std::stringstream m_dataset;
+            std::uint32_t m_elementcount = 0;
+        };
+
         _modeltype GetModelCorpus(const std::string& model) const {
             if (!model.length()) {
                 return model_unknown;
@@ -261,6 +290,9 @@ namespace cchips {
             }
             if (model.compare("gru") == 0) {
                 return model_gru;
+            }
+            if (model.compare("lstm") == 0) {
+                return model_lstm;
             }
             if (model.compare("transformers") == 0) {
                 return model_transformers;
@@ -290,6 +322,7 @@ namespace cchips {
             }
             break;
             case model_gru:
+            case model_lstm:
             {
                 GeneratingGruDatasets(std::move(wrapper), datasets, m_label);
             }
@@ -339,9 +372,12 @@ namespace cchips {
         bool CommonParseImportsInfo(ConstRapidObject& importsinfo, std::shared_ptr<CSemanticGeneration> sgobject) const;
         bool CommonParseExportsInfo(ConstRapidObject& exportsinfo, std::shared_ptr<CSemanticGeneration> sgobject) const;
         bool CommonParseManifestInfo(ConstRapidObject& manifestinfo, std::shared_ptr<CSemanticGeneration> sgobject) const;
+        bool CommonParseResourceInfo(ConstRapidObject& manifestinfo, std::shared_ptr<CSemanticGeneration> sgobject) const;
         bool CommonParseRichheaderInfo(ConstRapidObject& richheaderinfo, std::shared_ptr<CSemanticGeneration> sgobject) const;
         bool CommonParseSectionsInfo(ConstRapidObject& sectionsinfo, std::shared_ptr<CSemanticGeneration> sgobject) const;
-        bool CommonParseStrfeatureInfo(ConstRapidObject& strfeatureinfo, std::shared_ptr<CSemanticGeneration> sgobject) const;
+        bool CommonParseStrfeatureInfo(ConstRapidObject& strfeatureinfo, std::shared_ptr<CSemanticGeneration> sgobject, std::uint32_t feature_nums = _minimum_feature_counts) const;
+        bool CommonParseFlowGraph(ConstRapidObject& flowgraphobj, std::shared_ptr<CSemanticGeneration> sgobject, std::uint32_t feature_nums = _minimum_feature_counts) const;
+        bool CommonParseIlcode(ConstRapidObject& ilcodeobj, std::shared_ptr<CSemanticGeneration> sgobject, std::uint32_t feature_nums = _minimum_feature_counts) const;
         
         static const std::uint32_t _min_corpus_lenth;
         static const std::uint32_t _max_corpus_lenth;

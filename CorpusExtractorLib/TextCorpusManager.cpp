@@ -198,6 +198,13 @@ namespace cchips {
                         CommonParseManifestInfo(manifestobj, sgobject);
                     }
                 }
+                const auto resourceinfo = insideinfo.FindMember(RI_RESOURCEINFO);
+                if (resourceinfo != insideinfo.MemberEnd()) {
+                    if (!resourceinfo->value.IsNull() && resourceinfo->value.IsObject()) {
+                        auto resourceinfoobj = resourceinfo->value.GetObjectA();
+                        CommonParseResourceInfo(resourceinfoobj, sgobject);
+                    }
+                }
                 const auto richheader = insideinfo.FindMember(RH_RICHHEADER);
                 if (richheader != insideinfo.MemberEnd()) {
                     if (!richheader->value.IsNull() && richheader->value.IsObject()) {
@@ -335,6 +342,13 @@ namespace cchips {
                     CommonParseManifestInfo(manifestobj, sgptr);
                 }
             }
+            const auto resourceinfo = insideinfo.FindMember(RI_RESOURCEINFO);
+            if (resourceinfo != insideinfo.MemberEnd()) {
+                if (!resourceinfo->value.IsNull() && resourceinfo->value.IsObject()) {
+                    auto resourceinfoobj = resourceinfo->value.GetObjectA();
+                    CommonParseResourceInfo(resourceinfoobj, sgptr);
+                }
+            }
             const auto richheader = insideinfo.FindMember(RH_RICHHEADER);
             if (richheader != insideinfo.MemberEnd()) {
                 if (!richheader->value.IsNull() && richheader->value.IsObject()) {
@@ -371,6 +385,141 @@ namespace cchips {
     }
 
     bool CTextCorpusManager::GeneratingTransformersDatasets(std::unique_ptr<CRapidJsonWrapper>& wrapper, std::stringstream& datasets, const std::string& label) const {
+        if (!wrapper) return false;
+        if (auto anyvalue(wrapper->GetMember(std::vector<std::string>{PJ_SHA256}));
+            !anyvalue.has_value() || anyvalue.type() != typeid(std::string_view)) {
+            return false;
+        }
+        else {
+            std::cout << "process " << std::any_cast<std::string_view>(anyvalue) << "..." << std::endl;
+        }
+        std::shared_ptr<CSemanticGeneration> tfptr = std::make_shared<CTransformersSG>();
+        if (!tfptr) {
+            return false;
+        }
+        if (auto anyvalue(wrapper->GetMember(SI_SIGNINFO));
+            anyvalue.has_value() && anyvalue.type() == typeid(ConstRapidObject))
+        {
+            auto signinfo = std::any_cast<ConstRapidObject>(anyvalue);
+            CommonParseSigntureInfo(signinfo, tfptr);
+        }
+        if (auto anyvalue(wrapper->GetMember(NI_INSIDEINFO));
+            anyvalue.has_value() && anyvalue.type() == typeid(ConstRapidObject))
+        {
+            auto insideinfo = std::any_cast<ConstRapidObject>(anyvalue);
+            const auto peinfo = insideinfo.FindMember(PI_PEINFO);
+            if (peinfo != insideinfo.MemberEnd()) {
+                if (!peinfo->value.IsNull() && peinfo->value.IsObject()) {
+                    auto peinfoobj = peinfo->value.GetObjectA();
+                    CommonParsePeInfo(peinfoobj, tfptr);
+                }
+            }
+            const auto toolinfo = insideinfo.FindMember(TI_TOOLINFO);
+            if (toolinfo != insideinfo.MemberEnd()) {
+                if (!toolinfo->value.IsNull() && toolinfo->value.IsObject()) {
+                    auto toolinfoobj = toolinfo->value.GetObjectA();
+                    CommonParseToolInfo(toolinfoobj, tfptr);
+                }
+            }
+            const auto datadir = insideinfo.FindMember(DD_DATADIRECTORY);
+            if (datadir != insideinfo.MemberEnd()) {
+                if (!datadir->value.IsNull() && datadir->value.IsObject()) {
+                    auto datadirobj = datadir->value.GetObjectA();
+                    CommonParseDataDirectoryInfo(datadirobj, tfptr);
+                }
+            }
+            const auto pdbinfos = insideinfo.FindMember(PS_PDBINFOS);
+            if (pdbinfos != insideinfo.MemberEnd()) {
+                if (!pdbinfos->value.IsNull() && pdbinfos->value.IsObject()) {
+                    auto pdbinfosobj = pdbinfos->value.GetObjectA();
+                    CommonParsePdbInfosInfo(pdbinfosobj, tfptr);
+                }
+            }
+            const auto embeddedpe = insideinfo.FindMember(ED_EMBEDDEDPE);
+            if (embeddedpe != insideinfo.MemberEnd()) {
+                if (!embeddedpe->value.IsNull() && embeddedpe->value.IsObject()) {
+                    auto embeddedpeobj = embeddedpe->value.GetObjectA();
+                    CommonParseEmbeddedpeInfo(embeddedpeobj, tfptr);
+                }
+            }
+            const auto imports = insideinfo.FindMember(IT_IMPORTS);
+            if (imports != insideinfo.MemberEnd()) {
+                if (!imports->value.IsNull() && imports->value.IsObject()) {
+                    auto importsobj = imports->value.GetObjectA();
+                    CommonParseImportsInfo(importsobj, tfptr);
+                }
+            }
+            const auto exports = insideinfo.FindMember(ET_EXPORTS);
+            if (exports != insideinfo.MemberEnd()) {
+                if (!exports->value.IsNull() && exports->value.IsObject()) {
+                    auto exportsobj = exports->value.GetObjectA();
+                    CommonParseExportsInfo(exportsobj, tfptr);
+                }
+            }
+            const auto manifest = insideinfo.FindMember(MF_MANIFEST);
+            if (manifest != insideinfo.MemberEnd()) {
+                if (!manifest->value.IsNull() && manifest->value.IsObject()) {
+                    auto manifestobj = manifest->value.GetObjectA();
+                    CommonParseManifestInfo(manifestobj, tfptr);
+                }
+            }
+            const auto resourceinfo = insideinfo.FindMember(RI_RESOURCEINFO);
+            if (resourceinfo != insideinfo.MemberEnd()) {
+                if (!resourceinfo->value.IsNull() && resourceinfo->value.IsObject()) {
+                    auto resourceinfoobj = resourceinfo->value.GetObjectA();
+                    CommonParseResourceInfo(resourceinfoobj, tfptr);
+                }
+            }
+            const auto richheader = insideinfo.FindMember(RH_RICHHEADER);
+            if (richheader != insideinfo.MemberEnd()) {
+                if (!richheader->value.IsNull() && richheader->value.IsObject()) {
+                    auto richheaderobj = richheader->value.GetObjectA();
+                    CommonParseRichheaderInfo(richheaderobj, tfptr);
+                }
+            }
+            const auto sections = insideinfo.FindMember(SS_SECTIONS);
+            if (sections != insideinfo.MemberEnd()) {
+                if (!sections->value.IsNull() && sections->value.IsObject()) {
+                    auto sectionsobj = sections->value.GetObjectA();
+                    CommonParseSectionsInfo(sectionsobj, tfptr);
+                }
+            }
+            const auto strfeature = insideinfo.FindMember(SF_STRINGS_FEATURE);
+            if (strfeature != insideinfo.MemberEnd()) {
+                if (!strfeature->value.IsNull() && strfeature->value.IsObject()) {
+                    auto strfeatureobj = strfeature->value.GetObjectA();
+                    CommonParseStrfeatureInfo(strfeatureobj, tfptr, (_maximum_feature_counts - tfptr->getelemcount()));
+                }
+            }
+        }
+
+        if (tfptr->getelemcount() <= _minimum_feature_counts) {
+            if (auto anyvalue(wrapper->GetMember(FI_INSNINFO));
+                anyvalue.has_value() && anyvalue.type() == typeid(ConstRapidObject))
+            {
+                auto insninfo = std::any_cast<ConstRapidObject>(anyvalue);
+                const auto cfgflowgraph = insninfo.FindMember(FI_CFGFLOWGRAPH);
+                if (cfgflowgraph != insninfo.MemberEnd()) {
+                    if (!cfgflowgraph->value.IsNull() && cfgflowgraph->value.IsObject()) {
+                        auto graphobj = cfgflowgraph->value.GetObjectA();
+                        CommonParseFlowGraph(graphobj, tfptr, (_maximum_feature_counts - tfptr->getelemcount()));
+                    }
+                }
+                const auto ilcode = insninfo.FindMember(FI_ILCODE);
+                if (ilcode != insninfo.MemberEnd()) {
+                    if (!ilcode->value.IsNull() && ilcode->value.IsArray()) {
+                        CommonParseIlcode(insninfo, tfptr, (_maximum_feature_counts - tfptr->getelemcount()));
+                    }
+                }
+            }
+        }
+        std::cout << "word counts: " << tfptr->getelemcount() << std::endl;
+        if (label.length()) {
+            datasets << label << tfptr->fulldump();
+        }
+        else {
+            datasets << tfptr->fulldump();
+        }
         return true;
     }
 
@@ -1297,6 +1446,218 @@ namespace cchips {
         return sgobject->addElement(MF_MANIFEST, std::move(subsg));
     }
 
+    bool CTextCorpusManager::CommonParseResourceInfo(ConstRapidObject& resourceinfo, std::shared_ptr<CSemanticGeneration> sgobject) const {
+        if (!sgobject) return false;
+        auto subsg = sgobject->makeSubSg();
+        if (!subsg) return false;
+        std::vector<std::string> detected_l;
+        std::string commpanyname_str;
+        const auto bi_commpanyname = resourceinfo.FindMember(RI_COMMPANYNAME);
+        if (bi_commpanyname != resourceinfo.MemberEnd()) {
+            if (!bi_commpanyname->value.IsNull() && bi_commpanyname->value.IsString()) {
+                commpanyname_str = bi_commpanyname->value.GetString();
+                if (commpanyname_str.length()) {
+                    std::string des_str;
+                    if (CStrExtractor::detectedUSCorpus(commpanyname_str, detected_l)) {
+                        for (auto& detect : detected_l) {
+                            if (!des_str.length())
+                                des_str = detect;
+                            else
+                                des_str += " " + detect;
+                        }
+                    }
+                    commpanyname_str = des_str;
+                }
+            }
+        }
+        subsg->addElement(RI_COMMPANYNAME, commpanyname_str);
+        std::string description_str;
+        const auto bi_description = resourceinfo.FindMember(RI_DESCRIPTION);
+        if (bi_description != resourceinfo.MemberEnd()) {
+            if (!bi_description->value.IsNull() && bi_description->value.IsString()) {
+                description_str = bi_description->value.GetString();
+                if (description_str.length()) {
+                    std::string des_str;
+                    if (CStrExtractor::detectedUSCorpus(description_str, detected_l)) {
+                        for (auto& detect : detected_l) {
+                            if (!des_str.length())
+                                des_str = detect;
+                            else
+                                des_str += " " + detect;
+                        }
+                    }
+                    description_str = des_str;
+                }
+            }
+        }
+        subsg->addElement(RI_DESCRIPTION, description_str);
+        std::uint32_t file_version = 0;
+        const auto bi_filever = resourceinfo.FindMember(RI_FILEVER);
+        if (bi_filever != resourceinfo.MemberEnd()) {
+            if (!bi_filever->value.IsNull() && bi_filever->value.IsString()) {
+                std::string filever_str = bi_filever->value.GetString();
+                if (filever_str.length()) {
+                    file_version = 5;
+                }
+            }
+        }
+        subsg->addElement(RI_FILEVER, file_version);
+        std::string internalname_str;
+        const auto bi_internalname = resourceinfo.FindMember(RI_INTERNALNAME);
+        if (bi_internalname != resourceinfo.MemberEnd()) {
+            if (!bi_internalname->value.IsNull() && bi_internalname->value.IsString()) {
+                internalname_str = bi_internalname->value.GetString();
+                if (internalname_str.length()) {
+                    std::string name_str;
+                    if (CStrExtractor::detectedUSCorpus(internalname_str, detected_l)) {
+                        for (auto& detect : detected_l) {
+                            if (!name_str.length())
+                                name_str = detect;
+                            else
+                                name_str += " " + detect;
+                        }
+                    }
+                    internalname_str = name_str;
+                }
+            }
+        }
+        subsg->addElement(RI_INTERNALNAME, internalname_str);
+        std::string originalname_str;
+        const auto bi_originalname = resourceinfo.FindMember(RI_ORIGINALNAME);
+        if (bi_originalname != resourceinfo.MemberEnd()) {
+            if (!bi_originalname->value.IsNull() && bi_originalname->value.IsString()) {
+                originalname_str = bi_originalname->value.GetString();
+                if (originalname_str.length()) {
+                    std::string name_str;
+                    if (CStrExtractor::detectedUSCorpus(originalname_str, detected_l)) {
+                        for (auto& detect : detected_l) {
+                            if (!name_str.length())
+                                name_str = detect;
+                            else
+                                name_str += " " + detect;
+                        }
+                    }
+                    originalname_str = name_str;
+                }
+            }
+        }
+        subsg->addElement(RI_ORIGINALNAME, originalname_str);
+        std::string productname_str;
+        const auto bi_productname = resourceinfo.FindMember(RI_PRODUCTNAME);
+        if (bi_productname != resourceinfo.MemberEnd()) {
+            if (!bi_productname->value.IsNull() && bi_productname->value.IsString()) {
+                productname_str = bi_productname->value.GetString();
+                if (productname_str.length()) {
+                    std::string name_str;
+                    if (CStrExtractor::detectedUSCorpus(productname_str, detected_l)) {
+                        for (auto& detect : detected_l) {
+                            if (!name_str.length())
+                                name_str = detect;
+                            else
+                                name_str += " " + detect;
+                        }
+                    }
+                    productname_str = name_str;
+                }
+            }
+        }
+        subsg->addElement(RI_PRODUCTNAME, productname_str);
+        std::uint32_t product_version = 0;
+        const auto bi_productver = resourceinfo.FindMember(RI_PRODUCTVER);
+        if (bi_productver != resourceinfo.MemberEnd()) {
+            if (!bi_productver->value.IsNull() && bi_productver->value.IsString()) {
+                std::string productver_str = bi_productver->value.GetString();
+                if (productver_str.length()) {
+                    product_version = 5;
+                }
+            }
+        }
+        subsg->addElement(RI_PRODUCTVER, product_version);
+        std::string copyright_str;
+        const auto bi_copyright = resourceinfo.FindMember(RI_COPYRIGHT);
+        if (bi_copyright != resourceinfo.MemberEnd()) {
+            if (!bi_copyright->value.IsNull() && bi_copyright->value.IsString()) {
+                copyright_str = bi_copyright->value.GetString();
+                if (copyright_str.length()) {
+                    std::string name_str;
+                    if (CStrExtractor::detectedUSCorpus(copyright_str, detected_l)) {
+                        for (auto& detect : detected_l) {
+                            if (!name_str.length())
+                                name_str = detect;
+                            else
+                                name_str += " " + detect;
+                        }
+                    }
+                    copyright_str = name_str;
+                }
+            }
+        }
+        subsg->addElement(RI_COPYRIGHT, copyright_str);
+        std::string comments_str;
+        const auto bi_comments = resourceinfo.FindMember(RI_COMMENTS);
+        if (bi_comments != resourceinfo.MemberEnd()) {
+            if (!bi_comments->value.IsNull() && bi_comments->value.IsString()) {
+                comments_str = bi_comments->value.GetString();
+                if (comments_str.length()) {
+                    std::string name_str;
+                    if (CStrExtractor::detectedUSCorpus(comments_str, detected_l)) {
+                        for (auto& detect : detected_l) {
+                            if (!name_str.length())
+                                name_str = detect;
+                            else
+                                name_str += " " + detect;
+                        }
+                    }
+                    comments_str = name_str;
+                }
+            }
+        }
+        subsg->addElement(RI_COMMENTS, comments_str);
+        std::string trademarks_str;
+        const auto bi_trademarks = resourceinfo.FindMember(RI_TRADEMARKS);
+        if (bi_trademarks != resourceinfo.MemberEnd()) {
+            if (!bi_trademarks->value.IsNull() && bi_trademarks->value.IsString()) {
+                trademarks_str = bi_trademarks->value.GetString();
+                if (trademarks_str.length()) {
+                    std::string name_str;
+                    if (CStrExtractor::detectedUSCorpus(trademarks_str, detected_l)) {
+                        for (auto& detect : detected_l) {
+                            if (!name_str.length())
+                                name_str = detect;
+                            else
+                                name_str += " " + detect;
+                        }
+                    }
+                    trademarks_str = name_str;
+                }
+            }
+        }
+        subsg->addElement(RI_TRADEMARKS, trademarks_str);
+        std::uint32_t privatebuild = 0;
+        const auto bi_privatebuild = resourceinfo.FindMember(RI_PRIVATEBUILD);
+        if (bi_privatebuild != resourceinfo.MemberEnd()) {
+            if (!bi_privatebuild->value.IsNull() && bi_privatebuild->value.IsString()) {
+                std::string privatebuild_str = bi_privatebuild->value.GetString();
+                if (privatebuild_str.length()) {
+                    privatebuild = 5;
+                }
+            }
+        }
+        subsg->addElement(RI_PRIVATEBUILD, privatebuild);
+        std::uint32_t specialbuild = 0;
+        const auto bi_specialbuild = resourceinfo.FindMember(RI_SPECIALBUILD);
+        if (bi_specialbuild != resourceinfo.MemberEnd()) {
+            if (!bi_specialbuild->value.IsNull() && bi_specialbuild->value.IsString()) {
+                std::string specialbuild_str = bi_specialbuild->value.GetString();
+                if (specialbuild_str.length()) {
+                    specialbuild = 5;
+                }
+            }
+        }
+        subsg->addElement(RI_SPECIALBUILD, specialbuild);
+        return sgobject->addElement(RI_RESOURCEINFO, std::move(subsg));
+    }
+
     bool CTextCorpusManager::CommonParseRichheaderInfo(ConstRapidObject& richheaderinfo, std::shared_ptr<CSemanticGeneration> sgobject) const {
         if (!sgobject) return false;
         bool brichheader = false;
@@ -1397,13 +1758,13 @@ namespace cchips {
         return sgobject->addElement(SS_SECTIONS, std::move(subsg));
     }
 
-    bool CTextCorpusManager::CommonParseStrfeatureInfo(ConstRapidObject& strfeatureinfo, std::shared_ptr<CSemanticGeneration> sgobject) const {
+    bool CTextCorpusManager::CommonParseStrfeatureInfo(ConstRapidObject& strfeatureinfo, std::shared_ptr<CSemanticGeneration> sgobject, std::uint32_t feature_nums) const {
         if (!sgobject) return false;
         std::vector <std::string> detected_l;
         auto subsg = sgobject->makeSubSg();
         if (!subsg) return false;
+        std::uint64_t strings_count = 0;
         for (auto& strfeature : strfeatureinfo) {
-            std::uint64_t strings_count = 0;
             if (!strfeature.value.IsNull() && strfeature.value.IsObject()) {
                 auto strfeatureobj = strfeature.value.GetObjectA();
                 std::string secname = strfeature.name.GetString();
@@ -1434,15 +1795,100 @@ namespace cchips {
                                     }
                                 }
                             }
-                            if (strings_count >= _max_strfeature_count)
+                            if (strings_count > feature_nums)
                                 break;
                         }
                         subsg->addElement(secname, feature_strings);
+                        if (subsg->getelemcount() >= feature_nums) {
+                            break;
+                        }
                     }
                 }
             }
         }
         return sgobject->addElement(SF_STRINGS_FEATURE, std::move(subsg));
+    }
+
+    bool CTextCorpusManager::CommonParseFlowGraph(ConstRapidObject& flowgraphobj, std::shared_ptr<CSemanticGeneration> sgobject, std::uint32_t feature_nums) const {
+        if (!sgobject) return false;
+        std::vector <std::string> detected_l;
+        auto subsg = sgobject->makeSubSg();
+        if (!subsg) return false;
+        unsigned int flowcount = 0;
+        const auto flowcountitem = flowgraphobj.FindMember(FI_APIFLOWCFGCOUNT);
+        if (flowcountitem != flowgraphobj.MemberEnd()) {
+            if (!flowcountitem->value.IsNull() && flowcountitem->value.IsInt()) {
+                flowcount = flowcountitem->value.GetInt();
+            }
+        }
+        if (!flowcount) return true;
+        std::uint64_t strings_count = 0;
+        const auto apiflowcfgarray = flowgraphobj.FindMember(FI_APIFLOWCFG);
+        if (apiflowcfgarray != flowgraphobj.MemberEnd()) {
+            if (!apiflowcfgarray->value.IsNull() && apiflowcfgarray->value.IsArray()) {
+                std::string feature_strings;
+                for (auto& item : apiflowcfgarray->value.GetArray()) {
+                    if (!item.IsNull() && item.IsString()) {
+                        std::string str = item.GetString();
+                        if (CStrExtractor::detectedInsideCorpus(str, detected_l)) {
+                            for (auto& detect : detected_l) {
+                                if (!feature_strings.length())
+                                    feature_strings = detect;
+                                else
+                                    feature_strings += " " + detect;
+                                strings_count++;
+                            }
+                        }
+                    }
+                    if (strings_count > feature_nums)
+                        break;
+                }
+                subsg->addElement(FI_APIFLOWCFG, feature_strings);
+            }
+        }
+
+        return sgobject->addElement(FI_CFGFLOWGRAPH, std::move(subsg));
+    }
+
+    bool CTextCorpusManager::CommonParseIlcode(ConstRapidObject& ilcodeobj, std::shared_ptr<CSemanticGeneration> sgobject, std::uint32_t feature_nums) const {
+        if (!sgobject) return false;
+        std::vector <std::string> detected_l;
+        auto subsg = sgobject->makeSubSg();
+        if (!subsg) return false;
+        unsigned int ilcodecount = 0;
+        const auto ilcodecountitem = ilcodeobj.FindMember(FI_ILCODECOUNT);
+        if (ilcodecountitem != ilcodeobj.MemberEnd()) {
+            if (!ilcodecountitem->value.IsNull() && ilcodecountitem->value.IsInt()) {
+                ilcodecount = ilcodecountitem->value.GetInt();
+            }
+        }
+        if (!ilcodecount) return true;
+        std::uint64_t strings_count = 0;
+        const auto ilcodearray = ilcodeobj.FindMember(FI_ILCODE);
+        if (ilcodearray != ilcodeobj.MemberEnd()) {
+            if (!ilcodearray->value.IsNull() && ilcodearray->value.IsArray()) {
+                std::string feature_strings;
+                for (auto& item : ilcodearray->value.GetArray()) {
+                    if (!item.IsNull() && item.IsString()) {
+                        std::string str = item.GetString();
+                        if (CStrExtractor::detectedInsideCorpus(str, detected_l)) {
+                            for (auto& detect : detected_l) {
+                                if (!feature_strings.length())
+                                    feature_strings = detect;
+                                else
+                                    feature_strings += " " + detect;
+                                strings_count++;
+                            }
+                        }
+                    }
+                    if (strings_count > feature_nums)
+                        break;
+                }
+                subsg->addElement(FI_ILCODE, feature_strings);
+            }
+        }
+
+        return sgobject->addElement(FI_CFGFLOWGRAPH, std::move(subsg));
     }
 
     bool CTextCorpusManager::CFastTextSG::addElement(const std::string& key, const std::string& value) {
@@ -1841,6 +2287,104 @@ namespace cchips {
     }
 
     std::string CTextCorpusManager::CCorpusExtractSG::justdump() const {
+        return {};
+    }
+
+    bool CTextCorpusManager::CTransformersSG::addElement(const std::string& key, const std::string& value) {
+        auto count_words_in_line = [&](const std::string& input) -> std::uint32_t {
+            if (input.empty()) {
+                return 0;
+            }
+            std::uint32_t word_nums = 0;
+            std::istringstream iss(input);
+            std::string word;
+            while (iss >> word) {
+                word_nums++;
+            }
+            return word_nums - 1;
+        };
+        if (value.length()) {
+            m_dataset << " " << value;
+            m_elementcount += count_words_in_line(value);
+        }
+        return true;
+    }
+
+    bool CTextCorpusManager::CTransformersSG::addElement(const std::string& key, bool value) {
+        if (value) {
+            m_dataset << " " << SI_TRUE;
+        }
+        else {
+            m_dataset << " " << SI_FALSE;
+        }
+        m_elementcount++;
+        return true;
+    }
+
+    bool CTextCorpusManager::CTransformersSG::addElement(const std::string& key, std::uint32_t value) {
+        if (value) {
+            m_dataset << " " << SPECIAL_CORPUS_NUM;
+        }
+        else {
+            m_dataset << " " << SPECIAL_CORPUS_ZER;
+        }
+        m_elementcount++;
+        return true;
+    }
+
+    bool CTextCorpusManager::CTransformersSG::addElement(const std::string& key, std::unique_ptr<CSemanticGeneration> value) {
+        if (!value) {
+            return false;
+        }
+        std::string dump = value->fulldump();
+        if (m_dataset.str().empty()) {
+            m_dataset << dump;
+            m_elementcount += value->getelemcount();
+        }
+        else {
+            m_dataset << "." << dump;
+            m_elementcount += value->getelemcount() + 1;
+        }
+
+        return true;
+    }
+
+    bool CTextCorpusManager::CTransformersSG::addElement(const std::string& key, const std::vector<std::pair<std::string, std::any>>& value_vec) {
+        if (!value_vec.size()) {
+            return false;
+        }
+        for (size_t count = 0; count < value_vec.size(); count++) {
+            auto value = value_vec[count];
+            if (!value.first.length())
+                continue;
+            if (value.second.has_value()) {
+                if (value.second.type() == typeid(bool)) {
+                    bool bvalue = std::any_cast<bool>(value.second);
+                    addElement(value.first, bvalue);
+                }
+                else if (value.second.type() == typeid(std::uint32_t)) {
+                    std::uint32_t uvalue = std::any_cast<std::uint32_t>(value.second);
+                    addElement(value.first, uvalue);
+                }
+                else if (value.second.type() == typeid(std::string)) {
+                    std::string svalue = std::any_cast<std::string>(value.second);
+                    addElement(value.first, svalue);
+                }
+            }
+        }
+        return true;
+    }
+
+    std::unique_ptr<CSemanticGeneration> CTextCorpusManager::CTransformersSG::makeSubSg() const {
+        std::unique_ptr<CTransformersSG> tfssg = std::make_unique<CTransformersSG>();
+        return tfssg;
+    }
+
+    std::string CTextCorpusManager::CTransformersSG::fulldump() const {
+        return std::string(m_dataset.str());
+    }
+
+    std::string CTextCorpusManager::CTransformersSG::justdump() const {
         return {};
     }
 

@@ -16,6 +16,7 @@ namespace fs = std::filesystem;
 #define CF_IDENTIFIER "identifier"
 #define CF_FILETYPE "filetype"
 #define CF_PETYPE "petype"
+#define CF_EXTRATYPE "extratype"
 #define CF_SUBSYSTEM "subsystem"
 #define CF_OUTPUTTYPE "outputtype"
 #define CF_RUNNINGMODE "runningmode"
@@ -117,6 +118,8 @@ namespace cchips {
             info_type_signature,
             info_type_peinside,
             info_type_peinsnflow,
+            info_type_pyc,
+            info_type_javac,
         };
 
         struct _config {
@@ -138,6 +141,7 @@ namespace cchips {
             std::string identifier;
             std::string filetype;
             std::string petype;
+            std::string extratype;
             std::string subsystem;
             std::string outputtype;
             _runningmode runningmode;
@@ -181,6 +185,17 @@ namespace cchips {
                 }
                 return RE2::FullMatch(pe_str, *_pattern_petype);
             }
+            bool MatchExtraType(const std::string& type_str) const {
+                if (!_pattern_extratype) {
+                    if (type_str.length()) {
+                        _pattern_extratype = std::make_unique<RE2>(extratype, RE2::Quiet);
+                    }
+                    if (!_pattern_extratype) {
+                        return false;
+                    }
+                }
+                return RE2::FullMatch(type_str, *_pattern_extratype);
+            }
             bool IsDebugMode() const {
                 if (runningmode == _runningmode::mode_debug)
                     return true;
@@ -195,6 +210,24 @@ namespace cchips {
                 if (IsDebugMode() || IsPerformanceMode())
                     return false;
                 return true;
+            }
+            bool IsPythonFormat(const std::string& format) const {
+                if (format.empty()) {
+                    return false;
+                }
+                if (format == "pyc" || format == "py" || format == "pyw") {
+                    return true;
+                }
+                return false;
+            }
+            bool IsJavaFormat(const std::string& format) const {
+                if (format.empty()) {
+                    return false;
+                }
+                if (format == "javac" || format == "java") {
+                    return true;
+                }
+                return false;
             }
             _outputtype GetOutputType() const {
                 _outputtype format = _outputtype::output_logformat;
@@ -226,6 +259,7 @@ namespace cchips {
             mutable std::unique_ptr<RE2> _pattern_subsystem{};
             mutable std::unique_ptr<RE2> _pattern_petype{};
             mutable std::unique_ptr<RE2> _pattern_filetype{};
+            mutable std::unique_ptr<RE2> _pattern_extratype{};
         };
 
         using _base_info = struct {

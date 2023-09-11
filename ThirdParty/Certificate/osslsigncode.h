@@ -330,7 +330,15 @@ public:
     bool SetCrlStore(const char* crl_store);
 
     // Verify certificate / digital signature of a PE file
-    VerifyInfo Verify(
+    VerifyInfo VerifyBuffer(
+        const char* inbuf,
+        size_t bufsize,
+        bool crl_check = false,
+        bool store_certificate = false,
+        char* leaf_digest_name = NULL,
+        char* leaf_hash = NULL);
+
+    VerifyInfo VerifyFile(
         const char *infile,
         bool crl_check = false,
         bool store_certificate = false,

@@ -763,9 +763,11 @@ namespace cchips {
             fasttext::real threshold = 0.0;
             if (m_k == 0) {
                 m_ftmodel->predictLine(in, predictions, 1, threshold);
+                m_poutputtype = output_type::ot_nlp;
             }
             else {
                 m_ftmodel->predictLine(in, predictions, m_k, threshold);
+                m_poutputtype = output_type::ot_label;
             }
         }
         catch (const std::exception& e) {
@@ -830,6 +832,7 @@ namespace cchips {
         return output;
     }
 
+#ifndef pytorch_only_predict
     bool CGruModelImpl::train() {
         if (!m_valid) {
             return false;
@@ -950,6 +953,7 @@ namespace cchips {
         outputTestFesult();
         return true;
     }
+#endif
 
     bool CGruModelImpl::predict(const std::string& input_path) {
         if (!m_valid) {
@@ -959,8 +963,10 @@ namespace cchips {
             CFuncduration func_duration("predicting time: ");
             std::cout << "GRU Model predicting start... " << std::endl;
             m_datasets->LoadDict();
+#ifndef pytorch_only_predict
             m_grumodel->to(*m_device);
             m_linearmodel->to(*m_device);
+#endif
             m_grumodel->eval();
             m_linearmodel->eval();
             m_predict_result = torch::Tensor();
@@ -994,9 +1000,13 @@ namespace cchips {
             torch::Tensor inputs, lengths;
             std::tie(inputs, lengths) = m_datasets->LoadSample(output);
             if (inputs.defined()) {
+#ifndef pytorch_only_predict
                 inputs = inputs.to(*m_device);
+#endif
                 auto outputs = forward(inputs);
+#ifndef pytorch_only_predict
                 outputs = outputs.to(*m_device);
+#endif
                 m_predict_result = torch::softmax(outputs, -1);
                 //auto t1 = predictions[0].item<int>();
                 //std::cout << "predict: " << t1 << " label: " << m_datasets->getLabel(t1) << std::endl;
@@ -1014,6 +1024,10 @@ namespace cchips {
         if (!m_valid) {
             return false;
         }
+        if (!m_datasets->LoadDict()) {
+            return false;
+        }
+        model->to(torch::kCPU);
         std::cout << "save gru model..." << std::endl;
         torch::save(model, m_output);
         if (m_output.empty()) {
@@ -1154,6 +1168,7 @@ namespace cchips {
         return output;
     }
 
+#ifndef pytorch_only_predict
     bool CLstmModelImpl::train() {
         if (!m_valid) {
             return false;
@@ -1272,6 +1287,7 @@ namespace cchips {
         outputTestFesult();
         return true;
     }
+#endif
 
     bool CLstmModelImpl::predict(const std::string& input_path) {
         if (!m_valid) {
@@ -1281,8 +1297,10 @@ namespace cchips {
             CFuncduration func_duration("predicting time: ");
             std::cout << "LSTM Model predicting start... " << std::endl;
             m_datasets->LoadDict();
+#ifndef pytorch_only_predict
             m_lstmmodel->to(*m_device);
             m_linearmodel->to(*m_device);
+#endif
             m_lstmmodel->eval();
             m_linearmodel->eval();
             m_predict_result = torch::Tensor();
@@ -1316,7 +1334,9 @@ namespace cchips {
             torch::Tensor inputs, lengths;
             std::tie(inputs, lengths) = m_datasets->LoadSample(output);
             if (inputs.defined()) {
+#ifndef pytorch_only_predict
                 inputs = inputs.to(*m_device);
+#endif
                 auto outputs = forward(inputs);
                 m_predict_result = torch::softmax(outputs, -1);
                 //auto t1 = predictions[0].item<int>();
@@ -1335,6 +1355,10 @@ namespace cchips {
         if (!m_valid) {
             return false;
         }
+        if (!m_datasets->LoadDict()) {
+            return false;
+        }
+        model->to(torch::kCPU);
         std::cout << "save lstm model..." << std::endl;
         torch::save(model, m_output);
         if (m_output.empty()) {
@@ -1566,6 +1590,7 @@ namespace cchips {
         return true;
     }
 
+#ifndef pytorch_only_predict
     bool CAlbertModel::train() {
         return false;
     }
@@ -1573,6 +1598,7 @@ namespace cchips {
     bool CAlbertModel::test() {
         return false;
     }
+#endif
 
     bool CAlbertModel::predict(const std::string& inputpath) {
         if (!m_valid) {
@@ -1584,7 +1610,9 @@ namespace cchips {
             std::cout << "Bert(Local) Model predicting start... " << std::endl;
             m_datasets->LoadDict(CDataSets::dict_sentencepiece);
             m_predict_result = torch::Tensor();
+#ifndef pytorch_only_predict
             m_model.to(*m_device);
+#endif
             std::unique_ptr<cchips::CJsonOptions> options = std::make_unique<cchips::CJsonOptions>("CFGRES", IDR_JSONPE_CFG);
             if (!options || !options->Parse()) {
                 std::cout << "load config error." << std::endl;
@@ -1621,8 +1649,10 @@ namespace cchips {
             torch::Tensor inputids, attentionmask;
             std::tie(inputids, attentionmask) = m_datasets->LoadSample(output);
             if (inputids.defined() && attentionmask.defined()) {
+#ifndef pytorch_only_predict
                 inputids = inputids.to(*m_device);
                 attentionmask = attentionmask.to(*m_device);
+#endif
                 auto outputs = forward(inputids, attentionmask);
                 //std::cout << outputs << std::endl;
                 m_predict_result = torch::softmax(outputs, -1);

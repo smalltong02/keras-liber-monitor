@@ -18,6 +18,14 @@ namespace cchips {
                 return false;
             return true; 
         }
+        bool Scan(const std::string& file_buf, CFileInfo& file_info) {
+            std::unique_ptr<cchips::CRapidJsonWrapper> json_result;
+            json_result = std::make_unique<cchips::CRapidJsonWrapper>("{}");
+            if (!json_result)
+                return false;
+            file_info.SetJsonBaseInfo(std::move(json_result));
+            return true;
+        }
         bool Scan(fs::path& file_path, CFileInfo& file_info) {
             try {
                 std::unique_ptr<cchips::CRapidJsonWrapper> json_result;

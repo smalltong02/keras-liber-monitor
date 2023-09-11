@@ -137,6 +137,52 @@ namespace cchips {
         return true;
     }
 
+    bool CPeInside::Scan(const std::string& buffer)
+    {
+        try {
+            std::unique_ptr<PeLib::PeFile> file = GetPeFile(buffer);
+            if (!file)
+                return false;
+            std::unique_ptr<cchips::PeFormat> pe_format = std::make_unique<cchips::PeFormat>(std::move(file));
+            if (!pe_format)
+                return false;
+            m_json_result = std::make_unique<cchips::CRapidJsonWrapper>("{}");
+            if (!m_json_result)
+                return false;
+            for (auto& handler : m_handlers) {
+                handler->Scan(pe_format, m_json_result);
+            }
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+        }
+        return false;
+    }
+
+    bool CPeInside::ScanPeriod(const std::string& buffer)
+    {
+        try {
+            std::unique_ptr<PeLib::PeFile> file = GetPeFile(buffer);
+            if (!file)
+                return false;
+            std::unique_ptr<cchips::PeFormat> pe_format = std::make_unique<cchips::PeFormat>(std::move(file));
+            if (!pe_format)
+                return false;
+            m_json_result = std::make_unique<cchips::CRapidJsonWrapper>("{}");
+            if (!m_json_result)
+                return false;
+            for (auto& handler : m_handlers) {
+                handler->ScanPeriod(pe_format, m_json_result);
+            }
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+        }
+        return false;
+    }
+
     bool CPeInside::Scan(fs::path& path)
     {
         try {
@@ -207,5 +253,32 @@ namespace cchips {
             return std::make_unique<PeLib::PeFile64>(path.string());
         }
         return std::make_unique<PeLib::PeFile32>(path.string());
+    }
+
+    std::unique_ptr<PeLib::PeFile> CPeInside::GetPeFile(const std::string& buffer)
+    {
+        std::istringstream iss(buffer);
+        PeLib::PeFile32 pefile(iss, PeLib::PeFile32::loading_file);
+        if (pefile.readMzHeader() != PeLib::ERROR_NONE) {
+            return nullptr;
+        }
+        if (!pefile.mzHeader().isValid()) {
+            return nullptr;
+        }
+        if (pefile.readPeHeader() != PeLib::ERROR_NONE) {
+            return nullptr;
+        }
+        if (!pefile.peHeader().isValid()) {
+            return nullptr;
+        }
+        WORD machine = pefile.peHeader().getMachine();
+        WORD magic = pefile.peHeader().getMagic();
+
+        if ((machine == PeLib::PELIB_IMAGE_FILE_MACHINE_AMD64
+            || machine == PeLib::PELIB_IMAGE_FILE_MACHINE_IA64)
+            && magic == PeLib::PELIB_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+            return std::make_unique<PeLib::PeFile64>(iss, PeLib::PeFile64::loading_file);
+        }
+        return std::make_unique<PeLib::PeFile32>(iss, PeLib::PeFile32::loading_file);
     }
 } // namespace cchips

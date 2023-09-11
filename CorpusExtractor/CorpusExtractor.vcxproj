@@ -118,7 +118,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\x64\Debug;..\capstone\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>shlwapi.lib;HipsHookLib.lib;capstone_x64_d.lib;CorpusExtractorLib.lib;PowrProf.lib;Netapi32.lib;Wininet.lib;Dnsapi.lib;Ws2_32.lib;Iphlpapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shlwapi.lib;HipsHookLib.lib;CorpusExtractorLib.lib;PowrProf.lib;Netapi32.lib;Wininet.lib;Dnsapi.lib;Ws2_32.lib;Iphlpapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>
@@ -142,7 +142,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\x64\Release;..\capstone\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>shlwapi.lib;HipsHookLib.lib;capstone_x64.lib;CorpusExtractorLib.lib;PowrProf.lib;Netapi32.lib;Wininet.lib;Dnsapi.lib;Ws2_32.lib;Iphlpapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shlwapi.lib;HipsHookLib.lib;CorpusExtractorLib.lib;PowrProf.lib;Netapi32.lib;Wininet.lib;Dnsapi.lib;Ws2_32.lib;Iphlpapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>
