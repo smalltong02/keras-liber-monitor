@@ -46,6 +46,47 @@ namespace cchips {
 
     namespace fs = std::filesystem;
 
+    class CFuncduration {
+    public:
+        CFuncduration() : start_time_(std::chrono::high_resolution_clock::now()) {}
+        CFuncduration(const std::string& prefix) : start_time_(std::chrono::high_resolution_clock::now()) {
+            prefix_ = prefix;
+        }
+
+        ~CFuncduration() {
+            const auto end_time = std::chrono::high_resolution_clock::now();
+            const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time_);
+            std::cout << prefix_ << formattime(duration) << std::endl;
+        }
+
+    private:
+        std::string formattime(std::chrono::milliseconds time) {
+            std::string duration_str;
+            auto hours = std::chrono::duration_cast<std::chrono::hours>(time);
+            time -= hours;
+            auto minutes = std::chrono::duration_cast<std::chrono::minutes>(time);
+            time -= minutes;
+            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time);
+            time -= seconds;
+            auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(time);
+            if (hours.count()) {
+                duration_str = std::to_string(hours.count()) + " hours, ";
+            }
+            if (minutes.count()) {
+                duration_str += std::to_string(minutes.count()) + " minutes, ";
+            }
+            if (seconds.count()) {
+                duration_str += std::to_string(seconds.count()) + " seconds, ";
+            }
+            if (milliseconds.count()) {
+                duration_str += std::to_string(milliseconds.count()) + " ms";
+            }
+            return duration_str;
+        }
+        std::string prefix_ = "running time: ";
+        std::chrono::time_point<std::chrono::high_resolution_clock> start_time_;
+    };
+
     class CDataCleaning {
     public:
         CDataCleaning(const fs::path& path) {
@@ -377,6 +418,7 @@ namespace cchips {
                 }
                 CTraverseDriveEngine::fi_callback callback = std::bind(&CStaticFileManager::scan_callback, this, std::placeholders::_1, std::placeholders::_2);
                 CTraverseDriveEngine::GetInstance().AddFiCb(callback);
+                CTraverseDriveEngine::GetInstance().EnableHierarchicalFolder();
                 bool bret = CTraverseDriveEngine::GetInstance().TraverseDrive(scan_path, output);
                 if (OutputConsoleFlag()) {
                     auto totals = CTraverseDriveEngine::GetInstance().GetFileTotals();
@@ -694,7 +736,7 @@ namespace cchips {
             ecs->InitBeforeNewArchive();
             ecs->Set7zCallback(CStaticFileManager::c7z_callback);
             ecs->SetDefaultPassword(m_defaultpwd);
-            ecs->SetPackagePath(op.filePath);
+            ecs->SetPackagePath(string_to_fstring(GetCorrectPath(scan_path, package_path, subpath)));
             UStringVector removePathParts;
             const CExtractNtOptions ntOptions;
             CExtractCallbackConsole* ecb = new CExtractCallbackConsole;
@@ -709,6 +751,7 @@ namespace cchips {
                 removePathParts, false,
                 fi.Size + arcLink.VolumesSize);
             ecs->EnableMemmode();
+            m_temp_output = output;
             auto result = archive->Extract(&realIndices.Front(), realIndices.Size(), false, ec);
             if (result != S_OK) {
                 return false;
@@ -728,10 +771,14 @@ namespace cchips {
         bool scanmem_callback(const std::string& scan_buffer, std::string& output, bool bfilemode = false, const fs::path& package_path = "", const fs::path& subpath = "") {
             std::unique_ptr<CFileInfo> fileinfo = nullptr;
             if (bfilemode) {
-                fileinfo = std::make_unique<CFileInfo>(fs::path(scan_buffer));
+                fs::path path = scan_buffer;
+                fileinfo = std::make_unique<CFileInfo>(path);
+                fileinfo->SetBasename(path.filename().string());
             }
             else {
                 fileinfo = std::make_unique<CFileInfo>(scan_buffer);
+                fs::path path = subpath;
+                fileinfo->SetBasename(path.filename().string());
             }
             if (!fileinfo) {
                 IncFailedlog(GetCorrectPath(scan_buffer, package_path, subpath), subpath);

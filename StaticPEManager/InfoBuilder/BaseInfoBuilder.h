@@ -23,6 +23,12 @@ namespace cchips {
             json_result = std::make_unique<cchips::CRapidJsonWrapper>("{}");
             if (!json_result)
                 return false;
+            if (m_options_info.bfilename) {
+                std::string basename = file_info.GetBasename();
+                if (!basename.empty()) {
+                    json_result->AddTopMember("filename", cchips::RapidValue(basename.c_str(), json_result->GetAllocator()));
+                }
+            }
             file_info.SetJsonBaseInfo(std::move(json_result));
             return true;
         }

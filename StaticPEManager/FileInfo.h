@@ -112,10 +112,11 @@ namespace cchips {
             return m_valid;
         }
 
-        const std::string& GetFileType() { return m_filetype_desc; }
-        const std::string& GetFileFormat() { return m_fileformat_desc; }
-        const std::string& GetPeType() { return m_petype_desc; }
-        const std::string& GetSubsystem() { return m_subsystem_desc; }
+        const std::string& GetFileType() const { return m_filetype_desc; }
+        const std::string& GetFileFormat() const { return m_fileformat_desc; }
+        const std::string& GetPeType() const { return m_petype_desc; }
+        const std::string& GetSubsystem() const { return m_subsystem_desc; }
+        const std::string& GetBasename() const { return m_basename; }
         CIdentifierInfo& GetIdentifierInfo() { return m_iden_info; }
         std::unique_ptr<cchips::CRapidJsonWrapper>& GetBaseInfo() { return m_json_baseinfo; }
         std::unique_ptr<cchips::CRapidJsonWrapper>& GetVersionInfo() { return m_json_versioninfo; }
@@ -123,6 +124,7 @@ namespace cchips {
         std::unique_ptr<cchips::CRapidJsonWrapper>& GetVerifyInfo() { return m_json_verifyinfo; }
         std::unique_ptr<cchips::CRapidJsonWrapper>& GetPeInsideInfo() { return m_json_peinside; }
         std::unique_ptr<cchips::CRapidJsonWrapper>& GetInsnFlowInfo() { return m_json_insnflow; }
+        void SetBasename(const std::string& name) { m_basename = name; }
         void SetPeInsideInfo(std::unique_ptr<cchips::CRapidJsonWrapper> peinside) { m_json_peinside = std::move(peinside); }
         void SetInsnFlowInfo(std::unique_ptr<cchips::CRapidJsonWrapper> insnflow) { m_json_insnflow = std::move(insnflow); }
         void SetJsonBaseInfo(std::unique_ptr<cchips::CRapidJsonWrapper> baseinfo) { m_json_baseinfo = std::move(baseinfo); }
@@ -138,6 +140,7 @@ namespace cchips {
         std::string m_petype_desc;
         std::string m_fileformat_desc;
         std::string m_subsystem_desc;
+        std::string m_basename;
         CIdentifierInfo m_iden_info;
         std::unique_ptr<cchips::CRapidJsonWrapper> m_json_baseinfo;
         std::unique_ptr<cchips::CRapidJsonWrapper> m_json_versioninfo;

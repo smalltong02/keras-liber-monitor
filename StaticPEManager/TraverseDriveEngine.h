@@ -82,20 +82,30 @@ namespace cchips {
 
         unsigned long long GetDirectoryTotals() const { return m_ndirectory_totals; }
         unsigned long long GetFileTotals() const { return m_nfile_totals; }
+        void EnableHierarchicalFolder() { m_bhierarchical_folder = true; }
+        void DisableHierarchicalFolder() { m_bhierarchical_folder = false; }
     private:
         CTraverseDriveEngine() {
         }
         ~CTraverseDriveEngine() {
         }
+        bool HierarchicalFolderFlag() const { return m_bhierarchical_folder; }
 
         bool TraverseDirectory(const std::string& dir_path, std::string& output_path) {
             if (dir_path.empty()) return false;
             //info_log("search directory: %s ...", dir_path.c_str());
             try {
+                std::string org_path = output_path;
                 for (auto& de : fs::directory_iterator(dir_path)) {
                     auto file_path = de.path();
                     auto file_name = file_path.filename();
                     if (de.is_directory()) {
+                        if (HierarchicalFolderFlag()) {
+                            fs::path new_path = org_path + "\\" + file_name.string();
+                            if (fs::exists(new_path) || fs::create_directory(new_path)) {
+                                output_path = new_path.string();
+                            }
+                        }
                         TraverseDirectory(file_path.string(), output_path);
                         m_ndirectory_totals++;
                     }
@@ -115,6 +125,7 @@ namespace cchips {
             return true;
         }
 
+        bool m_bhierarchical_folder = false;
         std::vector<fi_callback> m_fi_cb_list;
         unsigned long long m_ndirectory_totals = 0;
         unsigned long long m_nfile_totals = 0;

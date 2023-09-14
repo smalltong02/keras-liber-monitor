@@ -2,6 +2,7 @@
 //
 #include "resource.h"
 #include <iostream>
+#include <chrono>
 #include "StaticPEManager\StaticFileManager.h"
 
 void info(const char* fmt, ...)
@@ -37,7 +38,7 @@ int main()
         );
         return -1;
     }
-
+    
     bool bcleaning = false;
     bool bpackage = false;
     std::wstring scan_pathw;
@@ -101,6 +102,7 @@ int main()
     if (!passwordw.empty()) {
         manager.SetDefaultPwd(passwordw);
     }
+    cchips::CFuncduration func_duration("Collector time: ");
     if (!manager.Scan(scan_path, output_path, true)) {
         info("scan failed!\n");
         return -1;

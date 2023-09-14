@@ -2088,7 +2088,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddExportRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_EXPORT) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2098,7 +2101,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddExportSize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXPORT].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_EXPORT) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXPORT].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2108,7 +2114,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddImportRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_IMPORT) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2118,7 +2127,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddImportSize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IMPORT].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_IMPORT) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IMPORT].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2128,7 +2140,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddResourceRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_RESOURCE) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2138,7 +2153,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddResourceSize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_RESOURCE].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_RESOURCE) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_RESOURCE].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2148,7 +2166,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddExceptionRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_EXCEPTION) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2158,7 +2179,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddExceptionSize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_EXCEPTION) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2168,7 +2192,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddSecurityRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_SECURITY].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_SECURITY) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_SECURITY].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2178,7 +2205,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddSecuritySize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_SECURITY].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_SECURITY) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_SECURITY].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2188,7 +2218,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddBaseRelocRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2198,7 +2231,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddBaseRelocSize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2208,7 +2244,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddDebugRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_DEBUG) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2218,7 +2257,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddDebugSize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DEBUG].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_DEBUG) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DEBUG].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2228,7 +2270,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddArchitectureRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_ARCHITECTURE].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_ARCHITECTURE) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_ARCHITECTURE].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2238,7 +2283,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddArchitectureSize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_ARCHITECTURE].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_ARCHITECTURE) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_ARCHITECTURE].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2248,7 +2296,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddGlobalPtrRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_GLOBALPTR].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_GLOBALPTR) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_GLOBALPTR].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2258,7 +2309,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddGlobalPtrSize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_GLOBALPTR].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_GLOBALPTR) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_GLOBALPTR].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2268,7 +2322,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddTlsRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_TLS) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2278,7 +2335,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddTlsSize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_TLS].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_TLS) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_TLS].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2288,7 +2348,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddLoadConfigRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2298,7 +2361,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddLoadConfigSize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2308,7 +2374,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddBoundImportRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2318,7 +2387,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddBoundImportSize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2328,7 +2400,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddIatRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IAT].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_IAT) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IAT].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2338,7 +2413,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddIatSize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IAT].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_IAT) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IAT].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2348,7 +2426,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddDelayImportRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2358,7 +2439,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddDelayImportSize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2368,7 +2452,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddComHeaderRva() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress;
+		}
+		return 0;
 	}
 
 	/**
@@ -2378,7 +2465,10 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getIddComHeaderSize() const
 	{
-		return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].Size;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR) {
+			return m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].Size;
+		}
+		return 0;
 	}
 
 	/**
@@ -2389,13 +2479,19 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getImageDataDirectoryRva(dword dwDirectory) const
 	{
-		return m_inthHeader.dataDirectories[dwDirectory].VirtualAddress;
+		if (m_inthHeader.dataDirectories.size() > dwDirectory) {
+			return m_inthHeader.dataDirectories[dwDirectory].VirtualAddress;
+		}
+		return 0;
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setImageDataDirectoryRva(dword dwDirectory, dword value)
 	{
-		m_inthHeader.dataDirectories[dwDirectory].VirtualAddress = value;
+		if (m_inthHeader.dataDirectories.size() > dwDirectory) {
+			m_inthHeader.dataDirectories[dwDirectory].VirtualAddress = value;
+		}
+		return;
 	}
 
 	/**
@@ -2406,13 +2502,19 @@ namespace PeLib
 	template<int x>
 	dword PeHeaderT<x>::getImageDataDirectorySize(dword dwDirectory) const
 	{
-		return m_inthHeader.dataDirectories[dwDirectory].Size;
+		if (m_inthHeader.dataDirectories.size() > dwDirectory) {
+			return m_inthHeader.dataDirectories[dwDirectory].Size;
+		}
+		return 0;
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setImageDataDirectorySize(dword dwDirectory, dword value)
 	{
-		m_inthHeader.dataDirectories[dwDirectory].Size = value;
+		if (m_inthHeader.dataDirectories.size() > dwDirectory) {
+			m_inthHeader.dataDirectories[dwDirectory].Size = value;
+		}
+		return;
 	}
 
 	/**
@@ -2911,109 +3013,145 @@ namespace PeLib
 	template<int x>
 	void PeHeaderT<x>::setIddDebugRva(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_DEBUG) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddDebugSize(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DEBUG].Size = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_DEBUG) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DEBUG].Size = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddDelayImportRva(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT].VirtualAddress = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT].VirtualAddress = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddDelayImportSize(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT].Size = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT].Size = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddExceptionRva(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_EXCEPTION) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddExceptionSize(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_EXCEPTION) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddGlobalPtrRva(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_GLOBALPTR].VirtualAddress = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_GLOBALPTR) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_GLOBALPTR].VirtualAddress = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddGlobalPtrSize(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_GLOBALPTR].Size = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_GLOBALPTR) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_GLOBALPTR].Size = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddIatRva(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IAT].VirtualAddress = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_IAT) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IAT].VirtualAddress = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddIatSize(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IAT].Size = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_IAT) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IAT].Size = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddLoadConfigRva(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].VirtualAddress = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].VirtualAddress = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddLoadConfigSize(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].Size = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].Size = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddResourceRva(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_RESOURCE) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddResourceSize(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_RESOURCE].Size = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_RESOURCE) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_RESOURCE].Size = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddSecurityRva(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_SECURITY].VirtualAddress = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_SECURITY) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_SECURITY].VirtualAddress = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddSecuritySize(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_SECURITY].Size = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_SECURITY) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_SECURITY].Size = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddTlsRva(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_TLS) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddTlsSize(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_TLS].Size = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_TLS) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_TLS].Size = dwValue;
+		}
 	}
 
 	/**
@@ -3023,7 +3161,9 @@ namespace PeLib
 	template<int x>
 	void PeHeaderT<x>::setIddExportRva(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_EXPORT) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress = dwValue;
+		}
 	}
 
 	/**
@@ -3033,43 +3173,57 @@ namespace PeLib
 	template<int x>
 	void PeHeaderT<x>::setIddExportSize(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXPORT].Size = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_EXPORT) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_EXPORT].Size = dwValue;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddBaseRelocRva(dword value)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = value;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = value;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddBaseRelocSize(dword value)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size = value;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size = value;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddArchitectureRva(dword value)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_ARCHITECTURE].VirtualAddress = value;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_ARCHITECTURE) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_ARCHITECTURE].VirtualAddress = value;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddArchitectureSize(dword value)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_ARCHITECTURE].Size = value;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_ARCHITECTURE) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_ARCHITECTURE].Size = value;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddComHeaderRva(dword value)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress = value;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress = value;
+		}
 	}
 
 	template<int x>
 	void PeHeaderT<x>::setIddComHeaderSize(dword value)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].Size = value;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].Size = value;
+		}
 	}
 
 	/**
@@ -3079,7 +3233,9 @@ namespace PeLib
 	template<int x>
 	void PeHeaderT<x>::setIddImportRva(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_IMPORT) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress = dwValue;
+		}
 	}
 
 	/**
@@ -3089,7 +3245,9 @@ namespace PeLib
 	template<int x>
 	void PeHeaderT<x>::setIddImportSize(dword dwValue)
 	{
-		m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IMPORT].Size = dwValue;
+		if (m_inthHeader.dataDirectories.size() > PELIB_IMAGE_DIRECTORY_ENTRY_IMPORT) {
+			m_inthHeader.dataDirectories[PELIB_IMAGE_DIRECTORY_ENTRY_IMPORT].Size = dwValue;
+		}
 	}
 
 	/**

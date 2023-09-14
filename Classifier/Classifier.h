@@ -43,47 +43,6 @@ namespace cchips {
     class CGruModel;
     class CLstmModel;
 
-    class CFuncduration {
-    public:
-        CFuncduration() : start_time_(std::chrono::high_resolution_clock::now()) {}
-        CFuncduration(const std::string& prefix) : start_time_(std::chrono::high_resolution_clock::now()) {
-            prefix_ = prefix;
-        }
-
-        ~CFuncduration() {
-            const auto end_time = std::chrono::high_resolution_clock::now();
-            const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time_);
-            std::cout << prefix_ << formattime(duration) << std::endl;
-        }
-
-    private:
-        std::string formattime(std::chrono::milliseconds time) {
-            std::string duration_str;
-            auto hours = std::chrono::duration_cast<std::chrono::hours>(time);
-            time -= hours;
-            auto minutes = std::chrono::duration_cast<std::chrono::minutes>(time);
-            time -= minutes;
-            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time);
-            time -= seconds;
-            auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(time);
-            if (hours.count()) {
-                duration_str = std::to_string(hours.count()) + " hours, ";
-            }
-            if (minutes.count()) {
-                duration_str += std::to_string(minutes.count()) + " minutes, ";
-            }
-            if (seconds.count()) {
-                duration_str += std::to_string(seconds.count()) + " seconds, ";
-            }
-            if (milliseconds.count()) {
-                duration_str += std::to_string(milliseconds.count()) + " ms";
-            }
-            return duration_str;
-        }
-        std::string prefix_ = "running time: ";
-        std::chrono::time_point<std::chrono::high_resolution_clock> start_time_;
-    };
-
     class CNlpOutput {
     public:
         CNlpOutput(const std::string& label, float score) {
