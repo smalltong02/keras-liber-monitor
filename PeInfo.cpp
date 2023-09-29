@@ -125,6 +125,9 @@ namespace cchips {
                 magic_size = (std::max)(magic_size, item.first.first + item.first.second.length());
             }
         }
+        if (magic_size > size) {
+            return file_format::format_undetectable;
+        }
 
         std::string magic;
         tls_check_struct *tls = check_get_tls();

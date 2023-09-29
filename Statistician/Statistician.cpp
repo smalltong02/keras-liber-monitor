@@ -28,7 +28,9 @@ int main()
             "Usage: %S <options..>\n"
             "Options:\n"
             "  --input                     input path.\n"
-            "  [--mode]                    statistic mode.\n",
+            "  --output                    output path.\n"
+            "  --prefix                    path prefix.\n"
+            "  [--model]                    statistic model.\n",
             argv[0]
         );
         return -1;
@@ -36,12 +38,22 @@ int main()
 
     std::wstring modelw;
     std::wstring input_pathw;
+    std::wstring output_pathw;
+    std::wstring prefixw;
     for (int idx = 1; idx < argc; idx++) {
         if (wcscmp(argv[idx], L"--input") == 0) {
             input_pathw = argv[++idx];
             continue;
         }
-        if (wcscmp(argv[idx], L"--mode") == 0) {
+        if (wcscmp(argv[idx], L"--output") == 0) {
+            output_pathw = argv[++idx];
+            continue;
+        }
+        if (wcscmp(argv[idx], L"--prefix") == 0) {
+            prefixw = argv[++idx];
+            continue;
+        }
+        if (wcscmp(argv[idx], L"--model") == 0) {
             modelw = argv[++idx];
             continue;
         }
@@ -50,10 +62,17 @@ int main()
         info("error argument.\n");
         return -1;
     }
+    if (!modelw.length()) {
+        info("error argument.\n");
+        return -1;
+    }
     auto& manager = cchips::GetCStatisticianManager().GetInstance();
     std::string input_path = to_byte_string(input_pathw);
-    std::string output_path;
-    manager.Scan(input_path, output_path, true);
+    std::string model = to_byte_string(modelw);
+    std::string output_path = to_byte_string(output_pathw);
+    std::string prefix_str = to_byte_string(prefixw);
+    manager.SetPrefix(prefix_str);
+    manager.Scan(input_path, output_path, model, true);
     return 0;
 }
 

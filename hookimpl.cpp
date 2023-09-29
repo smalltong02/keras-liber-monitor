@@ -356,29 +356,29 @@ bool process_duplicate_for_wmiobject(CHookImplementObject::detour_node* node, co
 processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IEnumWbemClassObject_Next(detour_node* node, IEnumWbemClassObject * This, long lTimeout, ULONG uCount, IWbemClassObject **apObjects, ULONG *puReturned)
 {
     POST_BEGIN(node)
-    if (!apObjects || !(*apObjects)) return processing_continue;
+    //if (!apObjects || !(*apObjects)) return processing_continue;
 
-    HRESULT hr;
-    VARIANT variant_value;
-    std::stringstream class_name;
-    IWbemClassObject* pWbemClassObject = *apObjects;
-    hr = pWbemClassObject->Get(CComBSTR("__CLASS"), 0, &variant_value, 0, 0);
-    if (!SUCCEEDED(hr)) return processing_continue;
-    if (class_name = OutputAnyValue(GetVariantValue(variant_value)); !class_name.str().length())
-        return processing_continue;
-    BEGIN_LOG(class_name.str());
-    for (const auto& wmi_object : node->hook_implement_object->GetWmiObjects())
-    {
-        ASSERT(wmi_object.second != nullptr);
-        if (wmi_object.second == nullptr) continue;
-        if (_stricmp(wmi_object.first.c_str(), class_name.str().c_str()) == 0)
-        {
-            if (!process_log_for_wmiobject(node, wmi_object.second, pWbemClassObject, LOGGER))
-                return processing_skip;
-            break;
-        }
-    }
-    END_LOG(node->log_entry);
+    //HRESULT hr;
+    //VARIANT variant_value;
+    //std::stringstream class_name;
+    //IWbemClassObject* pWbemClassObject = *apObjects;
+    //hr = pWbemClassObject->Get(CComBSTR("__CLASS"), 0, &variant_value, 0, 0);
+    //if (!SUCCEEDED(hr)) return processing_continue;
+    //if (class_name = OutputAnyValue(GetVariantValue(variant_value)); !class_name.str().length())
+    //    return processing_continue;
+    //BEGIN_LOG(class_name.str());
+    //for (const auto& wmi_object : node->hook_implement_object->GetWmiObjects())
+    //{
+    //    ASSERT(wmi_object.second != nullptr);
+    //    if (wmi_object.second == nullptr) continue;
+    //    if (_stricmp(wmi_object.first.c_str(), class_name.str().c_str()) == 0)
+    //    {
+    //        if (!process_log_for_wmiobject(node, wmi_object.second, pWbemClassObject, LOGGER))
+    //            return processing_skip;
+    //        break;
+    //    }
+    //}
+    //END_LOG(node->log_entry);
     return processing_continue;
 }
 
@@ -498,7 +498,6 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemClassObjec
     HRESULT hr;
     VARIANT variant_value;
     std::stringstream class_name;
-    error_log("detour_IWbemClassObject_Get: 11111111111111");
     hr = This->Get(CComBSTR("__CLASS"), 0, &variant_value, 0, 0);
     if (!SUCCEEDED(hr)) return processing_continue;
     if (class_name = OutputAnyValue(GetVariantValue(variant_value)); !class_name.str().length())
@@ -526,19 +525,19 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemClassObjec
 processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemClassObject_Put(detour_node* node, IWbemClassObject* This, LPCWSTR wszName, long lFlags, VARIANT *pVal, long Type)
 {
     POST_BEGIN(node)
-    HRESULT hr;
-    VARIANT variant_value;
-    std::stringstream class_name;
-    hr = This->Get(CComBSTR("__CLASS"), 0, &variant_value, 0, 0);
-    if (!SUCCEEDED(hr)) return processing_continue;
-    if (class_name = OutputAnyValue(GetVariantValue(variant_value)); !class_name.str().length())
-        return processing_continue;
-    if (pVal == nullptr) return processing_continue;
-    BEGIN_LOG(class_name.str());
-    if (std::stringstream str_val = OutputAnyValue(GetVariantValue(*pVal)); str_val.str().length())
-        LOGGING(W2AString(wszName), str_val.str());
+    //HRESULT hr;
+    //VARIANT variant_value;
+    //std::stringstream class_name;
+    //hr = This->Get(CComBSTR("__CLASS"), 0, &variant_value, 0, 0);
+    //if (!SUCCEEDED(hr)) return processing_continue;
+    //if (class_name = OutputAnyValue(GetVariantValue(variant_value)); !class_name.str().length())
+    //    return processing_continue;
+    //if (pVal == nullptr) return processing_continue;
+    //BEGIN_LOG(class_name.str());
+    //if (std::stringstream str_val = OutputAnyValue(GetVariantValue(*pVal)); str_val.str().length())
+    //    LOGGING(W2AString(wszName), str_val.str());
 
-    END_LOG(node->log_entry);
+    //END_LOG(node->log_entry);
     return processing_continue;
 }
 
@@ -683,7 +682,6 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_P
     POST_BEGIN(node)
     if (ppEnum == nullptr || *ppEnum == nullptr) return processing_skip;
     std::shared_ptr<PVOID> log_handle = node->log_entry;
-    error_log("detour_IWbemServices_Post_ExecQuery: 11111111111111");
     if (std::stringstream str_val = OutputAnyValue(std::wstring(strQuery)); str_val.str().length()) {
         if (std::string object_str; RE2::FullMatch(str_val.str().c_str(), "^.*(?i)from (.*)$", &object_str) && object_str.length()) {
             for (const auto& wmi_object : node->hook_implement_object->GetWmiObjects())
@@ -692,7 +690,6 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_P
                 if (wmi_object.second == nullptr) continue;
                 if (_stricmp(wmi_object.first.c_str(), object_str.c_str()) == 0)
                 {
-                    error_log("detour_IWbemServices_Post_ExecQuery: 222222222222222");
                     for (const auto& pcheck : wmi_object.second->GetChecks(false))
                     {
                         ASSERT(pcheck != nullptr);
@@ -709,7 +706,6 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_P
                         }
                         if (duplicate)
                         {
-                            error_log("detour_IWbemServices_Post_ExecQuery: 3333333333333333");
                             idIEnumWbemClassObject* p_IEnumWbemClassObject = (idIEnumWbemClassObject *)malloc(sizeof(idIEnumWbemClassObject));
                             if (p_IEnumWbemClassObject)
                             {
@@ -719,7 +715,6 @@ processing_status STDMETHODCALLTYPE CHookImplementObject::detour_IWbemServices_P
                                     memset(p_IEnumWbemClassObject->lpVtbl, 0, sizeof(idIEnumWbemClassObjectVtbl));
                                     InitializeWin32EnumWbemClassObject(p_IEnumWbemClassObject, *ppEnum, wmi_object.second);
                                     *ppEnum = (IEnumWbemClassObject*)p_IEnumWbemClassObject;
-                                    error_log("detour_IWbemServices_Post_ExecQuery: 4444444444444444444");
                                 }
                             }
                             break;

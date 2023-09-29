@@ -26,5 +26,8 @@
     <ClInclude Include="StatisticianManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="JsonDefine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

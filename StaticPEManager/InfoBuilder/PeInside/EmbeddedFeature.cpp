@@ -55,6 +55,9 @@ namespace cchips {
         size_t DosHeader = PeLib::PELIB_IMAGE_DOS_HEADER().size();
         size_t DataDirectory = PeLib::PELIB_IMAGE_DATA_DIRECTORY().size() * PeLib::PELIB_IMAGE_NUMBEROF_DIRECTORY_ENTRIES;
         size_t NtHeader = PeLib::PELIB_IMAGE_NT_HEADERS<32>().size() + DataDirectory;
+        if (data.size() < (DosHeader + NtHeader)) {
+            return false;
+        }
         uint32_t DosHeaderLastPos = data.size() - DosHeader - NtHeader;
         uint32_t NtHeaderLastPos = data.size() - NtHeader;
 

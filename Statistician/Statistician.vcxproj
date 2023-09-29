@@ -141,6 +141,7 @@
     <ClCompile Include="StatisticianManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="JsonDefine.h" />
     <ClInclude Include="StatisticianManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

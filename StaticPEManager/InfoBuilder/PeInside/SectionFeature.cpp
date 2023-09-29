@@ -35,8 +35,15 @@ namespace cchips {
                     vsection.AddMember("bbs", RapidValue(sec->isBss()), allocator);
                     vsection.AddMember("debug", RapidValue(sec->isDebug()), allocator);
                     vsection.AddMember("info", RapidValue(sec->isInfo()), allocator);
-                    std::string_view bytes = sec->getBytes(0, sizeinmemory);
-                    vsection.AddMember("entropy", RapidValue(getEntropy(bytes)), allocator);
+                    auto seclastpos = sec->getAddress() + sizeinmemory;
+                    auto filelastpos = (unsigned long long)pe_format->getLoadedBytesData() + pe_format->getLoadedFileLength();
+                    if (seclastpos < filelastpos) {
+                        std::string_view bytes = sec->getBytes(0, sizeinmemory);
+                        vsection.AddMember("entropy", RapidValue(getEntropy(bytes)), allocator);
+                    }
+                    else {
+                        vsection.AddMember("entropy", 0, allocator);
+                    }
                     vsections->AddMember(cchips::RapidValue(sec->getName().c_str(), allocator), vsection, allocator);
 				}
 			}

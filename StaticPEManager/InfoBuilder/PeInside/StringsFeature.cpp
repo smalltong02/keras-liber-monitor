@@ -70,8 +70,16 @@ namespace cchips {
                     vsection.AddMember("characteristics", cchips::RapidValue(fsec->getPeCoffFlags()), allocator);
                     unsigned long long sizeinmemory = 0;
                     fsec->getSizeInMemory(sizeinmemory);
-                    std::string_view bytes = fsec->getBytes(0, sizeinmemory);
-                    vsection.AddMember("entropy", RapidValue(getEntropy(bytes)), allocator);
+                    auto seclastpos = fsec->getAddress() + sizeinmemory;
+                    auto filelastpos = (unsigned long long)pe_format->getLoadedBytesData() + pe_format->getLoadedFileLength();
+                    if (seclastpos < filelastpos) {
+                        std::string_view bytes = fsec->getBytes(0, sizeinmemory);
+                        vsection.AddMember("entropy", RapidValue(getEntropy(bytes)), allocator);
+                    }
+                    else {
+                        vsection.AddMember("entropy", 0, allocator);
+                        continue;
+                    }
                     char* address = (char*)fsec->getAddress();
                     auto addr_size = fsec->getSizeInFile();
                     if (address && addr_size) {

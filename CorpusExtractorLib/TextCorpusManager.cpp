@@ -245,7 +245,39 @@ namespace cchips {
         return true;
     }
 
-    bool CTextCorpusManager::GeneratingFastTextDatasets(std::unique_ptr<CRapidJsonWrapper>& wrapper, std::stringstream& datasets, const std::string& label) const {
+    bool CTextCorpusManager::SaveStatisticianData(const fs::path& outputfile) const {
+        if (outputfile.empty()) {
+            return false;
+        }
+        fs::path statfile = outputfile.parent_path();
+        statfile = statfile.append("statisticianinfo.txt");
+        std::ofstream outfile(statfile, std::ios::out);
+        if (!outfile.is_open())
+            return false;
+        outfile << "skip counts: " << m_skip_lists.size() << std::endl;
+        outfile << "no enough feature counts: " << m_notenough_lists.size() << std::endl;
+        outfile << "duplicate iden counts: " << m_dup_idencounts << std::endl;
+        outfile << "success counts: " << m_scan_lists.size() << std::endl << std::endl;
+
+        outfile << "    skip lists: " << std::endl;
+        for (auto& item : m_skip_lists) {
+            outfile << "        " << item << std::endl;
+        }
+        outfile << std::endl;
+        outfile << "    noenough lists: " << std::endl;
+        for (auto& item : m_notenough_lists) {
+            outfile << "        " << item << std::endl;
+        }
+        outfile << std::endl;
+        outfile << "    success lists: " << std::endl;
+        for (auto& item : m_scan_lists) {
+            outfile << "        " << item << std::endl;
+        }
+        outfile << std::endl;
+        return true;
+    }
+
+    bool CTextCorpusManager::GeneratingFastTextDatasets(std::unique_ptr<CRapidJsonWrapper> wrapper, std::stringstream& datasets, const std::string& label) {
         if (!wrapper) return false;
         if (auto anyvalue(wrapper->GetMember(std::vector<std::string>{PJ_SHA256}));
             !anyvalue.has_value() || anyvalue.type() != typeid(std::string_view)) {
@@ -380,22 +412,52 @@ namespace cchips {
         return true;
     }
 
-    bool CTextCorpusManager::GeneratingGruDatasets(std::unique_ptr<CRapidJsonWrapper>& wrapper, std::stringstream& datasets, const std::string& label) const {
+    bool CTextCorpusManager::GeneratingGruDatasets(std::unique_ptr<CRapidJsonWrapper> wrapper, std::stringstream& datasets, const std::string& label) {
         return true;
     }
 
-    bool CTextCorpusManager::GeneratingTransformersDatasets(std::unique_ptr<CRapidJsonWrapper>& wrapper, std::stringstream& datasets, const std::string& label) const {
+    bool CTextCorpusManager::GeneratingTransformersDatasets(std::unique_ptr<CRapidJsonWrapper> wrapper, std::stringstream& datasets, const std::string& label) {
         if (!wrapper) return false;
+        std::string identifier;
         if (auto anyvalue(wrapper->GetMember(std::vector<std::string>{PJ_SHA256}));
             !anyvalue.has_value() || anyvalue.type() != typeid(std::string_view)) {
             return false;
         }
         else {
-            std::cout << "process " << std::any_cast<std::string_view>(anyvalue) << "..." << std::endl;
+            identifier = std::any_cast<std::string_view>(anyvalue);
+            std::cout << "process " << identifier << "..." << std::endl;
+            auto it = m_scaned_idenlist.find(identifier);
+            if (it != m_scaned_idenlist.end()) {
+                m_dup_idencounts++;
+                std::cout << "It's already been processed. Exit." << std::endl;
+                return false;
+            }
+            m_scaned_idenlist.insert(identifier);
         }
         std::shared_ptr<CSemanticGeneration> tfptr = std::make_shared<CTransformersSG>();
         if (!tfptr) {
             return false;
+        }
+        if (auto anyvalue(wrapper->GetMember(BI_BASEINFO));
+            anyvalue.has_value() && anyvalue.type() == typeid(ConstRapidObject))
+        {
+            std::string filename_str;
+            auto baseinfo = std::any_cast<ConstRapidObject>(anyvalue);
+            const auto bi_filename = baseinfo.FindMember(BI_FILENAME);
+            if (bi_filename != baseinfo.MemberEnd()) {
+                if (!bi_filename->value.IsNull() && bi_filename->value.IsString()) {
+                    filename_str = bi_filename->value.GetString();
+                    if (filename_str.length()) {
+                        fs::path filename(filename_str);
+                        filename_str = StringToLower(filename.u8string());
+                        if (InFilterList(filename_str)) {
+                            m_skip_lists.push_back(identifier);
+                            std::cout << "the filename " << filename_str << " needs to be skipped." << std::endl;
+                            return false;
+                        }
+                    }
+                }
+            }
         }
         if (auto anyvalue(wrapper->GetMember(SI_SIGNINFO));
             anyvalue.has_value() && anyvalue.type() == typeid(ConstRapidObject))
@@ -513,13 +575,20 @@ namespace cchips {
                 }
             }
         }
+        std::uint32_t word_counts = tfptr->getelemcount();
         std::cout << "word counts: " << tfptr->getelemcount() << std::endl;
+        if (word_counts <= _minimum_word_counts) {
+            m_notenough_lists.push_back(identifier);
+            std::cout << "not enough features, return false!" << std::endl;
+            return false;
+        }
         if (label.length()) {
             datasets << label << tfptr->fulldump();
         }
         else {
             datasets << tfptr->fulldump();
         }
+        m_scan_lists.push_back(identifier);
         return true;
     }
 
@@ -2342,7 +2411,7 @@ namespace cchips {
             m_elementcount += value->getelemcount();
         }
         else {
-            m_dataset << "." << dump;
+            m_dataset << " " << SPECIAL_CORPUS_SEP << dump;
             m_elementcount += value->getelemcount() + 1;
         }
 

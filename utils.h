@@ -46,6 +46,7 @@ void *memmem(const void *buf, size_t buf_len, const void *byte_sequence, size_t 
 
 inline std::wstring to_wide_string(const std::string& input)
 {
+    if (input.empty()) return {};
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     tls_check_struct *tls = check_get_tls();
     if (tls) {
@@ -62,6 +63,7 @@ inline std::wstring to_wide_string(const std::string& input)
 }
 inline std::string to_byte_string(const std::wstring& input)
 {
+    if (input.empty()) return {};
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     tls_check_struct *tls = check_get_tls();
     if (tls) {

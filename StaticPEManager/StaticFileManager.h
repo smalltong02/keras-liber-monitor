@@ -166,6 +166,8 @@ namespace cchips {
             return m_valid;
         }
     private:
+#define _extract_padding " --> extract: "
+
         bool AddDupCollectRecord(const std::string& name, const fs::path& path) {
             if (name.empty() || path.empty()) {
                 return false;
@@ -200,6 +202,31 @@ namespace cchips {
             std::uint32_t failed_counts = m_failedlists.size();
             std::uint32_t success_counts = m_successlists.size();
             std::uint32_t dup_counts = 0;
+            auto RemoveExtractPadding = [&](const std::string& path) -> std::string {
+                auto find = path.find(std::string(_extract_padding), 0);
+                if (find == std::string::npos) {
+                    return path;
+                }
+                return path.substr(0, find);
+            };
+            auto GetDiffCounts = [&](const std::vector<std::string>& list) ->std::uint32_t {
+                std::uint32_t diffcounts = 0;
+                if (list.size() == 0) return diffcounts;
+                fs::path path1;
+                fs::path path2;
+                for (auto& it : list) {
+                    if (path1.empty()) {
+                        path1 = fs::path(RemoveExtractPadding(it)).parent_path();
+                    }
+                    else {
+                        path2 = fs::path(RemoveExtractPadding(it)).parent_path();
+                        if (path1 != path2) {
+                            diffcounts++;
+                        }
+                    }
+                }
+                return diffcounts;
+            };
 
             std::unique_ptr<cchips::CRapidJsonWrapper> jsonfile = std::make_unique<cchips::CRapidJsonWrapper>("{}");
             if (!jsonfile) {
@@ -258,7 +285,7 @@ namespace cchips {
             }
             dup_lists->SetObject();
             for (auto& entry : m_duplists) {
-                if (entry.second.size() >= 2) {
+                if (GetDiffCounts(entry.second) >= 1) {
                     dup_counts++;
                     cchips::RapidValue dup_object;
                     dup_object.SetObject();
@@ -418,7 +445,9 @@ namespace cchips {
                 }
                 CTraverseDriveEngine::fi_callback callback = std::bind(&CStaticFileManager::scan_callback, this, std::placeholders::_1, std::placeholders::_2);
                 CTraverseDriveEngine::GetInstance().AddFiCb(callback);
-                CTraverseDriveEngine::GetInstance().EnableHierarchicalFolder();
+                if (!CleaningFlag()) {
+                    CTraverseDriveEngine::GetInstance().EnableHierarchicalFolder();
+                }
                 bool bret = CTraverseDriveEngine::GetInstance().TraverseDrive(scan_path, output);
                 if (OutputConsoleFlag()) {
                     auto totals = CTraverseDriveEngine::GetInstance().GetFileTotals();
@@ -492,6 +521,7 @@ namespace cchips {
 #define _mongodb_collector_insnflow_info "PeinsnflowInfo"
 #define _mongodb_document_limit 16777216
 #define _max_file_size 512 * 1024 * 1024 // 512M
+#define _extract_padding " --> extract: "
 
         CStaticFileManager() = default;
         ~CStaticFileManager() = default;
@@ -583,7 +613,7 @@ namespace cchips {
                 path = path2.string();
             }
             else {
-                path = path2.string() + " --> extract: " + subpath.string();
+                path = path2.string() + _extract_padding + subpath.string();
             }
             return path;
         }
@@ -654,6 +684,7 @@ namespace cchips {
             ifile.seekp(0, std::ios::beg);
             ifile.close();
             bool bret = scanpackage_callback(tmppath.string(), output, package_path, subpath);
+            std::cout << "remove file: " << tmppath << std::endl;
             fs::remove(tmppath);
             return bret;
         }
@@ -800,6 +831,11 @@ namespace cchips {
                             IncFailedlog(GetCorrectPath(scan_buffer, package_path, subpath), subpath);
                             return false;
                         }
+                        if (CleaningFlag()) {
+                            IncSuccesslog(GetCorrectPath(scan_buffer, package_path, subpath), subpath);
+                            m_success_scan_count.IncSuccessCount();
+                            return true;
+                        }
                         m_pychandler->Initialize(m_options);
                         if (m_options->GetConfigInfo().IsPerformanceMode()) {
                             if (bfilemode) {
@@ -826,6 +862,11 @@ namespace cchips {
                             IncFailedlog(GetCorrectPath(scan_buffer, package_path, subpath), subpath);
                             return false;
                         }
+                        if (CleaningFlag()) {
+                            IncSuccesslog(GetCorrectPath(scan_buffer, package_path, subpath), subpath);
+                            m_success_scan_count.IncSuccessCount();
+                            return true;
+                        }
                         m_javachandler->Initialize(m_options);
                         if (m_options->GetConfigInfo().IsPerformanceMode()) {
                             if (bfilemode) {
@@ -844,6 +885,9 @@ namespace cchips {
                             }
                         }
                     }
+                    else {
+                        return false;
+                    }
                 }
                 else {
                     if (!config.MatchFileType(format)) {
@@ -858,7 +902,6 @@ namespace cchips {
                         IncFailedlog(GetCorrectPath(scan_buffer, package_path, subpath), subpath);
                         return false;
                     }
-
                     if (CleaningFlag()) {
                         IncSuccesslog(GetCorrectPath(scan_buffer, package_path, subpath), subpath);
                         m_success_scan_count.IncSuccessCount();

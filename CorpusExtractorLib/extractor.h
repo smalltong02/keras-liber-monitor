@@ -11,6 +11,11 @@
 namespace cchips {
 
     class CStrExtractor {
+    private:
+#define _minimum_corpus_length 5
+#define _maximum_depths 100
+#define _maximum_string_length 10000
+
     public:
         CStrExtractor() = delete;
         ~CStrExtractor() = delete;
@@ -98,14 +103,14 @@ namespace cchips {
             std::int32_t match, matchCount = 0;
             detected.clear();
             if (!str.length()) return false;
-
+            std::uint32_t length = str.length() > _maximum_string_length ? _maximum_string_length : str.length();
             UErrorCode status = U_ZERO_ERROR;
 
             csd = ucsdet_open(&status);
             if (status != U_ZERO_ERROR)
                 return false;
 
-            ucsdet_setText(csd, str.c_str(), str.length(), &status);
+            ucsdet_setText(csd, str.c_str(), length, &status);
             if (status != U_ZERO_ERROR)
                 return false;
 
@@ -138,9 +143,10 @@ namespace cchips {
             detected_list.clear();
             UErrorCode status = U_ZERO_ERROR;
             if (!str.length()) return false;
+            std::uint32_t length = str.length() > _maximum_string_length ? _maximum_string_length : str.length();
             if (!_usword_pattern)
                 return false;
-            icu::UnicodeString findString(str.data());
+            icu::UnicodeString findString(str.data(), length);
             std::unique_ptr<icu::RegexMatcher> regexFilter = nullptr;
             regexFilter.reset(_usword_pattern->matcher(findString, status));
             if (U_FAILURE(status)) {
@@ -198,10 +204,11 @@ namespace cchips {
         static bool detectedVSCorpus(const std::string_view str, std::vector <std::string>& detected_list) {
             detected_list.clear();
             if (!str.length()) return false;
+            std::uint32_t length = str.length() > _maximum_string_length ? _maximum_string_length : str.length();
             UErrorCode status = U_ZERO_ERROR;
             if (!_vsword_pattern)
                 return false;
-            icu::UnicodeString findString(str.data());
+            icu::UnicodeString findString(str.data(), length);
             std::unique_ptr<icu::RegexMatcher> regexFilter = nullptr;
             regexFilter.reset(_vsword_pattern->matcher(findString, status));
             if (U_FAILURE(status)) {
@@ -227,9 +234,10 @@ namespace cchips {
             UErrorCode status = U_ZERO_ERROR;
             if (!str.length())
                 return false;
+            std::uint32_t length = str.length() > _maximum_string_length ? _maximum_string_length: str.length();
             if (!pattern)
                 return false;
-            icu::UnicodeString findString(str.data());
+            icu::UnicodeString findString(str.data(), length);
             std::unique_ptr<icu::RegexMatcher> regexFilter = nullptr;
             regexFilter.reset(pattern->matcher(findString, status));
             if (U_FAILURE(status)) {
@@ -253,7 +261,7 @@ namespace cchips {
                     star_str = str.substr(0, start);
                 }
                 if (end < str.length()) {
-                    tail_str = str.substr(end, str.length());
+                    tail_str = str.substr(end, length - end);
                 }
                 remainstr = star_str + tail_str;
                 return true;
@@ -277,10 +285,12 @@ namespace cchips {
             return detectedMatchCorpus(_guid_pattern, str, emailstr, remainstr);
         }
 
-        static bool detectedInsideCorpus(const std::string_view str, std::vector <std::string>& detected_list) {
+        static bool detectedInsideCorpus(const std::string_view str, std::vector <std::string>& detected_list, std::uint32_t curdepth = 0) {
             detected_list.clear();
             if (!str.length()) return false;
-
+            if (curdepth >= _maximum_depths) {
+                return false;
+            }
             std::string hitstr, remainstr;
             std::vector<std::string> detected_l;
             if (detectedUrlCorpus(str, hitstr, remainstr) || detectedEmailCorpus(str, hitstr, remainstr) || detectedGuidCorpus(str, hitstr, remainstr) || detectedIpv4Corpus(str, hitstr, remainstr)) {
@@ -288,13 +298,13 @@ namespace cchips {
                     detected_list.push_back(hitstr);
                 }
                 if (remainstr.length()) {
-                    if (detectedInsideCorpus(remainstr, detected_l)) {
+                    if (detectedInsideCorpus(remainstr, detected_l, curdepth + 1)) {
                         detected_list.insert(detected_list.end(), detected_l.begin(), detected_l.end());
                     }
                 }
                 return true;
             }
-            return detectedUSCorpus(str, detected_list, 5);
+            return detectedUSCorpus(str, detected_list, _minimum_corpus_length);
         }
     private:
         static std::unique_ptr<icu::RegexPattern> _usword_pattern;
