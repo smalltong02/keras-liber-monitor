@@ -13,13 +13,11 @@
             "justMyCode": true,
             "args": [
                 "--input",
-                "H:\\machine_learning\\fasttext_test\\predict.txt",
+                "I:\\collector\\output\\trainsets.txt",
                 "--model_path",
                 "./longformer/longformer-base-4096/",
-                "--dict_path",
-                "H:\\machine_learning\\spiece.model",
                 "--output",
-                "H:\\machine_learning"
+                "I:\\collector\\output"
                 ]
         }
     ]

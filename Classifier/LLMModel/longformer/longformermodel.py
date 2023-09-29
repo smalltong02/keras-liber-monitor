@@ -5,6 +5,8 @@ from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
 from transformers import LongformerTokenizerFast, LongformerForSequenceClassification
+from longformer.featuredataset import AppClassificationDataset
+from torch.utils.data import random_split, DataLoader
 
 class InnerLongformerModel(nn.Module):
     def __init__(self, model):
@@ -44,15 +46,26 @@ class InnerLongformerClassificationInstance:
         print(f"Total trainable parameters：{um_trainable_params}")
 
     def train(self):
-        print(self.tokenizer.vocab_size)
-        inputs = self.tokenizer("I have a dreaming!", return_tensors="pt")
-
-        print(self.model.config)
-        output = self.model(**inputs)
-        print(output)
+        print(f"Training {self.modelname} model start!")
+        start_time = time.time()
+        if self.input == "" or self.output == "":
+            return
+        datasets = AppClassificationDataset(self.input, self.tokenizer, 1)
+        trainsets, validsets = random_split(datasets, lengths=[0.9, 0.1])
+        trainloader = DataLoader(trainsets, batch_size=4, shuffle=True, collate_fn=self.collate_func)
+        validloader = DataLoader(trainsets, batch_size=8, shuffle=True, collate_fn=self.collate_func)
+        
 
     def test(self):
         pass
 
     def predict(self):
         pass
+
+    def collate_func(self, batch):
+        texts, labels = [], []
+        for item in batch:
+            texts.append(item[0])
+            labels.append(item[1])
+        print(texts)
+        print(labels)
