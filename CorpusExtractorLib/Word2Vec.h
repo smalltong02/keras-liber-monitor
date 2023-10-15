@@ -271,8 +271,8 @@ namespace cchips {
             // Reallocate memory if needed
             if (m_vocab_size + 2 >= m_vocab_max_size) {
                 m_vocab_max_size += 1000;
-                m_vocab.resize(m_vocab_max_size * sizeof(CWord2Vec::vocab_word));
-                if (m_vocab.size() != m_vocab_max_size * sizeof(CWord2Vec::vocab_word))
+                m_vocab.resize(m_vocab_max_size/* * sizeof(CWord2Vec::vocab_word)*/);
+                if (m_vocab.size() != m_vocab_max_size/* * sizeof(CWord2Vec::vocab_word)*/)
                     return -1;
             }
             hash = GetWordHash(word);

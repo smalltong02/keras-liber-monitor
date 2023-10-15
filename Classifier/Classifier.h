@@ -105,7 +105,7 @@ namespace cchips {
 
     class CDataSets : public torch::data::Dataset<CDataSets> {
     public:
-#define _max_file_size 1024 * 1024 * 1024 // 1G
+#define _max_file_size 4 * 1024 * 1024 * 1024 - 1 // 4G
 #define _max_batch_sequence_word 5000000
 #define _max_sequences_size 10000
 #define _max_word_dim 100
@@ -192,20 +192,51 @@ namespace cchips {
             if (!infile.is_open()) {
                 return false;
             }
-            initLabelVec();
+            //initLabelVec();
+            m_label.clear();
             m_dataset.clear();
             std::string line;
-            std::uint32_t loading_count = 0;
+            std::string label;
+            std::string data;
+            std::string token;
             while (std::getline(infile, line)) {
-                size_t pos = line.find_first_of(' ');
-                if (pos != std::string::npos && pos != 0) {
-                    //m_label.insert(line.substr(0, pos));
-                    m_dataset.push_back(std::pair(line.substr(0, pos), line.substr(pos + 1)));
+                std::istringstream iss(line);
+                if (iss.str().empty()) {
+                    continue;
                 }
-                loading_count++;
-                //if (loading_count >= 20) break;
+                label.clear();
+                data.clear();
+                std::uint32_t deep = m_labeldeep;
+                while(iss >> token) {
+                    if (deep > 0) {
+                        if (strncmp(token.c_str(), "__label_", sizeof("__label_") - 1) == 0) {
+                            m_label.insert(token);
+                            if (label.empty()) {
+                                label = token;
+                            }
+                            else {
+                                label = label + " " + token;
+                            }
+                            deep--;
+                        }
+                        else {
+                            deep = 0;
+                        }
+                        continue;
+                    }
+                    if (data.empty()) {
+                        data = token;
+                    }
+                    else {
+                        data += " " + token;
+                    }
+                }
+                if (!label.empty()) {
+                    m_label.insert(label);
+                    m_dataset.push_back(std::pair(label, data));
+                }
             }
-            std::cout << "LoadDataset: " << loading_count << std::endl;
+            std::cout << "LoadDataset: " << m_dataset.size() << "  label: " << m_label.size() << std::endl;
             infile.close();
             m_path = path;
             return true;
@@ -217,6 +248,7 @@ namespace cchips {
         bool LoadSentencepieceDict();
 
         bool m_valid = false;
+        std::uint32_t m_labeldeep = 1;
         std::uint32_t m_word_dim = _max_word_dim;
         std::uint32_t m_sequences_size = _max_sequences_size;
         std::uint32_t m_batchsize = _max_batch_sequence_word / _max_sequences_size / _max_word_dim;
@@ -330,9 +362,11 @@ namespace cchips {
             m_num_epochs = epochs;
 #ifndef pytorch_only_predict
             if (m_bcpu) {
+                std::cout << "device: kCPU\n" << std::endl;
                 m_device = std::make_unique<torch::Device>(torch::kCPU);
             }
             else {
+                std::cout << "device: kCUDA\n" << std::endl;
                 m_device = std::make_unique<torch::Device>(torch::kCUDA);
             }
             if (!m_device) {
@@ -344,7 +378,7 @@ namespace cchips {
                 return;
             }
             std::uint32_t input_size = m_datasets->getWorddim();
-            m_linearmodel = torch::nn::Linear(input_size, 5);//m_datasets->getLabelnum());
+            m_linearmodel = torch::nn::Linear(input_size, m_datasets->getLabelnum());
             m_grumodel = torch::nn::GRU(torch::nn::GRUOptions(input_size, input_size).num_layers(1));
             register_module("gru", m_grumodel);
             register_module("linear", m_linearmodel);
@@ -420,6 +454,7 @@ namespace cchips {
         bool loadtorchmodel(CGruModel& model, const std::string& modelbin);
         bool m_valid = false;
         bool m_bcpu = true;
+        bool m_dynamiclr = false;
         std::string m_input;
         std::string m_output;
         std::string m_modelbin;

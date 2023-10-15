@@ -514,7 +514,9 @@ namespace cchips {
         if (!input.length()) {
             return {};
         }
-        initLabelVec();
+        if (m_label.empty()) {
+            initLabelVec();
+        }
         m_dataset.clear();
         size_t pos = input.find_first_of(' ');
         if (pos != std::string::npos && pos != 0) {
@@ -564,7 +566,9 @@ namespace cchips {
         if (!outfile.is_open()) {
             return false;
         }
-        initLabelVec();
+        if (m_label.empty()) {
+            initLabelVec();
+        }
         outfile.write((char*)&(m_dicttype), sizeof(std::int32_t));
         outfile.write((char*)&(m_word_dim), sizeof(std::int32_t));
         outfile.write((char*)&(m_sequences_size), sizeof(std::int32_t));
@@ -614,7 +618,7 @@ namespace cchips {
         infile.read((char*)&(wordnums), sizeof(std::int32_t));
         for (int count = 0; count < labelsize; count++) {
             std::string str = getstr_func(infile);
-            m_label.insert(str);
+            //m_label.insert(str);
         }
         for (int count = 0; count < wordnums; count++) {
             std::string str = getstr_func(infile);
@@ -842,15 +846,18 @@ namespace cchips {
         }
         try {
             CFuncduration func_duration("traning time: ");
-            std::cout << "GRU Model training start... " << std::endl;
+            std::cout << "GRU Model training start... " << std::endl << "epochs: " << m_num_epochs << std::endl;
             m_datasets->LoadDict();
             m_grumodel->train();
             m_linearmodel->train();
             torch::nn::CrossEntropyLoss criterion;
             torch::optim::SGD optimizer(parameters(), torch::optim::SGDOptions(0.01));
             int step_size = 10;
-            float gamma = 0.1;
-            torch::optim::StepLR scheduler(optimizer, step_size, gamma);
+            std::atomic_uint32_t corrects = 0;
+            if (m_dynamiclr) {
+                float gamma = 0.1;
+                torch::optim::StepLR scheduler(optimizer, step_size, gamma);
+            }
             for (int epoch = 0; epoch < m_num_epochs; ++epoch) {
                 auto data_loader = torch::data::make_data_loader(
                     *m_datasets,
@@ -859,6 +866,7 @@ namespace cchips {
                 std::uint32_t num_batches = 0;
                 std::float_t average_loss = 0.0;
                 std::float_t total_loss = 0.0;
+                corrects = 0;
                 for (const auto& batch : *data_loader)
                 {
                     torch::Tensor inputs, lengths, targets;
@@ -874,6 +882,12 @@ namespace cchips {
                         //std::cout << targets << std::endl;
                         outputs = outputs.to(*m_device);
                         auto loss = criterion(outputs, targets);
+                        torch::Tensor predictions = torch::argmax(outputs, 1);
+                        auto t1 = predictions[0].item<int>();
+                        auto t2 = targets[0].item<int>();
+                        if (t1 == t2) {
+                            corrects++;
+                        }
                         optimizer.zero_grad();
                         loss.backward();
                         optimizer.step();
@@ -886,8 +900,9 @@ namespace cchips {
                         break;
                     }
                 }
+                float accuracy = ((float)corrects / (float)m_datasets->size().value()) * 100;
                 average_loss = total_loss / num_batches;
-                std::cout << "Epoch: " << epoch + 1 << ", average loss: " << average_loss << std::endl;
+                std::cout << "Epoch: " << epoch + 1 << ", average loss: " << average_loss << ", accuracy: " << std::fixed << std::setprecision(2) << accuracy << "%" << std::endl;
             }
         }
         catch (const std::exception& e) {
@@ -911,6 +926,8 @@ namespace cchips {
             CFuncduration func_duration("testing time: ");
             std::cout << "GRU Model testing start... " << std::endl;
             m_datasets->LoadDict();
+            m_grumodel->to(*m_device);
+            m_linearmodel->to(*m_device);
             m_grumodel->eval();
             m_linearmodel->eval();
             std::atomic_uint32_t corrects = 0;

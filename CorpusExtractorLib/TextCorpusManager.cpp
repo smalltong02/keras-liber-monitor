@@ -4,7 +4,7 @@
 #include "utils.h"
 
 namespace cchips {
-    const mongocxx::instance CTextCorpusManager::_mongodb_instance{};
+    //const mongocxx::instance CTextCorpusManager::_mongodb_instance{};
     const std::uint32_t CTextCorpusManager::_min_corpus_lenth = 3;
     const std::uint32_t CTextCorpusManager::_max_corpus_lenth = 100;
 

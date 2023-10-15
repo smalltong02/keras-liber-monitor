@@ -634,7 +634,7 @@ namespace cchips {
         std::vector<std::string> m_scan_lists;
         std::set<std::string> m_scaned_idenlist;
         std::set<std::string> m_filter_defaultlist;
-        static const mongocxx::instance _mongodb_instance;
+        //static const mongocxx::instance _mongodb_instance;
         static const std::vector <std::string> _special_vocab;
     };
 
