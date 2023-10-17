@@ -10,14 +10,14 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": true,
+            "justMyCode": false,
             "args": [
                 "--input",
-                "I:\\collector\\output\\trainsets.txt",
+                "G:\\collector\\output\\trainsets.txt",
                 "--model_path",
                 "./longformer/longformer-base-4096/",
                 "--output",
-                "I:\\collector\\output"
+                "G:\\collector\\output"
                 ]
         }
     ]

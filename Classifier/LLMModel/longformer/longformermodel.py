@@ -195,8 +195,8 @@ class InnerLongformerClassificationInstance:
         if self.input == "" or self.output == "":
             return
         datasets = AppClassificationDataset(self.input, self.tokenizer, 1)
-        trainsets1, trainsets2, trainsets3, trainsets4, validsets = random_split(datasets, lengths=[0.01, 0.39, 0.2, 0.2, 0.2])
-        trainloader1 = DataLoader(trainsets1, batch_size=1, shuffle=True, collate_fn=self.collate_func)
+        trainsets1, trainsets2, trainsets3, trainsets4, validsets = random_split(datasets, lengths=[0.1, 0.3, 0.2, 0.2, 0.2])
+        trainloader1 = DataLoader(trainsets1, batch_size=2, shuffle=True, collate_fn=self.collate_func)
         trainloader2 = DataLoader(trainsets2, batch_size=1, shuffle=True, collate_fn=self.collate_func)
         trainloader3 = DataLoader(trainsets3, batch_size=1, shuffle=True, collate_fn=self.collate_func)
         trainloader4 = DataLoader(trainsets4, batch_size=1, shuffle=True, collate_fn=self.collate_func)
@@ -239,8 +239,10 @@ class InnerLongformerClassificationInstance:
                     output = self.model(**batch)
                     
                     pred = torch.argmax(output.logits, dim=-1)
-                    labels.append(pred.long().item())
-                    train_label.append((batch["labels"].long().item(), pred.long().item()))
+                    for prd in pred:
+                        labels.append(prd.long().item())
+                    #labels.append(pred.long().item())
+                    #train_label.append((batch["labels"].long().item(), pred.long().item()))
                     self.clf_metrics.add_batch(predictions=pred.long(), references=batch["labels"].long())
                     #elf = self.clf_metrics.compute()
                     #print(f"{elf}")
@@ -269,10 +271,10 @@ class InnerLongformerClassificationInstance:
     def collate_func(self, batch):
         texts, labels = [], []
         for item in batch:
-            texts.append(item[0])
-            labels.append(item[1])
+            texts.append(item['context'])
+            labels.append(item['label'])
         #inputs = self.tokenizer(texts, max_length=512, padding="max_length", truncation=True, return_tensors="pt")
-        inputs = self.tokenizer(texts, max_length=2048, padding="max_length", truncation=True, return_tensors="pt")
+        inputs = self.tokenizer(texts, max_length=4096, padding="max_length", truncation=True, return_tensors="pt")
         #print("inputs length: ", inputs['input_ids'][0].size())
         inputs["labels"] = torch.tensor(labels)
         return inputs

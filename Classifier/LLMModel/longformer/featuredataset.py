@@ -60,16 +60,27 @@ class AppClassificationDataset(Dataset):
         return len(self.datasets)
 
     def __getitem__(self, idx):
-        labels = []
-        for i in range(self.labeldeep):
-            label = self.datasets[idx]["labels"][i]
-            try:
-                index = self.labels.index(label)
-                labels.append(index)
-            except ValueError:
-                return "", -1
+        if isinstance(idx, list):
+            labels = []
+            contexts = []
+            for index in idx:
+                labelidx = self.labels.index(self.datasets[index]["labels"][0])
+                labels.append(labelidx)
+                contexts.append(self.datasets[index]["content"])
 
-        return self.datasets[idx]["content"], index
+            return {'label': labels, 'context': contexts}
+        
+        if isinstance(idx, int):
+            labels = []
+            for i in range(self.labeldeep):
+                label = self.datasets[idx]["labels"][i]
+                try:
+                    index = self.labels.index(label)
+                    labels.append(index)
+                except ValueError:
+                    return "", -1
+
+            return self.datasets[idx]["content"], index
 
     def read_data(self, file_path):
         datasets = []
